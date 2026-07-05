@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data: file: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:*;"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Markdown Viewer Mac</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div class="brand">
+          <i data-lucide="file-text" aria-hidden="true"></i>
+          <span>Markdown Viewer Mac</span>
+        </div>
+
+        <div class="document-stats" aria-live="polite">
+          <span id="reading-time">0 min</span>
+          <span id="word-count">0 words</span>
+          <span id="char-count">0 chars</span>
+        </div>
+
+        <div class="header-actions">
+          <button class="icon-button" id="theme-toggle" type="button" title="Toggle theme" aria-label="Toggle theme">
+            <i data-lucide="moon" aria-hidden="true"></i>
+          </button>
+        </div>
+      </header>
+
+      <nav class="toolbar" aria-label="Markdown actions">
+        <div class="toolbar-group">
+          <button class="tool-button" id="open-file" type="button" title="Open Markdown file">
+            <i data-lucide="folder-open" aria-hidden="true"></i>
+            <span>Open</span>
+          </button>
+          <button class="tool-button" id="save-file" type="button" title="Save current file">
+            <i data-lucide="save" aria-hidden="true"></i>
+            <span>Save</span>
+          </button>
+          <button class="tool-button" id="save-file-as" type="button" title="Save current file as">
+            <i data-lucide="save-all" aria-hidden="true"></i>
+            <span>Save As</span>
+          </button>
+        </div>
+
+        <div class="toolbar-group segmented" role="group" aria-label="View mode">
+          <button class="segment-button active" type="button" data-view-mode="split" title="Split view">
+            <i data-lucide="columns-2" aria-hidden="true"></i>
+            <span>Split</span>
+          </button>
+          <button class="segment-button" type="button" data-view-mode="editor" title="Editor view">
+            <i data-lucide="edit-3" aria-hidden="true"></i>
+            <span>Editor</span>
+          </button>
+          <button class="segment-button" type="button" data-view-mode="preview" title="Preview view">
+            <i data-lucide="eye" aria-hidden="true"></i>
+            <span>Preview</span>
+          </button>
+        </div>
+
+        <div class="toolbar-group">
+          <button class="tool-button" id="copy-markdown" type="button" title="Copy Markdown">
+            <i data-lucide="copy" aria-hidden="true"></i>
+            <span>Copy</span>
+          </button>
+          <button class="tool-button" id="export-html" type="button" title="Export HTML">
+            <i data-lucide="code-2" aria-hidden="true"></i>
+            <span>HTML</span>
+          </button>
+          <button class="tool-button" id="export-pdf" type="button" title="Export PDF">
+            <i data-lucide="file-down" aria-hidden="true"></i>
+            <span>PDF</span>
+          </button>
+        </div>
+
+        <div class="toolbar-group">
+          <button class="tool-button" id="new-tab" type="button" title="New document">
+            <i data-lucide="plus" aria-hidden="true"></i>
+            <span>New</span>
+          </button>
+          <button class="tool-button" id="reveal-file" type="button" title="Reveal current file">
+            <i data-lucide="external-link" aria-hidden="true"></i>
+            <span>Reveal</span>
+          </button>
+        </div>
+      </nav>
+
+      <div class="tabs-bar" id="tabs-bar" role="tablist" aria-label="Open documents"></div>
+
+      <main class="workspace split" id="workspace">
+        <section class="pane editor-pane" aria-label="Markdown editor">
+          <textarea
+            id="markdown-editor"
+            spellcheck="false"
+            autocomplete="off"
+            autocapitalize="off"
+            aria-label="Markdown editor"
+          ></textarea>
+        </section>
+
+        <section class="pane preview-pane" aria-label="Markdown preview">
+          <article id="markdown-preview" class="markdown-body"></article>
+        </section>
+      </main>
+
+      <footer class="status-bar">
+        <span id="file-path">Untitled</span>
+        <span id="save-state">Saved</span>
+      </footer>
+
+      <div class="drop-overlay" id="drop-overlay" aria-hidden="true">
+        <div class="drop-message">
+          <i data-lucide="file-input" aria-hidden="true"></i>
+          <span>Drop Markdown files to open</span>
+        </div>
+      </div>
+
+      <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+    </div>
+
+    <script type="module" src="/renderer.js"></script>
+  </body>
+</html>
