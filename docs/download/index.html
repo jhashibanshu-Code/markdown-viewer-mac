@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shibanshu Markdown Viewer Download</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f7f4;
+      --surface: #ffffff;
+      --text: #1f2522;
+      --muted: #64706a;
+      --border: #d9ded8;
+      --accent: #236f55;
+      --accent-2: #315e9f;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111316;
+        --surface: #181b20;
+        --text: #f2f4f0;
+        --muted: #a8b0ab;
+        --border: #333941;
+        --accent: #7dd3a8;
+        --accent-2: #8ab4f8;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.56;
+    }
+    main {
+      width: min(1040px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 48px 0 72px;
+    }
+    h1 {
+      max-width: 760px;
+      margin: 0 0 12px;
+      font-size: clamp(2.2rem, 5vw, 4.8rem);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+    h2 { margin-top: 34px; }
+    .lead {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+    .panel {
+      margin-top: 24px;
+      padding: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    code {
+      overflow-wrap: anywhere;
+      color: var(--accent);
+    }
+    a { color: var(--accent-2); }
+    ol, ul { padding-left: 1.2rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <p>Version 0.1.0 · Generated 2026-07-05T14:43:44.917Z</p>
+    <h1>Shibanshu Markdown Viewer</h1>
+    <p class="lead">A free, local-first Markdown viewer, editor, graph mapper, AI context exporter, and static publisher. The app works offline after installation and does not require an account or hosted service.</p>
+
+    <section class="panel" aria-labelledby="downloads">
+      <h2 id="downloads">Downloads</h2>
+      <table>
+        <thead>
+          <tr><th>Artifact</th><th>Type</th><th>Size</th><th>SHA-256</th></tr>
+        </thead>
+        <tbody><tr>
+          <td><a href="../../release/Shibanshu Markdown Viewer-0.1.0-arm64-mac.zip">Shibanshu Markdown Viewer-0.1.0-arm64-mac.zip</a></td>
+          <td>mac-zip</td>
+          <td>159.2 MB</td>
+          <td><code>dfd8038e9faf828fc000fa5c3ce373bca6d9232480ad79561766779e3fdf1652</code></td>
+        </tr></tbody>
+      </table>
+    </section>
+
+    <section class="panel" aria-labelledby="readiness">
+      <h2 id="readiness">Release Readiness</h2>
+      <p><strong>public-blocked</strong> · development mode · 0 failures · 4 warnings · 4 public blockers</p>
+      <ul><li>Developer ID signature: ad-hoc signature only</li><li>Apple Team identifier: missing TeamIdentifier</li><li>Gatekeeper assessment passes: /Users/shibanshujha/Documents/markdown-viewer-mac/release/mac-arm64/Shibanshu Markdown Viewer.app: rejected</li><li>notarization ticket is stapled: Processing: /Users/shibanshujha/Documents/markdown-viewer-mac/release/mac-arm64/Shibanshu Markdown Viewer.app
+Shibanshu Markdown Viewer.app does not have a ticket stapled to it.</li></ul>
+    </section>
+
+    <section class="panel" aria-labelledby="install">
+      <h2 id="install">Install</h2>
+      <ol>
+        <li>Download the installer for your platform.</li>
+        <li>Verify the SHA-256 checksum against <code>release/SHA256SUMS</code>.</li>
+        <li>On macOS, open the ZIP or DMG and drag the app into Applications.</li>
+        <li>Open a Markdown file, or open a folder as a vault from the app.</li>
+      </ol>
+    </section>
+
+    <section class="panel" aria-labelledby="trust">
+      <h2 id="trust">Trust And Privacy</h2>
+      <ul>
+        <li>Markdown rendering, graph mapping, AI context maps, and static publishing run locally.</li>
+        <li>Generated context files are saved only where you choose.</li>
+        <li>Production public releases should be Developer ID signed, notarized, stapled, and listed with checksums.</li>
+        <li>Ad-hoc developer builds are useful for testing but are not a substitute for notarized public distribution.</li>
+      </ul>
+    </section>
+
+    <section class="panel" aria-labelledby="troubleshooting">
+      <h2 id="troubleshooting">Troubleshooting</h2>
+      <ul>
+        <li>If macOS blocks an unsigned development build, use a notarized release for normal installation.</li>
+        <li>If Electron cannot launch from a restricted terminal session, run <code>npm run local:web</code> and open the printed localhost URL to test the same renderer UI.</li>
+        <li>If a file association does not update immediately, restart Finder or choose the app from “Open With”.</li>
+        <li>For automation, use <code>shibanshu-markdown context</code>, <code>shibanshu-markdown publish</code>, or the <code>shibanshu-markdown://</code> URL scheme.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

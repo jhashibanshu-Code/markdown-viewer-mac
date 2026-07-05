@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shibanshu Markdown Context"
+  short_description: "Use Shibanshu Markdown Viewer for LLM context maps"
+  default_prompt: "Use $shibanshu-markdown-context to build and navigate a local Markdown knowledge graph."

@@ -1,4 +1,5 @@
 node_modules/
+build/
 dist/
 release/
 test-artifacts/
@@ -10,3 +11,5 @@ yarn-error.log*
 .vite/
 .env
 .env.*
+android/
+.capacitor/
