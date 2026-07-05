@@ -15,7 +15,7 @@ import {
   ListToolsRequestSchema
 } from '@modelcontextprotocol/sdk/types.js';
 import fsp from 'node:fs/promises';
-import { readdir, readFile, writeFile, stat, mkdir, rename, unlink } from 'node:fs/promises';
+import { readdir, readFile, stat, mkdir, rename, unlink } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
@@ -124,7 +124,7 @@ const TOOLS = [
         file: {
           type: 'string',
           description: 'Which context file to read',
-          enum: ['navigation', 'map', 'mind-map', 'graph', 'chunks']
+          enum: ['navigation', 'map', 'mind-map', 'graph', 'scene', 'chunks', 'integrity']
         },
         output_dir: { type: 'string', description: 'Output directory if non-default was used' }
       },
@@ -224,6 +224,44 @@ const TOOLS = [
         subfolder: { type: 'string', description: 'Subfolder within vault (e.g. "daily" creates daily/2026-07-05.md)' }
       },
       required: ['vault_path']
+    }
+  },
+  {
+    name: 'generate_3d_graph_viewer',
+    description: 'Generate an interactive 3D graph visualization of a codebase as a self-contained HTML file. Opens in any browser — rotating universe view with clickable nodes showing file details, connections, hubs, orphans. The key visual demo of how context mapping works.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Absolute path to the vault/repo to visualize' },
+        output: { type: 'string', description: 'Output HTML file path (defaults to <path>/.shibanshu/graph-viewer.html)' },
+        max_files: { type: 'number', description: 'Max files to include (default 500)' },
+        open: { type: 'boolean', description: 'Auto-open in browser after generating (default true)' }
+      },
+      required: ['path']
+    }
+  },
+  {
+    name: 'enable_auto_mapping',
+    description: 'Install a git post-commit hook that auto-regenerates the context map after every commit. The map stays fresh without manual re-runs. Also checks if map is stale (older than latest commit) and regenerates if needed.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Absolute path to the git repo' },
+        refresh_now: { type: 'boolean', description: 'Also regenerate the map right now if stale (default true)' }
+      },
+      required: ['path']
+    }
+  },
+  {
+    name: 'check_map_freshness',
+    description: 'Check if a context map is up-to-date with the repo. Compares map generation time against latest git commit. Returns stale/fresh status and optionally regenerates if stale.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Absolute path to the repo' },
+        auto_refresh: { type: 'boolean', description: 'Auto-regenerate if stale (default false)' }
+      },
+      required: ['path']
     }
   }
 ];
@@ -392,10 +430,195 @@ function countWords(text) {
   return text.split(/\s+/).filter(Boolean).length;
 }
 
+function normalizeAbsolutePath(rawPath, label = 'Path') {
+  const value = String(rawPath ?? '').trim();
+  if (!value) {
+    throw new Error(`${label} is required.`);
+  }
+  if (value.includes('\0')) {
+    throw new Error(`${label} contains an invalid null byte.`);
+  }
+  return path.resolve(value);
+}
+
+function parsePositiveInteger(value, fallback, max = Number.MAX_SAFE_INTEGER) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.min(Math.floor(parsed), max);
+}
+
+async function assertDirectoryPath(rawPath, label = 'Vault path') {
+  const directoryPath = normalizeAbsolutePath(rawPath, label);
+  const s = await stat(directoryPath);
+  if (!s.isDirectory()) {
+    throw new Error(`${label} is not a directory: ${directoryPath}`);
+  }
+  return directoryPath;
+}
+
+function assertMarkdownPath(rawPath, label = 'Markdown path') {
+  const filePath = normalizeAbsolutePath(rawPath, label);
+  if (!isMarkdownFile(filePath)) {
+    throw new Error(`${label} must end with .md, .markdown, .mdown, .mkd, .txt, or .canvas.`);
+  }
+  return filePath;
+}
+
+async function assertReadableMarkdownFile(rawPath, label = 'Markdown file') {
+  const filePath = assertMarkdownPath(rawPath, label);
+  const s = await stat(filePath);
+  if (!s.isFile()) {
+    throw new Error(`${label} is not a file: ${filePath}`);
+  }
+  if (s.size > MAX_FILE_SIZE) {
+    throw new Error(`File exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit.`);
+  }
+  return { filePath, stats: s };
+}
+
+function coerceToolTextContent(value) {
+  const text = String(value ?? '');
+  if (Buffer.byteLength(text, 'utf8') > MAX_FILE_SIZE) {
+    throw new Error(`Content exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit.`);
+  }
+  return text;
+}
+
+function normalizeVaultRelativePath(rawPath, label = 'Vault-relative path', options = {}) {
+  const { defaultExtension = '', requireMarkdownExtension = false, allowEmpty = false } = options;
+  let value = String(rawPath ?? '').replaceAll('\\', '/').trim();
+  if (!value && allowEmpty) return '';
+  if (!value) {
+    throw new Error(`${label} is required.`);
+  }
+  if (value.includes('\0')) {
+    throw new Error(`${label} contains an invalid null byte.`);
+  }
+  if (value.startsWith('/') || /^[a-z]:/i.test(value)) {
+    throw new Error(`${label} must be relative to the vault.`);
+  }
+  if (defaultExtension && !path.posix.extname(value)) {
+    value = `${value}${defaultExtension}`;
+  }
+
+  const normalized = path.posix.normalize(value);
+  if (
+    normalized === '.' ||
+    normalized.startsWith('../') ||
+    normalized.includes('/../') ||
+    normalized.endsWith('/..')
+  ) {
+    throw new Error(`${label} cannot escape the vault.`);
+  }
+  if (requireMarkdownExtension && !isMarkdownFile(normalized)) {
+    throw new Error(`${label} must end with .md, .markdown, .mdown, .mkd, .txt, or .canvas.`);
+  }
+  return normalized;
+}
+
+function assertInsideRoot(rootPath, candidatePath, label = 'Path') {
+  const relative = path.relative(rootPath, candidatePath);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error(`${label} cannot escape the vault.`);
+  }
+  return relative;
+}
+
+function resolveVaultChildPath(rootPath, relativePath, label = 'Vault-relative path', options = {}) {
+  const root = normalizeAbsolutePath(rootPath, 'Vault path');
+  const normalizedRelative = normalizeVaultRelativePath(relativePath, label, options);
+  const filePath = path.resolve(root, ...normalizedRelative.split('/'));
+  const relativeFromRoot = assertInsideRoot(root, filePath, label);
+  return {
+    rootPath: root,
+    filePath,
+    relativePath: relativeFromRoot.replaceAll(path.sep, '/')
+  };
+}
+
+function normalizeBacklinkTarget(rootPath, notePath) {
+  const raw = String(notePath ?? '').trim();
+  if (!raw) {
+    throw new Error('Target note path is required.');
+  }
+  if (raw.includes('\0')) {
+    throw new Error('Target note path contains an invalid null byte.');
+  }
+
+  let relativeTarget = raw.replaceAll('\\', '/');
+  if (path.isAbsolute(raw) || /^[a-z]:/i.test(raw)) {
+    const filePath = assertMarkdownPath(raw, 'Target note path');
+    relativeTarget = assertInsideRoot(rootPath, filePath, 'Target note path').replaceAll(path.sep, '/');
+  } else {
+    relativeTarget = normalizeVaultRelativePath(raw, 'Target note path');
+  }
+
+  return {
+    name: path.basename(relativeTarget, path.extname(relativeTarget)).toLowerCase(),
+    relative: relativeTarget.toLowerCase().replace(/\.[^.]+$/, '')
+  };
+}
+
+function normalizeDateString(value) {
+  const dateStr = value || new Date().toISOString().split('T')[0];
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    throw new Error('Date must use YYYY-MM-DD format.');
+  }
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const dateObj = new Date(year, month - 1, day);
+  if (dateObj.getFullYear() !== year || dateObj.getMonth() !== month - 1 || dateObj.getDate() !== day) {
+    throw new Error('Date must be a real calendar date in YYYY-MM-DD format.');
+  }
+  return { dateStr, dateObj };
+}
+
+async function atomicWriteUtf8File(filePath, content) {
+  const directory = path.dirname(filePath);
+  const baseName = path.basename(filePath);
+  const tempPath = path.join(directory, `.${baseName}.${process.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}.tmp`);
+  let handle = null;
+
+  try {
+    handle = await fsp.open(tempPath, 'wx');
+    await handle.writeFile(content, 'utf8');
+    await handle.sync();
+    await handle.close();
+    handle = null;
+    await rename(tempPath, filePath);
+  } catch (error) {
+    if (handle) {
+      await handle.close().catch(() => {});
+    }
+    await unlink(tempPath).catch(() => {});
+    throw error;
+  }
+}
+
+async function atomicCreateUtf8File(filePath, content) {
+  let handle = null;
+  try {
+    handle = await fsp.open(filePath, 'wx');
+    await handle.writeFile(content, 'utf8');
+    await handle.sync();
+    await handle.close();
+    handle = null;
+  } catch (error) {
+    if (handle) {
+      await handle.close().catch(() => {});
+      await unlink(filePath).catch(() => {});
+    }
+    if (error.code === 'EEXIST') {
+      throw new Error(`File already exists: ${filePath}. Use vault_write_note to overwrite.`);
+    }
+    throw error;
+  }
+}
+
 // ─── Tool handlers ──────────────────────────────────────────────────
 
 async function handleVaultListFiles({ path: vaultPath, max_files, pattern }) {
-  const files = await walkVault(vaultPath, max_files || 500);
+  const rootPath = await assertDirectoryPath(vaultPath);
+  const files = await walkVault(rootPath, parsePositiveInteger(max_files, 500, MAX_VAULT_FILES));
   let filtered = files;
   if (pattern) {
     const p = pattern.toLowerCase();
@@ -415,15 +638,14 @@ async function handleVaultListFiles({ path: vaultPath, max_files, pattern }) {
 }
 
 async function handleVaultReadNote({ path: notePath }) {
-  const s = await stat(notePath);
-  if (s.size > MAX_FILE_SIZE) throw new Error(`File exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit.`);
-  const content = await readFile(notePath, 'utf8');
+  const { filePath } = await assertReadableMarkdownFile(notePath, 'Note path');
+  const content = await readFile(filePath, 'utf8');
   const headings = extractMarkdownHeadings(content);
   const tags = extractMarkdownTags(content);
   const links = extractMarkdownLinks(content);
   return {
-    path: notePath,
-    name: path.basename(notePath),
+    path: filePath,
+    name: path.basename(filePath),
     content,
     words: countWords(content),
     headings,
@@ -433,37 +655,29 @@ async function handleVaultReadNote({ path: notePath }) {
 }
 
 async function handleVaultWriteNote({ path: notePath, content }) {
-  await mkdir(path.dirname(notePath), { recursive: true });
-  await writeFile(notePath, content, 'utf8');
-  return { path: notePath, name: path.basename(notePath), words: countWords(content), written: true };
+  const filePath = assertMarkdownPath(notePath, 'Note path');
+  const safeContent = coerceToolTextContent(content);
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await atomicWriteUtf8File(filePath, safeContent);
+  return { path: filePath, name: path.basename(filePath), words: countWords(safeContent), written: true };
 }
 
 async function handleVaultCreateNote({ path: notePath, content, title }) {
-  const dir = path.dirname(notePath);
+  const filePath = assertMarkdownPath(notePath, 'Note path');
+  const dir = path.dirname(filePath);
   await mkdir(dir, { recursive: true });
-  const name = title || path.basename(notePath, path.extname(notePath));
-  const body = content || `# ${name}\n\n`;
-  // Check if target already exists — refuse to overwrite
-  try {
-    await stat(notePath);
-    throw new Error(`File already exists: ${notePath}. Use vault_write_note to overwrite.`);
-  } catch (e) {
-    if (e.message.startsWith('File already exists')) throw e;
-    // ENOENT means file doesn't exist — safe to proceed
-  }
-  const tempPath = notePath + `.${process.pid}.${Date.now()}.tmp`;
-  const handle = await fsp.open(tempPath, 'wx');
-  await handle.writeFile(body, 'utf8');
-  await handle.sync();
-  await handle.close();
-  await rename(tempPath, notePath);
-  return { path: notePath, name: path.basename(notePath), words: countWords(body), created: true };
+  const name = title || path.basename(filePath, path.extname(filePath));
+  const body = coerceToolTextContent(content || `# ${name}\n\n`);
+  await atomicCreateUtf8File(filePath, body);
+  return { path: filePath, name: path.basename(filePath), words: countWords(body), created: true };
 }
 
 async function handleVaultSearch({ path: vaultPath, query, max_results }) {
-  const files = await walkVault(vaultPath, MAX_VAULT_FILES);
-  const q = query.toLowerCase();
-  const limit = Math.min(max_results || 20, MAX_SEARCH_RESULTS);
+  const rootPath = await assertDirectoryPath(vaultPath);
+  const files = await walkVault(rootPath, MAX_VAULT_FILES);
+  const q = String(query || '').toLowerCase();
+  if (!q) throw new Error('Search query is required.');
+  const limit = parsePositiveInteger(max_results, 20, MAX_SEARCH_RESULTS);
   const results = [];
 
   for (const f of files) {
@@ -497,8 +711,9 @@ async function handleVaultSearch({ path: vaultPath, query, max_results }) {
 }
 
 async function handleGenerateContextMap({ path: rootPath, output_dir, max_files, max_bytes, chunk_tokens }) {
-  const outDir = output_dir || path.join(rootPath, '.shibanshu');
-  const args = [EXPORT_SCRIPT, rootPath, '--out', outDir];
+  const sourceRoot = await assertDirectoryPath(rootPath, 'Source path');
+  const outDir = output_dir ? normalizeAbsolutePath(output_dir, 'Output directory') : path.join(sourceRoot, '.shibanshu');
+  const args = [EXPORT_SCRIPT, sourceRoot, '--out', outDir];
   if (max_files) args.push('--max-files', String(max_files));
   if (max_bytes) args.push('--max-bytes', String(max_bytes));
   if (chunk_tokens) args.push('--chunk-tokens', String(chunk_tokens));
@@ -512,7 +727,9 @@ async function handleGenerateContextMap({ path: rootPath, output_dir, max_files,
       'claude-context-map.md',
       'claude-context-mind-map.md',
       'claude-context-graph.json',
-      'llm-context-chunks.jsonl'
+      'claude-context-scene.json',
+      'llm-context-chunks.jsonl',
+      'context-integrity.json'
     ],
     stdout: stdout.trim(),
     stderr: stderr.trim(),
@@ -521,13 +738,16 @@ async function handleGenerateContextMap({ path: rootPath, output_dir, max_files,
 }
 
 async function handleReadContextMap({ path: rootPath, file, output_dir }) {
-  const outDir = output_dir || path.join(rootPath, '.shibanshu');
+  const sourceRoot = await assertDirectoryPath(rootPath, 'Source path');
+  const outDir = output_dir ? normalizeAbsolutePath(output_dir, 'Output directory') : path.join(sourceRoot, '.shibanshu');
   const fileMap = {
     navigation: 'claude-context-navigation.md',
     map: 'claude-context-map.md',
     'mind-map': 'claude-context-mind-map.md',
     graph: 'claude-context-graph.json',
-    chunks: 'llm-context-chunks.jsonl'
+    scene: 'claude-context-scene.json',
+    chunks: 'llm-context-chunks.jsonl',
+    integrity: 'context-integrity.json'
   };
 
   const fileName = fileMap[file];
@@ -551,7 +771,8 @@ async function handleReadContextMap({ path: rootPath, file, output_dir }) {
 }
 
 async function handleGenerateGraphJson({ path: vaultPath, max_files }) {
-  const files = await walkVault(vaultPath, max_files || 1000);
+  const rootPath = await assertDirectoryPath(vaultPath);
+  const files = await walkVault(rootPath, parsePositiveInteger(max_files, 1000, MAX_VAULT_FILES));
   const nodes = [];
   const edges = [];
   const edgeSet = new Set();
@@ -621,15 +842,16 @@ async function handleGenerateGraphJson({ path: vaultPath, max_files }) {
 }
 
 async function handleGenerateMindMap({ path: filePath }) {
-  const content = await readFile(filePath, 'utf8');
-  const mermaid = generateMindMap(filePath, content);
+  const note = await assertReadableMarkdownFile(filePath, 'Note path');
+  const content = await readFile(note.filePath, 'utf8');
+  const mermaid = generateMindMap(note.filePath, content);
   const headings = extractMarkdownHeadings(content);
   const tags = extractMarkdownTags(content);
   const links = extractMarkdownLinks(content);
 
   return {
-    path: filePath,
-    name: path.basename(filePath),
+    path: note.filePath,
+    name: path.basename(note.filePath),
     mermaid,
     summary: {
       headings: headings.length,
@@ -641,37 +863,40 @@ async function handleGenerateMindMap({ path: filePath }) {
 }
 
 async function handleExtractLinks({ path: filePath }) {
-  const content = await readFile(filePath, 'utf8');
+  const note = await assertReadableMarkdownFile(filePath, 'Note path');
+  const content = await readFile(note.filePath, 'utf8');
   const links = extractMarkdownLinks(content);
-  return { path: filePath, total: links.length, links };
+  return { path: note.filePath, total: links.length, links };
 }
 
 async function handleExtractHeadings({ path: filePath }) {
-  const content = await readFile(filePath, 'utf8');
+  const note = await assertReadableMarkdownFile(filePath, 'Note path');
+  const content = await readFile(note.filePath, 'utf8');
   const headings = extractMarkdownHeadings(content);
-  return { path: filePath, total: headings.length, headings };
+  return { path: note.filePath, total: headings.length, headings };
 }
 
 async function handleExtractTags({ path: filePath }) {
-  const content = await readFile(filePath, 'utf8');
+  const note = await assertReadableMarkdownFile(filePath, 'Note path');
+  const content = await readFile(note.filePath, 'utf8');
   const tags = extractMarkdownTags(content);
-  return { path: filePath, total: tags.length, tags };
+  return { path: note.filePath, total: tags.length, tags };
 }
 
 async function handleVaultBacklinks({ vault_path, note_path }) {
-  const files = await walkVault(vault_path, MAX_VAULT_FILES);
-  const targetName = path.basename(note_path, path.extname(note_path)).toLowerCase();
-  const targetRelative = path.relative(vault_path, note_path).toLowerCase().replace(/\.[^.]+$/, '');
+  const rootPath = await assertDirectoryPath(vault_path);
+  const files = await walkVault(rootPath, MAX_VAULT_FILES);
+  const target = normalizeBacklinkTarget(rootPath, note_path);
   const backlinks = [];
 
   for (const f of files) {
-    if (f.path === note_path) continue;
+    if (f.relativePath.toLowerCase().replace(/\.[^.]+$/, '') === target.relative) continue;
     try {
       const content = await readFile(f.path, 'utf8');
       const links = extractMarkdownLinks(content);
       for (const link of links) {
         const linkTarget = link.target.replace(/#.*$/, '').trim().toLowerCase().replace(/\.[^.]+$/, '');
-        if (linkTarget === targetName || linkTarget === targetRelative || linkTarget.endsWith('/' + targetName)) {
+        if (linkTarget === target.name || linkTarget === target.relative || linkTarget.endsWith('/' + target.name)) {
           backlinks.push({
             source: f.relativePath,
             kind: link.kind,
@@ -687,32 +912,39 @@ async function handleVaultBacklinks({ vault_path, note_path }) {
 }
 
 async function handlePublishStaticSite({ path: vaultPath, output_dir, title, theme }) {
+  const sourceRoot = await assertDirectoryPath(vaultPath);
+  const outDir = normalizeAbsolutePath(output_dir, 'Output directory');
   const publishScript = path.join(__dirname, 'scripts', 'publish-static-site.mjs');
-  const args = [publishScript, vaultPath, '--out', output_dir];
+  const args = [publishScript, sourceRoot, '--out', outDir];
   if (title) args.push('--title', title);
   if (theme) args.push('--theme', theme);
 
   const { stdout, stderr } = await execFileAsync('node', args, { maxBuffer: 50 * 1024 * 1024, timeout: 120000 });
 
   return {
-    output_dir,
+    output_dir: outDir,
     stdout: stdout.trim(),
     stderr: stderr.trim(),
-    hint: `Static site published to ${output_dir}. Open index.html in a browser.`
+    hint: `Static site published to ${outDir}. Open index.html in a browser.`
   };
 }
 
 async function handleCreateDailyNote({ vault_path, date, subfolder }) {
   const now = new Date();
-  const dateStr = date || now.toISOString().split('T')[0];
-  const dateParts = dateStr.split('-');
-  const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+  const rootPath = await assertDirectoryPath(vault_path);
+  const { dateStr, dateObj } = normalizeDateString(date);
   const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
   const monthDay = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
   const fileName = `${dateStr}.md`;
-  const dir = subfolder ? path.join(vault_path, subfolder) : vault_path;
-  const filePath = path.join(dir, fileName);
+  const subfolderRelative = normalizeVaultRelativePath(subfolder || '', 'Daily note subfolder', { allowEmpty: true });
+  const target = resolveVaultChildPath(
+    rootPath,
+    subfolderRelative ? `${subfolderRelative}/${fileName}` : fileName,
+    'Daily note path',
+    { requireMarkdownExtension: true }
+  );
+  const filePath = target.filePath;
 
   // Check if already exists
   try {
@@ -723,9 +955,315 @@ async function handleCreateDailyNote({ vault_path, date, subfolder }) {
 
   const template = `# ${dayName}, ${monthDay}\n\n## Tasks\n\n- [ ] \n- [ ] \n- [ ] \n\n## Notes\n\n\n\n## Goals\n\n- \n\n## Log\n\n- ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} — Created daily note\n\n`;
 
-  await mkdir(dir, { recursive: true });
-  await writeFile(filePath, template, 'utf8');
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await atomicCreateUtf8File(filePath, template);
   return { path: filePath, name: fileName, created: true, words: countWords(template) };
+}
+
+async function handleGenerate3dGraphViewer({ path: repoPath, output, max_files, open: autoOpen }) {
+  const root = await assertDirectoryPath(repoPath, 'Source path');
+  const files = await walkVault(root, parsePositiveInteger(max_files, 500, MAX_VAULT_FILES));
+  const graphNodes = [];
+  const graphEdges = [];
+  const edgeSet = new Set();
+  const degreeMap = {};
+
+  for (const f of files) {
+    try {
+      const content = await readFile(f.path, 'utf8');
+      const headings = extractMarkdownHeadings(content);
+      const tags = extractMarkdownTags(content);
+      const links = extractMarkdownLinks(content);
+      graphNodes.push({
+        path: f.relativePath, type: f.name.match(/\.(md|markdown|mdown|mkd|txt)$/i) ? 'markdown' : 'code',
+        words: countWords(content), headings: headings.map(h => h.text), tags, symbols: [],
+        imports: []
+      });
+      for (const link of links) {
+        const target = link.target.replace(/#.*$/, '').trim();
+        if (!target) continue;
+        const targetLower = target.toLowerCase().replace(/\.[^.]+$/, '');
+        const resolved = files.find(o => {
+          const ob = o.relativePath.toLowerCase().replace(/\.[^.]+$/, '');
+          return ob === targetLower || ob.endsWith('/' + targetLower) || o.name.toLowerCase().replace(/\.[^.]+$/, '') === targetLower;
+        });
+        const edgeKey = `${f.relativePath}->${resolved?.relativePath || target}:${link.kind}`;
+        if (!edgeSet.has(edgeKey)) {
+          edgeSet.add(edgeKey);
+          graphEdges.push({ source: f.relativePath, target: resolved?.relativePath || target, kind: link.kind });
+          degreeMap[f.relativePath] = (degreeMap[f.relativePath] || 0) + 1;
+          if (resolved) degreeMap[resolved.relativePath] = (degreeMap[resolved.relativePath] || 0) + 1;
+        }
+      }
+    } catch { /* skip */ }
+  }
+
+  // Compute hubs and orphans
+  const hubs = graphNodes.map(n => ({ path: n.path, degree: degreeMap[n.path] || 0 })).sort((a, b) => b.degree - a.degree).slice(0, 20);
+  const orphans = graphNodes.filter(n => !degreeMap[n.path]).map(n => n.path);
+
+  const graphData = { nodes: graphNodes, edges: graphEdges, hubs, orphans, bridges: [], edgeKinds: [] };
+  const html = generateStandaloneGraphViewer(graphData);
+  const outPath = resolveHtmlOutputPath(root, output);
+  await mkdir(path.dirname(outPath), { recursive: true });
+  await atomicWriteUtf8File(outPath, html);
+
+  if (autoOpen !== false) {
+    await execFileAsync('open', [outPath]).catch(() => {});
+  }
+
+  return {
+    path: outPath,
+    nodes: graphNodes.length,
+    edges: graphEdges.length,
+    hubs: hubs.slice(0, 5).map(h => `${h.path} (${h.degree})`),
+    orphans: orphans.length,
+    hint: `3D graph viewer generated. Open ${outPath} in a browser.`
+  };
+}
+
+function resolveHtmlOutputPath(root, output) {
+  const outPath = output ? normalizeAbsolutePath(output, 'Output file') : path.join(root, '.shibanshu', 'graph-viewer.html');
+  if (path.extname(outPath).toLowerCase() !== '.html') {
+    throw new Error('3D graph viewer output must be an .html file.');
+  }
+  return outPath;
+}
+
+function generateStandaloneGraphViewer(graphData) {
+  const data = JSON.stringify(graphData).replace(/</g, '\\u003c');
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shibanshu 3D Graph Viewer</title>
+  <style>
+    :root { color-scheme: dark; --bg: #0d1017; --panel: #151a24; --line: #2b3342; --text: #eef3f8; --muted: #9aa6b6; --accent: #8bd8bb; }
+    * { box-sizing: border-box; }
+    body { margin: 0; overflow: hidden; background: var(--bg); color: var(--text); font: 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { display: grid; grid-template-columns: minmax(0, 1fr) 320px; height: 100vh; }
+    #stage { position: relative; min-width: 0; background: radial-gradient(circle at center, #1d2633 0, #0d1017 58%); }
+    #scene { width: 100%; height: 100%; display: block; }
+    aside { border-left: 1px solid var(--line); background: var(--panel); padding: 16px; overflow: auto; }
+    h1 { margin: 0 0 6px; font-size: 18px; }
+    h2 { margin: 18px 0 8px; color: var(--muted); font-size: 11px; letter-spacing: 0; text-transform: uppercase; }
+    p { color: var(--muted); line-height: 1.45; }
+    button { width: 100%; border: 1px solid var(--line); border-radius: 7px; background: #10151f; color: var(--text); padding: 8px 10px; text-align: left; }
+    button:hover, button.active { border-color: var(--accent); background: #12241f; }
+    .metric { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
+    .metric strong { color: var(--text); font-variant-numeric: tabular-nums; }
+    .list { display: grid; gap: 6px; }
+    .node { cursor: pointer; transition: opacity 120ms ease, transform 120ms ease; }
+    .node circle { fill: #111821; stroke: var(--accent); stroke-width: 1.5; }
+    .node text { fill: var(--text); font-size: 11px; text-anchor: middle; pointer-events: none; }
+    .edge { stroke: #536174; stroke-width: 1; opacity: 0.42; }
+    @media (max-width: 760px) { main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) 280px; } aside { border-left: 0; border-top: 1px solid var(--line); } }
+  </style>
+</head>
+<body>
+<main>
+  <section id="stage" aria-label="3D graph stage"><svg id="scene" role="img" aria-label="Repository graph"></svg></section>
+  <aside>
+    <h1>3D Graph Viewer</h1>
+    <p>Drag or wait to orbit. Select a node to inspect file context.</p>
+    <div class="metric"><span>Nodes</span><strong id="node-count">0</strong></div>
+    <div class="metric"><span>Edges</span><strong id="edge-count">0</strong></div>
+    <div class="metric"><span>Orphans</span><strong id="orphan-count">0</strong></div>
+    <h2>Selected</h2>
+    <p id="selection">Select a node.</p>
+    <h2>Hubs</h2>
+    <div class="list" id="hub-list"></div>
+  </aside>
+</main>
+<script>
+const GRAPH_DATA = ${data};
+const svg = document.getElementById('scene');
+const selection = document.getElementById('selection');
+const hubList = document.getElementById('hub-list');
+document.getElementById('node-count').textContent = GRAPH_DATA.nodes.length;
+document.getElementById('edge-count').textContent = GRAPH_DATA.edges.length;
+document.getElementById('orphan-count').textContent = GRAPH_DATA.orphans.length;
+let width = 1;
+let height = 1;
+let rotation = { x: -0.32, y: 0.42 };
+let dragging = null;
+const nodeByPath = new Map(GRAPH_DATA.nodes.map((node, index) => [node.path, { ...node, index }]));
+const points = GRAPH_DATA.nodes.map((node, index) => {
+  const phi = Math.acos(1 - 2 * (index + 0.5) / Math.max(1, GRAPH_DATA.nodes.length));
+  const theta = Math.PI * (1 + Math.sqrt(5)) * index;
+  const degree = GRAPH_DATA.edges.filter((edge) => edge.source === node.path || edge.target === node.path).length;
+  return { node, theta, phi, degree };
+});
+function escapeHtmlClient(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[character]);
+}
+function project(point) {
+  const radius = Math.min(width, height) * 0.34;
+  let x = Math.cos(point.theta) * Math.sin(point.phi);
+  let y = Math.sin(point.theta) * Math.sin(point.phi);
+  let z = Math.cos(point.phi);
+  const cosY = Math.cos(rotation.y), sinY = Math.sin(rotation.y);
+  const cosX = Math.cos(rotation.x), sinX = Math.sin(rotation.x);
+  [x, z] = [x * cosY - z * sinY, x * sinY + z * cosY];
+  [y, z] = [y * cosX - z * sinX, y * sinX + z * cosX];
+  const scale = 800 / (800 - z * radius);
+  return { x: width / 2 + x * radius * scale, y: height / 2 + y * radius * scale, z, scale };
+}
+function render() {
+  const rect = svg.getBoundingClientRect();
+  width = Math.max(320, rect.width);
+  height = Math.max(320, rect.height);
+  svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+  const projected = new Map(points.map((point) => [point.node.path, { point, ...project(point) }]));
+  const edges = GRAPH_DATA.edges.map((edge) => {
+    const source = projected.get(edge.source);
+    const target = projected.get(edge.target);
+    if (!source || !target) return '';
+    return '<line class="edge" x1="' + source.x.toFixed(1) + '" y1="' + source.y.toFixed(1) + '" x2="' + target.x.toFixed(1) + '" y2="' + target.y.toFixed(1) + '" />';
+  }).join('');
+  const nodes = [...projected.values()].sort((a, b) => a.z - b.z).map((item) => {
+    const size = Math.min(18, 6 + item.point.degree * 1.8) * item.scale;
+    const label = escapeHtmlClient(item.point.node.path.split('/').pop());
+    const path = escapeHtmlClient(item.point.node.path);
+    return '<g class="node" data-path="' + path + '" transform="translate(' + item.x.toFixed(1) + ' ' + item.y.toFixed(1) + ')" style="opacity:' + (0.45 + item.scale * 0.55).toFixed(2) + '"><circle r="' + size.toFixed(1) + '"></circle><text y="' + (size + 14).toFixed(1) + '">' + label + '</text></g>';
+  }).join('');
+  svg.innerHTML = edges + nodes;
+}
+function selectNode(path) {
+  const node = nodeByPath.get(path);
+  if (!node) return;
+  selection.textContent = node.path + ' | ' + node.words + ' words | ' + node.headings.length + ' headings | ' + node.tags.length + ' tags';
+  svg.querySelectorAll('.node').forEach((item) => item.classList.toggle('active', item.dataset.path === path));
+}
+hubList.innerHTML = GRAPH_DATA.hubs.slice(0, 8).map((hub) => '<button type="button" data-hub="' + escapeHtmlClient(hub.path) + '">' + escapeHtmlClient(hub.path) + ' (' + hub.degree + ')</button>').join('');
+hubList.addEventListener('click', (event) => { const button = event.target.closest('[data-hub]'); if (button) selectNode(button.dataset.hub); });
+svg.addEventListener('click', (event) => { const node = event.target.closest('.node'); if (node) selectNode(node.dataset.path); });
+svg.addEventListener('pointerdown', (event) => { dragging = { x: event.clientX, y: event.clientY, rotation: { ...rotation } }; svg.setPointerCapture(event.pointerId); });
+svg.addEventListener('pointermove', (event) => { if (!dragging) return; rotation = { x: dragging.rotation.x + (event.clientY - dragging.y) / 240, y: dragging.rotation.y + (event.clientX - dragging.x) / 240 }; render(); });
+svg.addEventListener('pointerup', () => { dragging = null; });
+window.addEventListener('resize', render);
+function tick() { if (!dragging) { rotation.y += 0.0028; render(); } requestAnimationFrame(tick); }
+render();
+tick();
+</script>
+</body>
+</html>`;
+}
+
+async function getLatestGitCommitTime(repoPath) {
+  try {
+    const { stdout } = await execFileAsync('git', ['-C', repoPath, 'log', '-1', '--format=%cI'], { timeout: 5000 });
+    return new Date(stdout.trim());
+  } catch {
+    return null;
+  }
+}
+
+async function getMapGenerationTime(repoPath) {
+  const mapPath = path.join(repoPath, '.shibanshu', 'claude-context-navigation.md');
+  try {
+    const s = await stat(mapPath);
+    return s.mtime;
+  } catch {
+    return null;
+  }
+}
+
+async function regenerateMap(repoPath) {
+  const args = [EXPORT_SCRIPT, repoPath, '--out', path.join(repoPath, '.shibanshu')];
+  const { stdout } = await execFileAsync('node', args, { maxBuffer: 50 * 1024 * 1024, timeout: 120000 });
+  return stdout.trim();
+}
+
+async function handleCheckMapFreshness({ path: repoPath, auto_refresh }) {
+  const root = path.resolve(repoPath);
+  const commitTime = await getLatestGitCommitTime(root);
+  const mapTime = await getMapGenerationTime(root);
+
+  if (!mapTime) {
+    if (auto_refresh) {
+      const output = await regenerateMap(root);
+      return { status: 'generated', reason: 'No map existed', output };
+    }
+    return { status: 'missing', reason: 'No context map found. Run generate_context_map first.' };
+  }
+
+  if (!commitTime) {
+    return { status: 'unknown', reason: 'Not a git repo or no commits. Map exists but freshness cannot be determined.', map_time: mapTime.toISOString() };
+  }
+
+  const isStale = commitTime > mapTime;
+  const ageMinutes = Math.round((Date.now() - mapTime.getTime()) / 60000);
+
+  if (isStale && auto_refresh) {
+    const output = await regenerateMap(root);
+    return { status: 'refreshed', reason: `Map was ${ageMinutes} min old, latest commit was newer. Regenerated.`, output };
+  }
+
+  return {
+    status: isStale ? 'stale' : 'fresh',
+    map_generated: mapTime.toISOString(),
+    latest_commit: commitTime.toISOString(),
+    age_minutes: ageMinutes,
+    reason: isStale
+      ? `Map is stale — generated ${ageMinutes} min ago but latest commit is newer. Use auto_refresh:true or run generate_context_map.`
+      : `Map is fresh — generated ${ageMinutes} min ago, after the latest commit.`
+  };
+}
+
+async function handleEnableAutoMapping({ path: repoPath, refresh_now }) {
+  const root = path.resolve(repoPath);
+
+  // Verify it's a git repo
+  try {
+    await stat(path.join(root, '.git'));
+  } catch {
+    throw new Error('Not a git repository. The auto-mapping hook requires git.');
+  }
+
+  // Install post-commit hook
+  const hooksDir = path.join(root, '.git', 'hooks');
+  const hookPath = path.join(hooksDir, 'post-commit');
+  const marker = '# shibanshu-markdown-mcp auto-mapping';
+
+  const hookScript = `#!/bin/sh
+${marker}
+node "${EXPORT_SCRIPT}" "${root}" --out "${path.join(root, '.shibanshu')}" > /dev/null 2>&1 &
+echo "[shibanshu] Context map updated."
+`;
+
+  await mkdir(hooksDir, { recursive: true });
+
+  let installed = false;
+  try {
+    const existing = await readFile(hookPath, 'utf8');
+    if (existing.includes(marker)) {
+      installed = false; // Already installed
+    } else {
+      await fsp.writeFile(hookPath, existing + '\n' + hookScript, 'utf8');
+      installed = true;
+    }
+  } catch {
+    await fsp.writeFile(hookPath, hookScript, 'utf8');
+    installed = true;
+  }
+
+  await fsp.chmod(hookPath, 0o755);
+
+  // Optionally refresh now
+  let refreshResult = null;
+  if (refresh_now !== false) {
+    const freshness = await handleCheckMapFreshness({ path: root, auto_refresh: true });
+    refreshResult = freshness;
+  }
+
+  return {
+    hook_installed: installed ? 'installed' : 'already_installed',
+    hook_path: hookPath,
+    auto_refresh_result: refreshResult,
+    hint: 'Context map will now auto-update after every git commit. The map stays fresh automatically.'
+  };
 }
 
 // ─── MCP Server setup ───────────────────────────────────────────────
@@ -745,7 +1283,10 @@ const HANDLER_MAP = {
   extract_tags: handleExtractTags,
   vault_backlinks: handleVaultBacklinks,
   publish_static_site: handlePublishStaticSite,
-  create_daily_note: handleCreateDailyNote
+  create_daily_note: handleCreateDailyNote,
+  generate_3d_graph_viewer: handleGenerate3dGraphViewer,
+  enable_auto_mapping: handleEnableAutoMapping,
+  check_map_freshness: handleCheckMapFreshness
 };
 
 const server = new Server(
