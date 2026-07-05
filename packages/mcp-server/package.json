@@ -1,0 +1,40 @@
+{
+  "name": "shibanshu-markdown-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Claude Code — 40x context compression for codebases via knowledge graphs, navigation routes, and mind maps",
+  "author": "Shibanshu Jha",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "shibanshu-markdown-mcp": "mcp-server.mjs"
+  },
+  "main": "mcp-server.mjs",
+  "files": [
+    "mcp-server.mjs",
+    "export-context.mjs",
+    "README.md"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  },
+  "keywords": [
+    "mcp",
+    "claude",
+    "claude-code",
+    "markdown",
+    "knowledge-graph",
+    "mind-map",
+    "context-compression",
+    "ai-coding",
+    "model-context-protocol",
+    "vault",
+    "obsidian-alternative"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shibanshu12/markdown-viewer-mac"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
