@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d1117; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+.card { width: 1200px; height: 675px; padding: 80px; display: flex; flex-direction: column; justify-content: center; }
+.line { font-family: 'SF Mono', 'Fira Code', monospace; margin-bottom: 16px; }
+.line1 { font-size: 28px; color: #9aa4b2; }
+.line1 span { color: #e6edf3; font-weight: 700; font-size: 36px; }
+.line2 { font-size: 28px; color: #9aa4b2; margin-bottom: 8px; }
+.line2 span { color: #ff6b6b; font-weight: 700; font-size: 36px; }
+.line3 { font-size: 48px; font-weight: 800; color: #ff6b6b; margin-bottom: 48px; margin-top: 16px; }
+.line4 { font-size: 48px; font-weight: 800; color: #72c7a6; margin-bottom: 48px; }
+.divider { width: 80px; height: 3px; background: #303844; margin-bottom: 48px; }
+.install { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 18px; color: #9aa4b2; }
+.install span { color: #72c7a6; }
+.label { position: absolute; top: 40px; left: 80px; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: #72c7a6; }
+.footer { position: absolute; bottom: 40px; right: 80px; font-size: 13px; color: #667085; }
+</style>
+</head>
+<body>
+<div class="card" style="position: relative;">
+  <div class="label">shibanshu-markdown-mcp</div>
+
+  <div class="line line1">Claude's context window: <span>200,000</span> tokens</div>
+  <div class="line line2">Your 200-file repo: <span>1,057,310</span> tokens</div>
+  <div class="line3">Math doesn't work.</div>
+  <div class="divider"></div>
+  <div class="line4">Unless you compress 40x.</div>
+
+  <div class="install">$ <span>claude mcp add shibanshu-markdown npx shibanshu-markdown-mcp</span></div>
+
+  <div class="footer">Free &middot; Open Source &middot; MIT Licensed</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d1117; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+.card { width: 1200px; padding: 60px; }
+.label { font-size: 14px; text-transform: uppercase; letter-spacing: 2px; color: #72c7a6; margin-bottom: 24px; }
+h1 { font-size: 42px; font-weight: 800; line-height: 1.2; margin-bottom: 40px; }
+h1 span { color: #72c7a6; }
+.panels { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px; }
+.panel { background: #1c2128; border-radius: 12px; padding: 28px; border: 1px solid #303844; }
+.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #303844; }
+.panel-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.panel-bad .panel-title { color: #ff6b6b; }
+.panel-good .panel-title { color: #72c7a6; }
+.context-badge { font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+.panel-bad .context-badge { background: #3d1418; color: #ff6b6b; }
+.panel-good .context-badge { background: #19372e; color: #72c7a6; }
+.terminal { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; line-height: 1.8; }
+.terminal .prompt { color: #72c7a6; }
+.terminal .action { color: #9aa4b2; }
+.terminal .file { color: #d2a8ff; }
+.terminal .result { color: #e6edf3; }
+.terminal .bad { color: #ff6b6b; }
+.terminal .good { color: #72c7a6; }
+.terminal .dim { color: #667085; }
+.install { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 16px; background: #1c2128; padding: 14px 20px; border-radius: 10px; border: 1px solid #303844; display: inline-block; margin-bottom: 16px; }
+.install em { color: #72c7a6; font-style: normal; }
+.footer { font-size: 14px; color: #667085; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="label">shibanshu-markdown-mcp</div>
+  <h1>Same question. <span>Different understanding.</span></h1>
+
+  <div class="panels">
+    <div class="panel panel-bad">
+      <div class="panel-header">
+        <div class="panel-title">Without MCP</div>
+        <div class="context-badge">Context: 73% burned</div>
+      </div>
+      <div class="terminal">
+        <span class="prompt">you:</span> <span class="result">"explain the auth architecture"</span><br><br>
+        <span class="action">Reading</span> <span class="file">src/auth/login.ts</span> <span class="dim">...3,200 tokens</span><br>
+        <span class="action">Reading</span> <span class="file">src/auth/session.ts</span> <span class="dim">...2,800 tokens</span><br>
+        <span class="action">Reading</span> <span class="file">src/auth/types.ts</span> <span class="dim">...1,400 tokens</span><br>
+        <span class="action">Reading</span> <span class="file">src/middleware/auth.ts</span> <span class="dim">...2,100 tokens</span><br>
+        <span class="action">Reading</span> <span class="file">src/utils/crypto.ts</span> <span class="dim">...1,800 tokens</span><br>
+        <span class="action">Reading</span> <span class="file">src/api/users.ts</span> <span class="dim">...3,400 tokens</span><br>
+        <span class="dim">...12 more files...</span><br><br>
+        <span class="bad">"The auth system appears to use sessions<br>and some kind of token-based flow..."</span><br>
+        <span class="dim">// vague, incomplete, already forgetting earlier files</span>
+      </div>
+    </div>
+
+    <div class="panel panel-good">
+      <div class="panel-header">
+        <div class="panel-title">With MCP</div>
+        <div class="context-badge">Context: 7% used</div>
+      </div>
+      <div class="terminal">
+        <span class="prompt">you:</span> <span class="result">"explain the auth architecture"</span><br><br>
+        <span class="action">Using</span> <span class="good">generate_context_map</span> <span class="dim">...5,845 tokens</span><br><br>
+        <span class="good">"The auth system has 3 clusters:</span><br><br>
+        <span class="good">1. auth/ — hub: login.ts (12 dependents)</span><br>
+        <span class="good">&nbsp;&nbsp;&nbsp;JWT-based with refresh tokens</span><br><br>
+        <span class="good">2. middleware/ — bridge connecting</span><br>
+        <span class="good">&nbsp;&nbsp;&nbsp;auth/ to api/ clusters</span><br><br>
+        <span class="good">3. api/users.ts — consumer, 3 routes</span><br><br>
+        <span class="good">Risk: session.ts has 3 unresolved imports</span><br>
+        <span class="good">Dead code: legacy-crypto.ts (orphan)"</span><br>
+        <span class="dim">// precise, structural, room left to actually code</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="install">$ <em>claude mcp add shibanshu-markdown npx shibanshu-markdown-mcp</em></div>
+  <div class="footer">Free &middot; Open Source &middot; 15 tools &middot; Works with any repo &middot; github.com/shibanshu12/markdown-viewer-mac</div>
+</div>
+</body>
+</html>
