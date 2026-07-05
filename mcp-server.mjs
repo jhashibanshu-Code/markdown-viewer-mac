@@ -263,6 +263,17 @@ const TOOLS = [
       },
       required: ['path']
     }
+  },
+  {
+    name: 'setup_repo',
+    description: 'One-command full setup for a repo: generates context map, installs git hook for auto-updates, adds CLAUDE.md instructions so Claude automatically reads the map at every session start. Run this ONCE per repo — everything is automatic after that.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Absolute path to the git repo to set up' }
+      },
+      required: ['path']
+    }
   }
 ];
 
@@ -1266,6 +1277,103 @@ echo "[shibanshu] Context map updated."
   };
 }
 
+async function handleSetupRepo({ path: repoPath }) {
+  const root = path.resolve(repoPath);
+
+  // Verify git repo
+  try { await stat(path.join(root, '.git')); } catch {
+    throw new Error('Not a git repository. Run this inside a git repo.');
+  }
+
+  const results = { steps: [] };
+
+  // Step 1: Generate context map
+  try {
+    const mapOutput = await regenerateMap(root);
+    results.steps.push({ step: 'context_map', status: 'ok', detail: mapOutput.split('\n').pop() });
+  } catch (e) {
+    results.steps.push({ step: 'context_map', status: 'error', detail: e.message });
+  }
+
+  // Step 2: Install git hook
+  try {
+    const hookResult = await handleEnableAutoMapping({ path: root, refresh_now: false });
+    results.steps.push({ step: 'git_hook', status: 'ok', detail: hookResult.hook_installed });
+  } catch (e) {
+    results.steps.push({ step: 'git_hook', status: 'error', detail: e.message });
+  }
+
+  // Step 3: Add instructions to CLAUDE.md
+  const claudeMdPath = path.join(root, 'CLAUDE.md');
+  const marker = '<!-- shibanshu-context-map -->';
+  const instruction = `
+${marker}
+## Context Map (auto-generated)
+
+This repo has an auto-updating context map at \`.shibanshu/\`.
+
+**At the start of every session**, use the \`check_map_freshness\` tool to verify the map is current, then use \`read_context_map\` with \`file: "navigation"\` to understand the repo structure before making changes.
+
+The map provides:
+- **Navigation routes** — prioritized reading order for this codebase
+- **Hub files** — the most connected, critical files
+- **Bridge files** — files connecting different parts of the system
+- **Orphan files** — potentially dead code
+- **Dependency graph** — what imports what
+
+Use \`generate_mind_map\` on any file to see its structure visually.
+Use \`vault_search\` to find content across the repo.
+Use \`vault_backlinks\` to see what depends on a file before changing it.
+${marker}
+`;
+
+  try {
+    let existing = '';
+    try { existing = await readFile(claudeMdPath, 'utf8'); } catch { /* file doesn't exist yet */ }
+
+    if (existing.includes(marker)) {
+      // Already has our section — replace it
+      const regex = new RegExp(`${marker}[\\s\\S]*?${marker}`, 'g');
+      const updated = existing.replace(regex, instruction.trim());
+      await fsp.writeFile(claudeMdPath, updated, 'utf8');
+      results.steps.push({ step: 'claude_md', status: 'ok', detail: 'Updated existing section' });
+    } else {
+      // Append
+      const newContent = existing ? existing.trimEnd() + '\n\n' + instruction : instruction;
+      await fsp.writeFile(claudeMdPath, newContent, 'utf8');
+      results.steps.push({ step: 'claude_md', status: 'ok', detail: existing ? 'Appended to CLAUDE.md' : 'Created CLAUDE.md' });
+    }
+  } catch (e) {
+    results.steps.push({ step: 'claude_md', status: 'error', detail: e.message });
+  }
+
+  // Step 4: Add .shibanshu to .gitignore
+  const gitignorePath = path.join(root, '.gitignore');
+  try {
+    let gitignore = '';
+    try { gitignore = await readFile(gitignorePath, 'utf8'); } catch { /* no gitignore */ }
+    if (!gitignore.includes('.shibanshu')) {
+      const updated = gitignore.trimEnd() + '\n\n# Context map (auto-generated)\n.shibanshu/\n';
+      await fsp.writeFile(gitignorePath, updated, 'utf8');
+      results.steps.push({ step: 'gitignore', status: 'ok', detail: 'Added .shibanshu/ to .gitignore' });
+    } else {
+      results.steps.push({ step: 'gitignore', status: 'ok', detail: 'Already in .gitignore' });
+    }
+  } catch (e) {
+    results.steps.push({ step: 'gitignore', status: 'error', detail: e.message });
+  }
+
+  const allOk = results.steps.every(s => s.status === 'ok');
+
+  return {
+    ...results,
+    status: allOk ? 'ready' : 'partial',
+    hint: allOk
+      ? 'Setup complete. Context map will auto-update on every commit. Claude will automatically read the map at session start via CLAUDE.md instructions. Zero effort from now on.'
+      : 'Setup partially complete. Check individual step errors above.'
+  };
+}
+
 // ─── MCP Server setup ───────────────────────────────────────────────
 
 const HANDLER_MAP = {
@@ -1286,7 +1394,8 @@ const HANDLER_MAP = {
   create_daily_note: handleCreateDailyNote,
   generate_3d_graph_viewer: handleGenerate3dGraphViewer,
   enable_auto_mapping: handleEnableAutoMapping,
-  check_map_freshness: handleCheckMapFreshness
+  check_map_freshness: handleCheckMapFreshness,
+  setup_repo: handleSetupRepo
 };
 
 const server = new Server(
