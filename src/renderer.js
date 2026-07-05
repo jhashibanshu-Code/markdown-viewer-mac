@@ -121,7 +121,7 @@ const MIND_MAP_BACKLINK_LIMIT = 80;
 const MIND_MAP_TASK_LIMIT = 80;
 const AI_CONTEXT_FILE_LIMIT = 180;
 const AI_CONTEXT_EDGE_LIMIT = 360;
-const BROWSER_VAULT_FILE_LIMIT = 1000;
+const BROWSER_VAULT_FILE_LIMIT = 3000;
 const MARKDOWN_FILE_EXTENSION_PATTERN = /\.(md|markdown|mdown|mkd|txt|canvas)$/i;
 const MEDIA_LINK_EXTENSION_PATTERN = /\.(avif|bmp|gif|heic|jpeg|jpg|m4a|mov|mp3|mp4|ogg|opus|pdf|png|svg|wav|webm|webp)(?:[?#].*)?$/i;
 const CANVAS_LINK_PATTERN = /(?:^|[\s([/\\])[\w./\\ -]+\.canvas(?:[)\]\s]|$)/i;
@@ -130,8 +130,27 @@ const EXPORT_CSS = [githubMarkdownCssText, highlightCssText, katexCssText].join(
 const editorHost = document.getElementById('markdown-editor');
 const preview = document.getElementById('markdown-preview');
 const workspace = document.getElementById('workspace');
+const activityButtons = [...document.querySelectorAll('[data-activity-surface]')];
+const workspaceStart = document.getElementById('workspace-start');
+const startRecentList = document.getElementById('start-recent-list');
+const documentTitleLabel = document.getElementById('document-title');
+const documentLocationLabel = document.getElementById('document-location');
+const documentSaveButton = document.getElementById('document-save');
+const documentMindMapButton = document.getElementById('document-mind-map');
+const documentGraphButton = document.getElementById('document-graph');
+const inspectorDocumentTitle = document.getElementById('inspector-document-title');
+const inspectorDocumentPath = document.getElementById('inspector-document-path');
+const inspectorDocumentState = document.getElementById('inspector-document-state');
+const inspectorMetrics = document.getElementById('inspector-metrics');
+const inspectorOpenGraphButton = document.getElementById('inspector-open-graph');
+const inspectorOpenMindMapButton = document.getElementById('inspector-open-mind-map');
+const inspectorCopyContextButton = document.getElementById('inspector-copy-context');
+const inspectorNewContextButton = document.getElementById('inspector-new-context');
 const vaultNameLabel = document.getElementById('vault-name');
 const vaultCountLabel = document.getElementById('vault-count');
+const sidebarOpenVaultButton = document.getElementById('sidebar-open-vault');
+const sidebarOpenFileButton = document.getElementById('sidebar-open-file');
+const recentWorkList = document.getElementById('recent-work-list');
 const vaultSearchInput = document.getElementById('vault-search');
 const vaultFileList = document.getElementById('vault-file-list');
 const outlineList = document.getElementById('outline-list');
@@ -541,9 +560,9 @@ function createUnavailableNative() {
     clearAutosaveDrafts: async () => ({ cleared: true }),
     listFileHistory: async () => ({ snapshots: [] }),
     readFileHistorySnapshot: async () => null,
-    createVaultFile: unavailable,
-    renameVaultFile: unavailable,
-    deleteVaultFile: unavailable,
+    createVaultFile: createBrowserVaultFile,
+    renameVaultFile: renameBrowserVaultFile,
+    deleteVaultFile: deleteBrowserVaultFile,
     saveFile: saveBrowserFile,
     saveFileAs: saveBrowserFileAs,
     exportHtml: exportBrowserHtml,
@@ -584,15 +603,15 @@ async function openBrowserMarkdownFiles() {
 async function openBrowserMarkdownVault() {
   if (window.showDirectoryPicker) {
     try {
-      const directoryHandle = await window.showDirectoryPicker({ mode: 'read' });
-      const vaultId = createBrowserVirtualId(directoryHandle.name || 'Vault');
+      const directoryHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      const vaultId = createBrowserVirtualId(directoryHandle.name || 'Folder');
       const rootPath = `browser-vault://${vaultId}`;
       browserDirectoryHandles.set(rootPath, directoryHandle);
       const files = [];
       await collectBrowserVaultFiles(directoryHandle, rootPath, [], files);
       return {
         path: rootPath,
-        name: directoryHandle.name || 'Browser Vault',
+        name: directoryHandle.name || 'Browser Folder',
         files
       };
     } catch (error) {
@@ -604,13 +623,13 @@ async function openBrowserMarkdownVault() {
   const files = await pickBrowserFilesWithInput({
     multiple: true,
     directory: true,
-    rootPath: `browser-vault://${createBrowserVirtualId('Browser Vault')}`
+    rootPath: `browser-vault://${createBrowserVirtualId('Browser Folder')}`
   });
   if (!files.length) return null;
 
   return {
-    path: getBrowserVirtualRoot(files[0].path) || `browser-vault://${createBrowserVirtualId('Browser Vault')}`,
-    name: 'Browser Vault',
+    path: getBrowserVirtualRoot(files[0].path) || `browser-vault://${createBrowserVirtualId('Browser Folder')}`,
+    name: 'Browser Folder',
     files
   };
 }
@@ -705,6 +724,67 @@ async function publishBrowserStaticSite(payload = {}) {
   const fileName = `${sanitizeFileStem(payload.title || 'Markdown Site')}-offline-site.html`;
   downloadBlobFallback(new Blob([html], { type: 'text/html;charset=utf-8' }), fileName);
   return { files: payload.files?.length || 0, downloaded: true };
+}
+
+async function createBrowserVaultFile({ rootPath, relativePath, content = '' } = {}) {
+  const cleanRelativePath = normalizeBrowserVaultRelativePath(relativePath);
+  const rootHandle = getBrowserWritableVaultHandle(rootPath);
+  await ensureBrowserDirectoryWritePermission(rootHandle);
+  const { directoryHandle, fileName } = await getBrowserVaultDirectory(rootHandle, cleanRelativePath, { create: true });
+
+  if (await browserDirectoryEntryExists(directoryHandle, fileName)) {
+    throw new Error('A note already exists at that path.');
+  }
+
+  const fileHandle = await directoryHandle.getFileHandle(fileName, { create: true });
+  await writeBrowserFileHandle(fileHandle, content);
+  const file = await fileHandle.getFile();
+  const filePath = `${rootPath}/${cleanRelativePath}`;
+  browserFileHandles.set(filePath, fileHandle);
+  return createBrowserOpenedFile(file, filePath, cleanRelativePath);
+}
+
+async function renameBrowserVaultFile({ rootPath, currentRelativePath, nextRelativePath } = {}) {
+  const currentPath = normalizeBrowserVaultRelativePath(currentRelativePath, { requireExtension: false });
+  const nextPath = normalizeBrowserVaultRelativePath(nextRelativePath);
+  if (currentPath === nextPath) {
+    const existingHandle = browserFileHandles.get(`${rootPath}/${currentPath}`);
+    if (!existingHandle) throw new Error('This note is not editable in the current browser folder session.');
+    const file = await existingHandle.getFile();
+    return createBrowserOpenedFile(file, `${rootPath}/${currentPath}`, currentPath);
+  }
+
+  const rootHandle = getBrowserWritableVaultHandle(rootPath);
+  await ensureBrowserDirectoryWritePermission(rootHandle);
+  const { directoryHandle: currentDirectory, fileName: currentName } = await getBrowserVaultDirectory(rootHandle, currentPath);
+  const currentHandle = await currentDirectory.getFileHandle(currentName);
+  const currentFile = await currentHandle.getFile();
+  const content = await currentFile.text();
+  const { directoryHandle: nextDirectory, fileName: nextName } = await getBrowserVaultDirectory(rootHandle, nextPath, { create: true });
+
+  if (await browserDirectoryEntryExists(nextDirectory, nextName)) {
+    throw new Error('A note already exists at the new path.');
+  }
+
+  const nextHandle = await nextDirectory.getFileHandle(nextName, { create: true });
+  await writeBrowserFileHandle(nextHandle, content);
+  await currentDirectory.removeEntry(currentName);
+
+  browserFileHandles.delete(`${rootPath}/${currentPath}`);
+  const nextFile = await nextHandle.getFile();
+  const nextFilePath = `${rootPath}/${nextPath}`;
+  browserFileHandles.set(nextFilePath, nextHandle);
+  return createBrowserOpenedFile(nextFile, nextFilePath, nextPath);
+}
+
+async function deleteBrowserVaultFile({ rootPath, relativePath } = {}) {
+  const cleanRelativePath = normalizeBrowserVaultRelativePath(relativePath, { requireExtension: false });
+  const rootHandle = getBrowserWritableVaultHandle(rootPath);
+  await ensureBrowserDirectoryWritePermission(rootHandle);
+  const { directoryHandle, fileName } = await getBrowserVaultDirectory(rootHandle, cleanRelativePath);
+  await directoryHandle.removeEntry(fileName);
+  browserFileHandles.delete(`${rootPath}/${cleanRelativePath}`);
+  return { deleted: true, trash: false };
 }
 
 async function readBrowserFileHandles(handles, options = {}) {
@@ -857,6 +937,54 @@ function normalizeBrowserRelativePath(value) {
     .split('/')
     .filter((part) => part && part !== '.' && part !== '..')
     .join('/');
+}
+
+function normalizeBrowserVaultRelativePath(value, options = {}) {
+  const { requireExtension = true } = options;
+  const cleanPath = normalizeBrowserRelativePath(value);
+  if (!cleanPath) throw new Error('Enter a note path.');
+  if (cleanPath.split('/').some((part) => !part.trim())) throw new Error('Enter a valid note path.');
+  if (requireExtension && !MARKDOWN_FILE_EXTENSION_PATTERN.test(cleanPath)) return `${cleanPath}.md`;
+  if (!MARKDOWN_FILE_EXTENSION_PATTERN.test(cleanPath)) throw new Error('Use a Markdown, text, or canvas file extension.');
+  return cleanPath;
+}
+
+function getBrowserWritableVaultHandle(rootPath) {
+  const rootHandle = browserDirectoryHandles.get(rootPath);
+  if (!rootHandle) {
+    throw new Error('This folder was opened read-only. Reopen it with Open Folder in a browser that supports folder editing, or use the Mac app.');
+  }
+  return rootHandle;
+}
+
+async function ensureBrowserDirectoryWritePermission(directoryHandle) {
+  if (!directoryHandle) throw new Error('Folder write access is unavailable.');
+  const descriptor = { mode: 'readwrite' };
+  if (directoryHandle.queryPermission && (await directoryHandle.queryPermission(descriptor)) === 'granted') return true;
+  if (directoryHandle.requestPermission && (await directoryHandle.requestPermission(descriptor)) === 'granted') return true;
+  if (!directoryHandle.requestPermission && !directoryHandle.queryPermission) return true;
+  throw new Error('Folder write permission was not granted.');
+}
+
+async function getBrowserVaultDirectory(rootHandle, relativePath, options = {}) {
+  const parts = normalizeBrowserRelativePath(relativePath).split('/');
+  const fileName = parts.pop();
+  if (!fileName) throw new Error('Enter a note filename.');
+  let directoryHandle = rootHandle;
+  for (const part of parts) {
+    directoryHandle = await directoryHandle.getDirectoryHandle(part, { create: Boolean(options.create) });
+  }
+  return { directoryHandle, fileName };
+}
+
+async function browserDirectoryEntryExists(directoryHandle, name) {
+  try {
+    await directoryHandle.getFileHandle(name);
+    return true;
+  } catch (error) {
+    if (error?.name === 'NotFoundError') return false;
+    throw error;
+  }
 }
 
 function getBrowserVirtualRoot(filePath) {
@@ -1297,7 +1425,7 @@ function readGraphPresets() {
     return parsed
       .map((preset) => ({
         id: String(preset.id || crypto.randomUUID()).slice(0, 80),
-        name: String(preset.name || 'Graph Preset').slice(0, 60),
+        name: String(preset.name || 'Map View').slice(0, 60),
         mode: VALID_GRAPH_MODES.has(preset.mode) ? preset.mode : 'local',
         depth: clampFullGraphDepth(preset.depth),
         filters: normalizeGraphPresetFilters(preset.filters || {})
@@ -1312,7 +1440,7 @@ function writeGraphPresets() {
   try {
     localStorage.setItem(GRAPH_PRESETS_KEY, JSON.stringify(fullGraphPresets.slice(0, 24)));
   } catch (_error) {
-    showToast('Graph presets could not be saved locally.');
+    showToast('Map views could not be saved locally.');
   }
 }
 
@@ -1321,8 +1449,10 @@ async function refreshRecentItems() {
   try {
     recentItems = normalizeRecentItems(await native.listRecentItems());
     renderCommandPaletteResults();
+    renderVaultSidebar();
   } catch (_error) {
     recentItems = { files: [], vaults: [] };
+    renderVaultSidebar();
   }
 }
 
@@ -1330,7 +1460,7 @@ function normalizeRecentItems(value = {}) {
   const normalize = (item, type) => ({
     id: String(item?.id || '').slice(0, 80),
     type,
-    name: String(item?.name || (type === 'vault' ? 'Recent Vault' : 'Recent File')).slice(0, 240),
+    name: String(item?.name || (type === 'vault' ? 'Recent Folder' : 'Recent File')).slice(0, 240),
     path: String(item?.path || '').slice(0, 2000),
     openedAt: Number(item?.openedAt) || 0
   });
@@ -1703,6 +1833,19 @@ function bindDomEvents() {
 
   document.getElementById('open-file').addEventListener('click', openFromDialog);
   document.getElementById('open-vault').addEventListener('click', openVaultFromDialog);
+  sidebarOpenFileButton.addEventListener('click', openFromDialog);
+  sidebarOpenVaultButton.addEventListener('click', openVaultFromDialog);
+  addDomListener(document.getElementById('start-open-file'), 'click', openFromDialog);
+  addDomListener(document.getElementById('start-open-vault'), 'click', openVaultFromDialog);
+  addDomListener(document.getElementById('start-new-note'), 'click', createUntitledDocument);
+  addDomListener(document.getElementById('start-command-palette'), 'click', openCommandPalette);
+  addDomListener(documentSaveButton, 'click', saveActiveDocument);
+  addDomListener(documentMindMapButton, 'click', openMindMapCanvas);
+  addDomListener(documentGraphButton, 'click', openFullGraph);
+  addDomListener(inspectorOpenGraphButton, 'click', openFullGraph);
+  addDomListener(inspectorOpenMindMapButton, 'click', openMindMapCanvas);
+  addDomListener(inspectorCopyContextButton, 'click', copyAiContextMap);
+  addDomListener(inspectorNewContextButton, 'click', createAiContextMapDocument);
   document.getElementById('save-file').addEventListener('click', saveActiveDocument);
   document.getElementById('save-file-as').addEventListener('click', saveActiveDocumentAs);
   document.getElementById('copy-markdown').addEventListener('click', copyActiveMarkdown);
@@ -1770,6 +1913,10 @@ function bindDomEvents() {
   // Mobile floating action button
   addDomListener(document.getElementById('mobile-new-note'), 'click', createUntitledDocument);
 
+  activityButtons.forEach((button) => {
+    addDomListener(button, 'click', () => handleActivitySurface(button.dataset.activitySurface));
+  });
+
   formatButtons.forEach((button) => {
     button.addEventListener('click', () => runFormattingCommand(button.dataset.formatCommand));
   });
@@ -1779,11 +1926,18 @@ function bindDomEvents() {
   });
 
   vaultSearchInput.addEventListener('input', renderVaultSidebar);
+  recentWorkList.addEventListener('click', handleSidebarRecentWorkClick);
+  addDomListener(startRecentList, 'click', handleSidebarRecentWorkClick);
   newVaultFileButton.addEventListener('click', createVaultFileFromPrompt);
   renameVaultFileButton.addEventListener('click', renameActiveVaultFileFromPrompt);
   deleteVaultFileButton.addEventListener('click', deleteActiveVaultFileWithConfirmation);
 
   vaultFileList.addEventListener('click', (event) => {
+    if (event.target.closest('[data-empty-new-file]')) {
+      createVaultFileFromPrompt();
+      return;
+    }
+
     const folderButton = event.target.closest('[data-vault-folder-path]');
     if (folderButton) {
       toggleVaultFolder(folderButton.dataset.vaultFolderPath);
@@ -2511,7 +2665,7 @@ function decodeURIComponentIfNeeded(value) {
 function openCommandPalette() {
   commandPalette.hidden = false;
   commandSearchInput.value = '';
-  commandSearchInput.placeholder = 'Search commands and notes';
+  commandSearchInput.placeholder = 'Search commands and notes…';
   commandPaletteSelection = 0;
   renderCommandPaletteResults();
   requestAnimationFrame(() => commandSearchInput.focus());
@@ -2520,7 +2674,7 @@ function openCommandPalette() {
 function openQuickOpen(query = '') {
   commandPalette.hidden = false;
   commandSearchInput.value = String(query || '');
-  commandSearchInput.placeholder = 'Quick open notes, recent files, vaults, and commands';
+  commandSearchInput.placeholder = 'Find notes, recent files, folders, and commands…';
   commandPaletteSelection = 0;
   renderCommandPaletteResults();
   requestAnimationFrame(() => {
@@ -2531,7 +2685,7 @@ function openQuickOpen(query = '') {
 
 function closeCommandPalette() {
   commandPalette.hidden = true;
-  commandSearchInput.placeholder = 'Search commands and notes';
+  commandSearchInput.placeholder = 'Search commands and notes…';
   commandPaletteTrigger.focus();
 }
 
@@ -2593,7 +2747,7 @@ function renderGlobalSearchResults() {
 
   if (!terms.length) {
     globalSearchSummary.textContent = `${sourceDocs.length} searchable document${sourceDocs.length === 1 ? '' : 's'}`;
-    globalSearchResults.innerHTML = '<p class="command-empty">Type to search open files and vault content.</p>';
+    globalSearchResults.innerHTML = '<p class="command-empty">Type to search open files and folder content.</p>';
     return;
   }
 
@@ -2734,8 +2888,8 @@ function getCommandPaletteItems() {
   const items = [
     {
       type: 'Command',
-      label: 'New Document',
-      detail: 'Create a blank Markdown tab',
+      label: 'New Note',
+      detail: 'Create a blank Markdown note',
       keywords: 'new note file markdown',
       run: createUntitledDocument
     },
@@ -2748,7 +2902,7 @@ function getCommandPaletteItems() {
     },
     {
       type: 'Command',
-      label: 'Open Vault',
+      label: 'Open Folder',
       detail: 'Open a folder of Markdown files',
       keywords: 'folder workspace vault',
       run: openVaultFromDialog
@@ -2756,14 +2910,14 @@ function getCommandPaletteItems() {
     {
       type: 'Command',
       label: 'Quick Open',
-      detail: 'Jump to notes, recent files, recent vaults, and commands',
+      detail: 'Jump to notes, recent files, recent folders, and commands',
       keywords: 'quick open switch recent workspace command p',
       run: openQuickOpen
     },
     {
       type: 'Command',
       label: 'Search Files',
-      detail: 'Search open documents or the active vault',
+      detail: 'Search open notes or the active folder',
       keywords: 'search find grep full text vault workspace',
       run: openGlobalSearch
     },
@@ -2793,22 +2947,22 @@ function getCommandPaletteItems() {
     },
     {
       type: 'Command',
-      label: 'Split View',
-      detail: 'Show editor and preview',
+      label: 'Write + Read View',
+      detail: 'Show writing and preview side by side',
       keywords: 'view split editor preview',
       run: () => setViewMode('split')
     },
     {
       type: 'Command',
-      label: 'Editor View',
-      detail: 'Show only the Markdown editor',
+      label: 'Write View',
+      detail: 'Show only the editor',
       keywords: 'view editor source',
       run: () => setViewMode('editor')
     },
     {
       type: 'Command',
-      label: 'Preview View',
-      detail: 'Show only rendered Markdown',
+      label: 'Read View',
+      detail: 'Show only the rendered note',
       keywords: 'view preview rendered',
       run: () => setViewMode('preview')
     },
@@ -2878,16 +3032,102 @@ function getCommandPaletteItems() {
     },
     {
       type: 'Command',
-      label: 'Open Graph',
-      detail: 'Open the full vault relationship map',
+      label: 'Open Folder Map',
+      detail: 'Open the full note map for this folder',
       keywords: 'map graph backlinks network',
       disabled: !hasVault,
       run: openFullGraph
     },
     {
       type: 'Command',
-      label: 'Export Graph JSON',
-      detail: 'Export the current graph scope, filters, nodes, edges, and unresolved links',
+      label: 'Open 3D Map',
+      detail: 'Open the folder map with rotate, zoom, pan, and 3D export controls',
+      keywords: 'map graph 3d orbit rotate scene',
+      disabled: !hasVault,
+      run: async () => {
+        openFullGraph({ space: FULL_GRAPH_SPACE_MODE_3D });
+        await waitForNextFrame();
+      }
+    },
+    {
+      type: 'Command',
+      label: 'Show All Notes Map',
+      detail: 'Show every note in the folder map',
+      keywords: 'map graph global all vault scope',
+      disabled: !hasVault,
+      run: async () => {
+        openFullGraph({ mode: 'global' });
+        await waitForNextFrame();
+      }
+    },
+    {
+      type: 'Command',
+      label: 'Fit Map To View',
+      detail: 'Fit the visible map into the canvas',
+      keywords: 'map graph fit zoom viewport',
+      disabled: !hasVault,
+      run: async () => {
+        openFullGraph();
+        await waitForNextFrame();
+        fitFullGraphToView();
+      }
+    },
+    {
+      type: 'Command',
+      label: 'Reset Map View',
+      detail: 'Reset map pan, zoom, and viewport position',
+      keywords: 'map graph reset zoom pan',
+      disabled: !hasVault,
+      run: async () => {
+        openFullGraph();
+        await waitForNextFrame();
+        resetFullGraphViewport();
+      }
+    },
+    {
+      type: 'Command',
+      label: 'Auto Rotate 3D Map',
+      detail: 'Start or stop automatic 3D map rotation',
+      keywords: 'map graph 3d rotate orbit animation',
+      disabled: !hasVault,
+      run: async () => {
+        openFullGraph({ space: FULL_GRAPH_SPACE_MODE_3D });
+        await waitForNextFrame();
+        toggleFullGraphAutoRotate();
+      }
+    },
+    {
+      type: 'Command',
+      label: 'Reset 3D Map Rotation',
+      detail: 'Restore the default 3D map angle',
+      keywords: 'map graph 3d rotate reset camera',
+      disabled: !hasVault,
+      run: async () => {
+        openFullGraph({ space: FULL_GRAPH_SPACE_MODE_3D });
+        await waitForNextFrame();
+        resetFullGraphRotation();
+      }
+    },
+    {
+      type: 'Command',
+      label: 'Save 3D Map File',
+      detail: 'Save a compact 3D map file for AI or presentation workflows',
+      keywords: 'map graph export 3d scene json claude context',
+      disabled: !hasVault,
+      run: async () => exportFullGraphWithProfile('scene', exportFullGraphJson)
+    },
+    {
+      type: 'Command',
+      label: 'Save Claude / ChatGPT Notes',
+      detail: 'Save map context as AI-ready Markdown',
+      keywords: 'map graph export llm claude chatgpt context',
+      disabled: !hasVault,
+      run: async () => exportFullGraphWithProfile('llm', exportFullGraphContext)
+    },
+    {
+      type: 'Command',
+      label: 'Save Map JSON',
+      detail: 'Save the current map range, filters, notes, links, and missing links',
       keywords: 'map graph export json filters depth',
       disabled: !hasVault,
       run: async () => {
@@ -2898,8 +3138,8 @@ function getCommandPaletteItems() {
     },
     {
       type: 'Command',
-      label: 'Export Graph SVG',
-      detail: 'Export the visible graph drawing as SVG',
+      label: 'Save Map SVG',
+      detail: 'Save the visible map drawing as SVG',
       keywords: 'map graph export svg image',
       disabled: !hasVault,
       run: async () => {
@@ -2910,79 +3150,79 @@ function getCommandPaletteItems() {
     },
     {
       type: 'Command',
-      label: 'Open Mind Map Canvas',
-      detail: 'Map the active note as headings, links, tasks, tags, and backlinks',
+      label: 'Open Note Map',
+      detail: 'Map the active note as headings, links, tasks, tags, and links back to it',
       keywords: 'mind map canvas outline headings claude context',
       disabled: !hasDocument,
       run: openMindMapCanvas
     },
     {
       type: 'Command',
-      label: 'New Vault File',
-      detail: 'Create a Markdown file inside the open vault',
+      label: 'New Note In Folder',
+      detail: 'Create a Markdown note inside the open folder',
       keywords: 'new note vault file create',
       disabled: !hasVault,
       run: createVaultFileFromPrompt
     },
     {
       type: 'Command',
-      label: 'Rename Current Vault File',
-      detail: 'Rename or move the active vault file',
+      label: 'Rename Current Note',
+      detail: 'Rename or move the active note inside the open folder',
       keywords: 'rename move vault file',
       disabled: !hasPath || !isDocumentInActiveVault(activeDocument),
       run: renameActiveVaultFileFromPrompt
     },
     {
       type: 'Command',
-      label: 'Move Current Vault File To Trash',
-      detail: 'Delete the active vault file using the OS Trash',
+      label: 'Move Current Note To Trash',
+      detail: 'Move the active note to the OS Trash',
       keywords: 'delete remove trash vault file',
       disabled: !hasPath || !isDocumentInActiveVault(activeDocument),
       run: deleteActiveVaultFileWithConfirmation
     },
     {
       type: 'Command',
-      label: 'Copy AI Map',
-      detail: 'Copy local Claude/OpenAI context from the vault',
+      label: 'Copy Folder Map For AI',
+      detail: 'Copy local Claude/ChatGPT context from the open folder',
       keywords: 'ai claude context backlinks graph',
       disabled: !hasVault,
       run: copyAiContextMap
     },
     {
       type: 'Command',
-      label: 'New AI Map Note',
-      detail: 'Create a Markdown note with vault context',
+      label: 'Save Folder Map Note',
+      detail: 'Create a Markdown note with folder map context',
       keywords: 'ai claude context new note',
       disabled: !hasVault,
       run: createAiContextMapDocument
     },
     {
       type: 'Command',
-      label: 'Copy Mind Map For Claude',
-      detail: 'Copy the active note mind map as local Claude-ready context',
+      label: 'Copy Note Map For Claude',
+      detail: 'Copy the active note map as local Claude-ready context',
       keywords: 'mind map claude context copy outline links backlinks',
       disabled: !hasDocument,
       run: copyMindMapContext
     },
     {
       type: 'Command',
-      label: 'New Mind Map Note',
-      detail: 'Create a Markdown note from the active note mind map',
+      label: 'Save Note Map Note',
+      detail: 'Create a Markdown note from the active note map',
       keywords: 'mind map claude context new note outline links backlinks',
       disabled: !hasDocument,
       run: createMindMapContextDocument
     },
     {
       type: 'Command',
-      label: 'Insert Mind Map',
-      detail: 'Generate Mermaid mind map from headings',
+      label: 'Insert Diagram',
+      detail: 'Generate a Mermaid map from headings',
       keywords: 'mind map mermaid headings',
       disabled: !hasDocument,
       run: insertMindMapFromHeadings
     },
     {
       type: 'Command',
-      label: 'Copy Markdown',
+      label: 'Copy Note',
       detail: 'Copy active Markdown source',
       keywords: 'copy markdown source',
       disabled: !hasDocument,
@@ -2990,7 +3230,7 @@ function getCommandPaletteItems() {
     },
     {
       type: 'Command',
-      label: 'Export HTML',
+      label: 'Save HTML',
       detail: 'Save rendered Markdown as HTML',
       keywords: 'export html',
       disabled: !hasDocument,
@@ -2998,7 +3238,7 @@ function getCommandPaletteItems() {
     },
     {
       type: 'Command',
-      label: 'Export PDF',
+      label: 'Save PDF',
       detail: 'Save rendered Markdown as PDF',
       keywords: 'export pdf print',
       disabled: !hasDocument,
@@ -3006,8 +3246,8 @@ function getCommandPaletteItems() {
     },
     {
       type: 'Command',
-      label: 'Publish Static Site',
-      detail: 'Export the open vault as a local website',
+      label: 'Create Website',
+      detail: 'Export the open folder as a local website',
       keywords: 'publish static site html vault backlinks graph search',
       disabled: !hasVault,
       run: publishStaticSite
@@ -3073,7 +3313,7 @@ function getRecentCommandPaletteItems() {
     .filter((item) => item.id && item.path && item.path !== activeVaultPath)
     .slice(0, MAX_RECENT_COMMAND_ITEMS)
     .map((item) => ({
-      type: 'Recent Vault',
+      type: 'Recent Folder',
       label: item.name,
       detail: item.path,
       keywords: `recent vault workspace folder ${item.name} ${item.path}`,
@@ -3108,18 +3348,25 @@ function renderCommandPaletteResults() {
         .map((item, index) => {
           const selected = index === commandPaletteSelection;
           const disabled = Boolean(item.disabled);
-          return `<button class="command-item${selected ? ' selected' : ''}${disabled ? ' disabled' : ''}" type="button" role="option" aria-selected="${selected}" aria-disabled="${disabled}" data-command-index="${index}">
+          const typeLabel = getCommandTypeLabel(item.type);
+          return `<button class="command-item${selected ? ' selected' : ''}${disabled ? ' disabled' : ''}" type="button" role="option" aria-selected="${selected}" aria-disabled="${disabled}" data-command-index="${index}" data-command-type="${escapeAttribute(typeLabel)}">
             <span>
               <strong>${escapeHtml(item.label)}</strong>
               <small>${escapeHtml(item.detail)}</small>
             </span>
-            <em>${escapeHtml(item.type)}</em>
+            <em>${escapeHtml(typeLabel)}</em>
           </button>`;
         })
         .join('')
     : '<p class="command-empty">No matching command or note.</p>';
 
   commandResults.querySelector('.selected')?.scrollIntoView({ block: 'nearest' });
+}
+
+function getCommandTypeLabel(type) {
+  if (type === 'Command') return 'Action';
+  if (type === 'Recent File' || type === 'Recent Folder') return 'Recent';
+  return type || 'Item';
 }
 
 async function runCommandPaletteSelection(index) {
@@ -3134,7 +3381,7 @@ async function runCommandPaletteSelection(index) {
 function openFullGraph(options = {}) {
   const vaultDocs = getVaultDocuments();
   if (!vaultDocs.length) {
-    showToast('Open a vault before opening the graph.');
+    showToast('Open a folder before opening the map.');
     return;
   }
 
@@ -3206,7 +3453,7 @@ function renderFullGraphModeControls() {
   });
   fullGraphSpaceModeButtons.forEach((button) => {
     button.disabled = false;
-    button.setAttribute('aria-label', `${button.textContent.trim()} graph space`);
+    button.setAttribute('aria-label', `${button.textContent.trim()} map space`);
   });
   fullGraphDepthInput.value = String(fullGraphLocalDepth);
   fullGraphDepthValue.value = String(fullGraphLocalDepth);
@@ -3215,14 +3462,15 @@ function renderFullGraphModeControls() {
   fullGraphDepthInput.disabled = localDepthDisabled;
   fullGraphDepthInput.closest('.graph-depth-filter')?.classList.toggle('disabled', localDepthDisabled);
   const space3dEnabled = fullGraphSpaceMode === FULL_GRAPH_SPACE_MODE_3D;
-  setDisabled(fullGraphRotateLeftButton, !space3dEnabled);
-  setDisabled(fullGraphRotateRightButton, !space3dEnabled);
-  setDisabled(fullGraphRotateUpButton, !space3dEnabled);
-  setDisabled(fullGraphRotateDownButton, !space3dEnabled);
-  setDisabled(fullGraphRotationResetButton, !space3dEnabled);
-  setDisabled(fullGraphAutoRotateButton, !space3dEnabled);
+  const rotationDisabledReason = 'Switch the map to 3D to use rotation controls.';
+  setDisabled(fullGraphRotateLeftButton, !space3dEnabled, rotationDisabledReason);
+  setDisabled(fullGraphRotateRightButton, !space3dEnabled, rotationDisabledReason);
+  setDisabled(fullGraphRotateUpButton, !space3dEnabled, rotationDisabledReason);
+  setDisabled(fullGraphRotateDownButton, !space3dEnabled, rotationDisabledReason);
+  setDisabled(fullGraphRotationResetButton, !space3dEnabled, rotationDisabledReason);
+  setDisabled(fullGraphAutoRotateButton, !space3dEnabled, rotationDisabledReason);
   fullGraphAutoRotateButton.setAttribute('aria-pressed', String(fullGraphAutoRotate && space3dEnabled));
-  fullGraphAutoRotateButton.textContent = `${fullGraphAutoRotate && space3dEnabled ? 'Stop Orbit' : 'Auto Orbit'}`;
+  fullGraphAutoRotateButton.textContent = `${fullGraphAutoRotate && space3dEnabled ? 'Stop Rotate' : 'Auto Rotate'}`;
   if (fullGraphRotationReadout) {
     fullGraphRotationReadout.textContent = `${Math.round(fullGraphRotation.x)}° / ${Math.round(fullGraphRotation.y)}°`;
   }
@@ -3240,12 +3488,12 @@ function renderFullGraph() {
   const activeDocument = getActiveDocument();
 
   if (!vaultDocs.length) {
-    fullGraphTitle.textContent = 'Graph';
-    fullGraphSummary.textContent = 'Open a vault to map notes.';
-    fullGraphCanvas.innerHTML = '<div class="graph-empty">Open a folder to build a full note graph.</div>';
+    fullGraphTitle.textContent = 'Map';
+    fullGraphSummary.textContent = 'Open a folder to map notes.';
+    fullGraphCanvas.innerHTML = '<div class="graph-empty">Open a folder to build a full note map.</div>';
     renderFullGraphMinimap(null, activeDocument, '');
     fullGraphList.innerHTML = '';
-    fullGraphDetail.innerHTML = '<p>Open a vault to inspect note context.</p>';
+    fullGraphDetail.innerHTML = '<p>Open a folder to inspect note context.</p>';
     fullGraphFolderFilter.innerHTML = '<option value="all">All folders</option>';
     fullGraphExtensionFilter.innerHTML = '<option value="all">All types</option>';
     lastFullGraphDetailState = null;
@@ -3278,7 +3526,7 @@ function renderFullGraph() {
   const filteredSuffix = hasFullGraphFilters(filters)
     ? ` · filtered from ${baseVisibleGraph.nodes.length} note${baseVisibleGraph.nodes.length === 1 ? '' : 's'}`
     : '';
-  const depthSuffix = fullGraphMode === 'local' ? ` · depth ${localDepth}` : '';
+  const depthSuffix = fullGraphMode === 'local' ? ` · ${localDepth} step${localDepth === 1 ? '' : 's'}` : '';
   const filteredUnresolvedCount = graph.unresolvedLinks.filter((link) => visibleGraph.nodeByPath.has(link.source)).length;
   const previewNode =
     renderGraph.nodeByPath.get(fullGraphPreviewPath) ||
@@ -3288,13 +3536,14 @@ function renderFullGraph() {
     null;
   fullGraphPreviewPath = previewNode?.path || null;
 
-  fullGraphTitle.textContent = activeVault?.name || 'Graph';
-  fullGraphSummary.textContent = `${visibleCount} ${fullGraphMode} notes${depthSuffix} · ${visibleGraph.edges.length} links · ${filteredUnresolvedCount} unresolved${filteredSuffix}${
+  const scopeLabel = fullGraphMode === 'global' ? 'all notes' : 'near this note';
+  fullGraphTitle.textContent = activeVault?.name || 'Map';
+  fullGraphSummary.textContent = `${visibleCount} ${scopeLabel}${depthSuffix} · ${visibleGraph.edges.length} links · ${filteredUnresolvedCount} missing${filteredSuffix}${
     renderGraph.limited ? ' · capped for smooth rendering' : ''
   }`;
 
   if (!renderGraph.nodes.length) {
-    fullGraphCanvas.innerHTML = '<div class="graph-empty">No graph nodes match this scope, search, and filter set.</div>';
+    fullGraphCanvas.innerHTML = '<div class="graph-empty">No notes match this map view, search, and filters.</div>';
   } else {
     fullGraphCanvas.innerHTML = renderGraphSvg(renderGraph, activeDocument, {
       width: FULL_GRAPH_VIEWBOX.width,
@@ -3353,7 +3602,7 @@ function renderFullGraphList(graph, activeDocument, query) {
           </button>`;
         })
         .join('')
-    : '<p class="sidebar-empty">No matching graph nodes.</p>';
+    : '<p class="sidebar-empty">No matching notes.</p>';
 }
 
 function renderFullGraphMinimap(graph, activeDocument, query) {
@@ -3438,7 +3687,7 @@ function renderFullGraphExtensionOptions(graph) {
 }
 
 function renderFullGraphPresetOptions(selectedId = fullGraphPresetSelect.value) {
-  const options = ['<option value="">Presets</option>']
+  const options = ['<option value="">Saved views</option>']
     .concat(
       fullGraphPresets
         .slice()
@@ -3454,7 +3703,7 @@ function renderFullGraphPresetOptions(selectedId = fullGraphPresetSelect.value) 
 }
 
 function saveCurrentFullGraphPreset() {
-  const name = window.prompt('Graph preset name', createDefaultGraphPresetName());
+  const name = window.prompt('Map view name', createDefaultGraphPresetName());
   const cleanName = String(name || '').trim().slice(0, 60);
   if (!cleanName) return;
 
@@ -3471,7 +3720,7 @@ function saveCurrentFullGraphPreset() {
     : [...fullGraphPresets, preset].slice(-24);
   writeGraphPresets();
   renderFullGraphPresetOptions(preset.id);
-  showToast(`Graph preset saved: ${cleanName}`);
+  showToast(`Map view saved: ${cleanName}`);
 }
 
 function createDefaultGraphPresetName() {
@@ -3480,13 +3729,13 @@ function createDefaultGraphPresetName() {
   if (filters.folder !== 'all') labels.push(getGraphFolderLabel(filters.folder));
   if (filters.extension !== 'all') labels.push(getGraphExtensionLabel(filters.extension));
   if (filters.tagged) labels.push('Tagged');
-  if (filters.orphans) labels.push('Orphans');
-  if (filters.unresolved) labels.push('Unresolved');
-  if (filters.backlinks) labels.push('Backlinks');
-  if (filters.outgoing) labels.push('Outgoing');
+  if (filters.orphans) labels.push('No Links');
+  if (filters.unresolved) labels.push('Missing Links');
+  if (filters.backlinks) labels.push('Links Here');
+  if (filters.outgoing) labels.push('Links Out');
   if (filters.media) labels.push('Media');
   if (filters.canvas) labels.push('Canvas');
-  if (!labels.length) labels.push(fullGraphMode === 'local' ? `Local Depth ${getFullGraphDepth()}` : 'Global');
+  if (!labels.length) labels.push(fullGraphMode === 'local' ? `This Note + ${getFullGraphDepth()} Step` : 'All Notes');
   return labels.join(' + ');
 }
 
@@ -3504,7 +3753,7 @@ function applyFullGraphPreset(presetId) {
   renderFullGraphPresetOptions(preset.id);
   renderFullGraph();
   schedulePersist();
-  showToast(`Graph preset applied: ${preset.name}`);
+  showToast(`Map view applied: ${preset.name}`);
 }
 
 function deleteSelectedFullGraphPreset() {
@@ -3514,7 +3763,7 @@ function deleteSelectedFullGraphPreset() {
   fullGraphPresets = fullGraphPresets.filter((item) => item.id !== presetId);
   writeGraphPresets();
   renderFullGraphPresetOptions('');
-  showToast(`Graph preset deleted: ${preset.name}`);
+  showToast(`Map view deleted: ${preset.name}`);
 }
 
 function applyFullGraphFilterState(filters = {}) {
@@ -4169,7 +4418,7 @@ function updateFullGraphRotationControls() {
   fullGraphRotationReadout.textContent = `${Math.round(fullGraphRotation.x)}° / ${Math.round(fullGraphRotation.y)}°`;
   if (fullGraphAutoRotateButton) {
     fullGraphAutoRotateButton.setAttribute('aria-pressed', String(fullGraphAutoRotate));
-    fullGraphAutoRotateButton.textContent = fullGraphAutoRotate ? 'Stop Orbit' : 'Auto Orbit';
+    fullGraphAutoRotateButton.textContent = fullGraphAutoRotate ? 'Stop Rotate' : 'Auto Rotate';
   }
 }
 
@@ -4283,33 +4532,33 @@ function getFullGraphExportProfile() {
 }
 
 function getFullGraphExportProfileLabel(profile = getFullGraphExportProfile()) {
-  if (profile === 'llm') return 'Claude / ChatGPT Context';
-  if (profile === 'compact') return 'Compact Navigation';
-  if (profile === 'audit') return 'Full Audit JSON';
-  if (profile === 'presentation') return 'Presentation SVG';
-  if (profile === 'scene') return '3D Scene';
-  return 'Navigation JSON';
+  if (profile === 'llm') return 'Claude / ChatGPT Notes';
+  if (profile === 'compact') return 'Compact Map';
+  if (profile === 'audit') return 'Full Audit File';
+  if (profile === 'presentation') return 'Presentation Image';
+  if (profile === 'scene') return '3D Scene File';
+  return 'Navigation File';
 }
 
 function updateFullGraphExportButtons() {
   const profile = getFullGraphExportProfile();
   if (exportGraphJsonButton) {
-    if (profile === 'compact') exportGraphJsonButton.textContent = 'Export Compact Map';
-    else if (profile === 'scene') exportGraphJsonButton.textContent = 'Export Scene';
-    else exportGraphJsonButton.textContent = profile === 'presentation' ? 'Export Layout JSON' : 'Export JSON';
+    if (profile === 'compact') exportGraphJsonButton.textContent = 'Save Compact Map';
+    else if (profile === 'scene') exportGraphJsonButton.textContent = 'Save 3D File';
+    else exportGraphJsonButton.textContent = profile === 'presentation' ? 'Save Layout JSON' : 'Save JSON';
   }
   if (exportGraphSvgButton) {
-    exportGraphSvgButton.textContent = profile === 'presentation' ? 'Export Presentation' : 'Export SVG';
+    exportGraphSvgButton.textContent = profile === 'presentation' ? 'Save Image' : 'Save SVG';
   }
   if (exportGraphContextButton) {
     exportGraphContextButton.textContent =
       profile === 'audit'
-        ? 'Export Audit Notes'
+        ? 'Save Audit Notes'
         : profile === 'compact'
-          ? 'Export Compact Context'
+          ? 'Save Compact Notes'
           : profile === 'scene'
-            ? 'Export Scene Map'
-            : 'Export Context';
+            ? 'Save Scene Notes'
+            : 'Save Context';
   }
 }
 
@@ -4385,15 +4634,15 @@ function fitFullGraphToView() {
 
 async function exportFullGraphJson() {
   if (!lastFullGraphDetailState?.visibleGraph) {
-    showToast('Open a graph before exporting.');
+    showToast('Open a map before saving.');
     return;
   }
 
   const profile = getFullGraphExportProfile();
   const payload = buildFullGraphExportPayload(profile);
   await exportTextFile({
-    title: `Export ${getFullGraphExportProfileLabel(profile)}`,
-    defaultPath: `${sanitizeFileStem(activeVault?.name || 'Shibanshu Graph')}-${profile}-graph.json`,
+    title: `Save ${getFullGraphExportProfileLabel(profile)}`,
+    defaultPath: `${sanitizeFileStem(activeVault?.name || 'Shibanshu Map')}-${profile}-map.json`,
     format: 'json',
     content: `${JSON.stringify(payload, null, 2)}\n`
   });
@@ -4403,13 +4652,13 @@ async function exportFullGraphSvg() {
   const profile = getFullGraphExportProfile();
   const svg = buildFullGraphExportSvg(profile);
   if (!svg) {
-    showToast('Open a graph before exporting.');
+    showToast('Open a map before saving.');
     return;
   }
 
   await exportTextFile({
-    title: `Export ${profile === 'presentation' ? 'Presentation Graph SVG' : 'Graph SVG'}`,
-    defaultPath: `${sanitizeFileStem(activeVault?.name || 'Shibanshu Graph')}-${profile}-graph.svg`,
+    title: `Save ${profile === 'presentation' ? 'Presentation Map SVG' : 'Map SVG'}`,
+    defaultPath: `${sanitizeFileStem(activeVault?.name || 'Shibanshu Map')}-${profile}-map.svg`,
     format: 'svg',
     content: svg
   });
@@ -4417,18 +4666,29 @@ async function exportFullGraphSvg() {
 
 async function exportFullGraphContext() {
   if (!lastFullGraphDetailState?.visibleGraph) {
-    showToast('Open a graph before exporting.');
+    showToast('Open a map before saving.');
     return;
   }
 
   const profile = getFullGraphExportProfile();
   const content = buildFullGraphContextMarkdown(profile);
   await exportTextFile({
-    title: `Export ${getFullGraphExportProfileLabel(profile)} Markdown`,
-    defaultPath: `${sanitizeFileStem(activeVault?.name || 'Shibanshu Graph')}-${profile}-context.md`,
+    title: `Save ${getFullGraphExportProfileLabel(profile)} Markdown`,
+    defaultPath: `${sanitizeFileStem(activeVault?.name || 'Shibanshu Map')}-${profile}-context.md`,
     format: 'md',
     content
   });
+}
+
+async function exportFullGraphWithProfile(profile, exporter) {
+  if (!VALID_GRAPH_EXPORT_PROFILES.has(profile) || typeof exporter !== 'function') return;
+  openFullGraph({ space: profile === 'scene' ? FULL_GRAPH_SPACE_MODE_3D : fullGraphSpaceMode });
+  if (fullGraphExportProfileSelect) {
+    fullGraphExportProfileSelect.value = profile;
+    updateFullGraphExportButtons();
+  }
+  await waitForNextFrame();
+  await exporter();
 }
 
 function buildFullGraphExportPayload(profile = getFullGraphExportProfile()) {
@@ -4997,7 +5257,7 @@ function summarizeGraphTags(nodes) {
 function buildFullGraphContextMarkdown(profile = getFullGraphExportProfile()) {
   const payload = buildFullGraphExportPayload(profile);
   const lines = [
-    `# ${activeVault?.name || 'Vault'} Graph Context`,
+    `# ${activeVault?.name || 'Folder'} Map Context`,
     '',
     `Generated: ${payload.generatedAt}`,
     `Profile: ${payload.profileLabel}`,
@@ -5005,11 +5265,11 @@ function buildFullGraphContextMarkdown(profile = getFullGraphExportProfile()) {
     `Active path: ${payload.activePath || 'None'}`,
     `Nodes: ${payload.counts.nodes}`,
     `Edges: ${payload.counts.edges}`,
-    `Unresolved links: ${payload.counts.unresolved}`,
+    `Missing links: ${payload.counts.unresolved}`,
     '',
     '## How To Use',
     '',
-    'Give this file to Claude, ChatGPT, or another local model when it needs to understand the current graph view. Start with the reading order, then inspect node summaries and unresolved links before editing source files.',
+    'Give this file to Claude, ChatGPT, or another local model when it needs to understand the current map view. Start with the reading order, then inspect note summaries and missing links before editing source files.',
     '',
     '## Reading Order',
     ''
@@ -5034,7 +5294,7 @@ function buildFullGraphContextMarkdown(profile = getFullGraphExportProfile()) {
   }
 
   if (payload.compact?.routes?.length) {
-    lines.push('', '## Compact Navigation Routes', '');
+    lines.push('', '## Compact Map Routes', '');
     for (const route of payload.compact.routes) {
       lines.push(`### ${route.name}`);
       lines.push(`- Goal: ${route.goal}`);
@@ -5060,10 +5320,10 @@ function buildFullGraphContextMarkdown(profile = getFullGraphExportProfile()) {
       lines.push(`- Outgoing: ${node.outgoingPaths.join(', ')}`);
     }
     if (node.backlinkPaths?.length) {
-      lines.push(`- Backlinks: ${node.backlinkPaths.join(', ')}`);
+      lines.push(`- Links here: ${node.backlinkPaths.join(', ')}`);
     }
     if (node.unresolvedTargets?.length) {
-      lines.push(`- Unresolved: ${node.unresolvedTargets.join(', ')}`);
+      lines.push(`- Missing links: ${node.unresolvedTargets.join(', ')}`);
     }
     lines.push(`- Flags: ${[node.hasMedia ? 'media' : '', node.hasCanvas ? 'canvas' : ''].filter(Boolean).join(', ') || 'none'}`);
     lines.push(`- Excerpt: ${node.excerpt || 'No readable text.'}`);
@@ -5080,7 +5340,7 @@ function buildFullGraphContextMarkdown(profile = getFullGraphExportProfile()) {
   }
 
   if (payload.unresolvedLinks.length) {
-    lines.push('## Unresolved Links', '');
+    lines.push('## Missing Links', '');
     payload.unresolvedLinks.slice(0, 120).forEach((link) => {
       lines.push(`- ${link.sourcePath} -> ${link.target}`);
     });
@@ -5100,9 +5360,9 @@ function buildFullGraphExportSvg(profile = getFullGraphExportProfile()) {
   clone.setAttribute('height', String(FULL_GRAPH_VIEWBOX.height));
   clone.dataset.exportProfile = profile;
   const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-  title.textContent = `${activeVault?.name || 'Shibanshu Graph'} - ${getFullGraphExportProfileLabel(profile)}`;
+  title.textContent = `${activeVault?.name || 'Shibanshu Map'} - ${getFullGraphExportProfileLabel(profile)}`;
   const desc = document.createElementNS('http://www.w3.org/2000/svg', 'desc');
-  desc.textContent = `${fullGraphSummary.textContent || 'Graph export'} Generated ${new Date().toISOString()}.`;
+  desc.textContent = `${fullGraphSummary.textContent || 'Map export'} Generated ${new Date().toISOString()}.`;
   const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
   style.textContent = `
     .graph-export-background { fill: #ffffff; }
@@ -5142,7 +5402,7 @@ async function exportTextFile(payload) {
       showToast(`${payload.format.toUpperCase()} downloaded.`);
       return;
     }
-    showToast(`Graph export failed: ${error.message}`);
+    showToast(`Map save failed: ${error.message}`);
   }
 }
 
@@ -5252,7 +5512,7 @@ function endFullGraphDrag(event) {
 function openMindMapCanvas(options = {}) {
   const doc = getActiveDocument();
   if (!doc) {
-    showToast('Open a document before opening the mind map.');
+    showToast('Open a note before opening the note map.');
     return;
   }
 
@@ -5289,11 +5549,11 @@ function renderMindMapCanvas() {
 
   const doc = getActiveDocument();
   if (!doc) {
-    mindMapTitle.textContent = 'Canvas';
-    mindMapSummary.textContent = 'Open a document to map headings, links, tasks, tags, and backlinks.';
-    mindMapCanvas.innerHTML = '<div class="graph-empty">Open a document to build a mind map.</div>';
+    mindMapTitle.textContent = 'Map';
+    mindMapSummary.textContent = 'Open a note to see headings, links, tasks, tags, and links back to it.';
+    mindMapCanvas.innerHTML = '<div class="graph-empty">Open a note to build a note map.</div>';
     mindMapList.innerHTML = '';
-    mindMapDetail.innerHTML = '<p>Open a document to inspect map context.</p>';
+    mindMapDetail.innerHTML = '<p>Open a note to inspect map context.</p>';
     lastMindMapModel = null;
     return;
   }
@@ -5425,7 +5685,7 @@ function buildMindMapModel(doc, vaultDocs) {
   }
 
   if (outgoingLinks.length) {
-    const group = addGroup('group:links', 'Outgoing Links', `${outgoingLinks.length} linked note${outgoingLinks.length === 1 ? '' : 's'}`, 20);
+    const group = addGroup('group:links', 'Links Out', `${outgoingLinks.length} linked note${outgoingLinks.length === 1 ? '' : 's'}`, 20);
     outgoingLinks.forEach((link, index) => {
       const resolvedLabel = link.resolvedDoc ? getDisplayPath(link.resolvedDoc) : link.target;
       const id = `link:${index}:${normalizeLinkTarget(link.target)}`;
@@ -5433,7 +5693,7 @@ function buildMindMapModel(doc, vaultDocs) {
         id,
         type: link.resolvedDoc ? 'link' : 'unresolved',
         label: resolvedLabel,
-        detail: link.resolvedDoc ? 'Resolved note link' : 'Unresolved link',
+        detail: link.resolvedDoc ? 'Resolved note link' : 'Missing link',
         path: link.resolvedDoc?.path || null,
         depth: 2,
         order: 300 + index
@@ -5443,7 +5703,7 @@ function buildMindMapModel(doc, vaultDocs) {
   }
 
   if (backlinks.length) {
-    const group = addGroup('group:backlinks', 'Backlinks', `${backlinks.length} note${backlinks.length === 1 ? '' : 's'} mention this`, 30);
+    const group = addGroup('group:backlinks', 'Links Here', `${backlinks.length} note${backlinks.length === 1 ? '' : 's'} mention this`, 30);
     backlinks.forEach((backlink, index) => {
       const id = `backlink:${index}:${backlink.doc.path}`;
       addNode({
@@ -5872,24 +6132,24 @@ function endMindMapDrag(event) {
 async function copyMindMapContext() {
   const content = buildMindMapContextMarkdown();
   if (!content) {
-    showToast('Open a document before copying a mind map.');
+    showToast('Open a note before copying a note map.');
     return;
   }
 
   await navigator.clipboard.writeText(content);
-  showToast('Claude mind map copied.');
+  showToast('Note map copied for Claude.');
 }
 
 function createMindMapContextDocument() {
   const content = buildMindMapContextMarkdown();
   const activeDocument = getActiveDocument();
   if (!content || !activeDocument) {
-    showToast('Open a document before creating a mind map note.');
+    showToast('Open a note before saving a map note.');
     return;
   }
 
   const doc = createDocument({
-    title: `${stripMarkdownExtension(activeDocument.title || 'Document')} Mind Map.md`,
+    title: `${stripMarkdownExtension(activeDocument.title || 'Document')} Note Map.md`,
     content,
     dirty: true
   });
@@ -5900,7 +6160,7 @@ function createMindMapContextDocument() {
   }
   activateDocument(doc.id);
   persistSession();
-  showToast('Mind map note created.');
+  showToast('Map note created.');
 }
 
 function buildMindMapContextMarkdown() {
@@ -5910,7 +6170,7 @@ function buildMindMapContextMarkdown() {
   const model = buildMindMapModel(doc, getVaultDocuments());
   const generatedAt = new Date().toISOString();
   const lines = [
-    `# ${stripMarkdownExtension(doc.title || UNTITLED_NAME)} Mind Map Context`,
+    `# ${stripMarkdownExtension(doc.title || UNTITLED_NAME)} Note Map Context`,
     '',
     `Generated: ${generatedAt}`,
     `Source: ${doc.path ? getDisplayPath(doc) : doc.title}`,
@@ -5934,7 +6194,7 @@ function buildMindMapContextMarkdown() {
     lines.push('- No headings found.');
   }
 
-  lines.push('', '## Outgoing Links', '');
+  lines.push('', '## Links Out', '');
   if (model.outgoingLinks.length) {
     for (const link of model.outgoingLinks) {
       lines.push(`- ${link.target}${link.resolvedDoc ? ` -> ${getDisplayPath(link.resolvedDoc)}` : ' (unresolved)'}`);
@@ -5943,13 +6203,13 @@ function buildMindMapContextMarkdown() {
     lines.push('- No outgoing note links found.');
   }
 
-  lines.push('', '## Backlinks', '');
+  lines.push('', '## Links Here', '');
   if (model.backlinks.length) {
     for (const backlink of model.backlinks) {
       lines.push(`- ${getDisplayPath(backlink.doc)} (${backlink.linkText || 'backlink'})`);
     }
   } else {
-    lines.push('- No backlinks found in the open vault.');
+    lines.push('- No links back to this note were found in the open folder.');
   }
 
   lines.push('', '## Tags', '');
@@ -5984,7 +6244,7 @@ function mindMapNodeTypeLabel(type) {
     group: 'Group',
     heading: 'Heading',
     link: 'Link',
-    unresolved: 'Unresolved Link',
+    unresolved: 'Missing Link',
     backlink: 'Backlink',
     tag: 'Tag',
     task: 'Task',
@@ -6028,14 +6288,14 @@ function createUntitledDocument() {
   const name = title.replace(/\.md$/i, '');
   const doc = createDocument({
     title,
-    content: `# ${name}\n\nStart writing here. Use the toolbar above to format text.\n\n## Quick Start\n\n- **Bold** with Cmd+B\n- *Italic* with Cmd+I\n- Create [[links]] to other notes\n- Add tasks with the Task button\n- Open Mind Map to visualize this note\n\n`,
+    content: `# ${name}\n\nStart writing here.\n\n## Quick Start\n\n- Write notes in Markdown\n- Create [[links]] to other notes\n- Add tasks with the Task button\n- Open Note Map to visualize this note\n\n`,
     dirty: true
   });
 
   documents.push(doc);
   activateDocument(doc.id);
   persistSession();
-  showToast('New note created — start writing!');
+  showToast('New note created. Start writing!');
 }
 
 function createDailyNote() {
@@ -6084,12 +6344,12 @@ function createDailyNote() {
 
 async function createVaultFileFromPrompt() {
   if (!activeVault?.path) {
-    showToast('Open a vault before creating a vault file.');
+    showToast('Open a folder before creating a note.');
     return;
   }
 
   const suggestedPath = nextVaultFileName();
-  const relativePath = prompt('New vault file path', suggestedPath);
+  const relativePath = prompt('New note name or path', suggestedPath);
   if (!relativePath) return;
 
   try {
@@ -6111,7 +6371,7 @@ async function createVaultFileFromPrompt() {
 async function renameActiveVaultFileFromPrompt() {
   const doc = getActiveDocument();
   if (!isDocumentInActiveVault(doc)) {
-    showToast('Select a vault file before renaming.');
+    showToast('Select a note from the folder before renaming.');
     return;
   }
 
@@ -6121,7 +6381,7 @@ async function renameActiveVaultFileFromPrompt() {
   }
 
   const currentRelativePath = getDocumentVaultRelativePath(doc);
-  const nextRelativePath = prompt('Rename or move vault file', currentRelativePath);
+  const nextRelativePath = prompt('Rename or move note', currentRelativePath);
   if (!nextRelativePath || nextRelativePath === currentRelativePath) return;
 
   try {
@@ -6143,7 +6403,7 @@ async function renameActiveVaultFileFromPrompt() {
 async function deleteActiveVaultFileWithConfirmation() {
   const doc = getActiveDocument();
   if (!isDocumentInActiveVault(doc)) {
-    showToast('Select a vault file before deleting.');
+    showToast('Select a note from the folder before deleting.');
     return;
   }
 
@@ -6153,16 +6413,17 @@ async function deleteActiveVaultFileWithConfirmation() {
   }
 
   const relativePath = getDocumentVaultRelativePath(doc);
-  const confirmed = confirm(`Move ${relativePath} to Trash?`);
+  const deleteLabel = native.platform === 'browser' ? `Delete ${relativePath} from this folder?` : `Move ${relativePath} to Trash?`;
+  const confirmed = confirm(deleteLabel);
   if (!confirmed) return;
 
   try {
-    await native.deleteVaultFile({
+    const result = await native.deleteVaultFile({
       rootPath: activeVault.path,
       relativePath
     });
     removeDocumentAfterVaultDelete(doc.id);
-    showToast(`${relativePath} moved to Trash.`);
+    showToast(result?.trash === false ? `${relativePath} deleted.` : `${relativePath} moved to Trash.`);
   } catch (error) {
     showToast(`Delete failed: ${error.message}`);
   }
@@ -6236,21 +6497,25 @@ async function openVaultFromDialog() {
 }
 
 function applyOpenedVault(vault) {
-  if (!vault?.files?.length) {
-    if (vault) showToast('No Markdown files found in that folder.');
+  if (!vault?.path) {
     return false;
   }
 
+  const vaultFiles = Array.isArray(vault.files) ? vault.files : [];
   activeVault = {
     path: vault.path,
     name: vault.name,
     openedAt: Date.now()
   };
 
-  addOpenedDocuments(vault.files, { source: 'vault' });
+  addOpenedDocuments(vaultFiles, { source: 'vault' });
   renderVaultSidebar();
   persistSession();
-  showToast(`${vault.files.length} vault file${vault.files.length === 1 ? '' : 's'} indexed.`);
+  showToast(
+    vaultFiles.length
+      ? `${vaultFiles.length} note${vaultFiles.length === 1 ? '' : 's'} found.`
+      : 'Folder opened. Create a Markdown note to start.'
+  );
   return true;
 }
 
@@ -6282,6 +6547,57 @@ async function openRecentVault(recentId) {
   } catch (error) {
     showToast(`Recent vault failed: ${error.message}`);
   }
+}
+
+function handleSidebarRecentWorkClick(event) {
+  const button = event.target.closest('[data-sidebar-recent-id]');
+  if (!button) return;
+
+  if (button.dataset.sidebarRecentType === 'vault') {
+    openRecentVault(button.dataset.sidebarRecentId);
+    return;
+  }
+
+  if (button.dataset.sidebarRecentType === 'file') {
+    openRecentFile(button.dataset.sidebarRecentId);
+  }
+}
+
+function handleActivitySurface(surface) {
+  setActivitySurface(surface || 'workspace');
+
+  if (surface === 'search') {
+    openGlobalSearch();
+    return;
+  }
+
+  if (surface === 'graph') {
+    openFullGraph();
+    return;
+  }
+
+  if (surface === 'context') {
+    openMindMapCanvas();
+    return;
+  }
+
+  if (surface === 'command') {
+    openCommandPalette();
+    return;
+  }
+
+  if (surface === 'publish') {
+    publishStaticSite();
+  }
+}
+
+function setActivitySurface(surface) {
+  const activeSurface = ['workspace', 'search', 'graph', 'context', 'command', 'publish'].includes(surface) ? surface : 'workspace';
+  activityButtons.forEach((button) => {
+    const active = button.dataset.activitySurface === activeSurface;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
 }
 
 function addOpenedDocuments(opened, options = {}) {
@@ -6357,6 +6673,7 @@ function activateDocumentByPath(filePath) {
 function renderVaultSidebar() {
   const vaultDocs = getVaultDocuments();
   const activeDocument = getActiveDocument();
+  const hasOpenVault = Boolean(activeVault?.path);
   const query = vaultSearchInput.value.trim().toLowerCase();
   const filteredDocs = query
     ? vaultDocs.filter((doc) => {
@@ -6365,19 +6682,51 @@ function renderVaultSidebar() {
       })
     : vaultDocs;
 
-  vaultNameLabel.textContent = activeVault?.name || 'No folder';
-  vaultCountLabel.textContent = `${vaultDocs.length} file${vaultDocs.length === 1 ? '' : 's'}`;
-  setDisabled(newVaultFileButton, !activeVault?.path);
+  const sidebar = document.getElementById('vault-sidebar');
+  if (sidebar) sidebar.dataset.vaultState = hasOpenVault ? 'open' : 'recent';
+  renderSidebarRecentWork(hasOpenVault);
+
+  vaultNameLabel.textContent = activeVault?.name || 'Recent Work';
+  vaultCountLabel.textContent = hasOpenVault
+    ? `${vaultDocs.length} file${vaultDocs.length === 1 ? '' : 's'}`
+    : `${recentItems.vaults.length + recentItems.files.length} recent`;
+  setDisabled(newVaultFileButton, !hasOpenVault);
   setDisabled(renameVaultFileButton, !isDocumentInActiveVault(activeDocument));
   setDisabled(deleteVaultFileButton, !isDocumentInActiveVault(activeDocument));
 
   // Hide empty sections on mobile for compact sidebar
+  const searchBox = vaultSearchInput.closest('.vault-search');
   const outlineSection = outlineList.closest('.sidebar-section');
   const backlinkSection = backlinkList.closest('.sidebar-section');
   const graphSection = graphCanvas.closest('.sidebar-section');
+  if (searchBox) searchBox.hidden = !hasOpenVault;
+
+  if (!hasOpenVault) {
+    const headings = activeDocument ? extractMarkdownHeadings(activeDocument.content) : [];
+    vaultFileList.innerHTML = renderNoRepositoryPanel();
+    outlineList.innerHTML = headings.length
+      ? headings
+          .map((heading) => {
+            const indent = Math.max(0, heading.level - 1);
+            return `<button class="outline-item" type="button" data-outline-line="${heading.line}" style="--depth: ${indent}">
+              <span>${escapeHtml(heading.text)}</span>
+            </button>`;
+          })
+          .join('')
+      : '';
+    backlinkList.innerHTML = '';
+    if (outlineSection) outlineSection.hidden = !headings.length;
+    if (backlinkSection) backlinkSection.hidden = true;
+    if (graphSection) graphSection.hidden = true;
+    renderGraphPanel([], null);
+    renderFullGraph();
+    renderWorkspaceShell();
+    createIcons({ icons });
+    return;
+  }
 
   if (!vaultDocs.length) {
-    vaultFileList.innerHTML = '<p class="sidebar-empty">Open a folder to index Markdown files.</p>';
+    vaultFileList.innerHTML = '<div class="sidebar-empty-panel"><p>No Markdown files were found in this folder.</p><button class="sidebar-action primary" type="button" data-empty-new-file>Create Note</button></div>';
     outlineList.innerHTML = '';
     backlinkList.innerHTML = '';
     if (outlineSection) outlineSection.hidden = true;
@@ -6385,6 +6734,8 @@ function renderVaultSidebar() {
     if (graphSection) graphSection.hidden = true;
     renderGraphPanel([], null);
     renderFullGraph();
+    renderWorkspaceShell();
+    createIcons({ icons });
     return;
   }
 
@@ -6425,6 +6776,120 @@ function renderVaultSidebar() {
 
   renderGraphPanel(vaultDocs, activeDocument);
   renderFullGraph();
+  renderWorkspaceShell();
+  createIcons({ icons });
+}
+
+function renderSidebarRecentWork(hasOpenVault) {
+  const recentVaults = recentItems.vaults.slice(0, hasOpenVault ? 3 : 6);
+  const recentFiles = recentItems.files.slice(0, hasOpenVault ? 2 : 6);
+  const items = [
+    ...recentVaults.map((item) => renderSidebarRecentWorkItem(item, 'vault')),
+    ...recentFiles.map((item) => renderSidebarRecentWorkItem(item, 'file'))
+  ];
+
+  recentWorkList.innerHTML = items.length
+    ? items.join('')
+    : '<p class="sidebar-empty">Recent folders and Markdown files will appear here after you open them.</p>';
+
+  if (startRecentList) {
+    const startItems = [
+      ...recentItems.vaults.slice(0, 5).map((item) => renderSidebarRecentWorkItem(item, 'vault')),
+      ...recentItems.files.slice(0, 5).map((item) => renderSidebarRecentWorkItem(item, 'file'))
+    ];
+    startRecentList.innerHTML = startItems.length
+      ? startItems.join('')
+      : '<p class="sidebar-empty">Open a folder or file and it will stay one click away here.</p>';
+  }
+}
+
+function renderSidebarRecentWorkItem(item, type) {
+  const icon = type === 'vault' ? 'folder-open' : 'file-text';
+  const typeLabel = type === 'vault' ? 'Folder' : 'File';
+  const title = escapeHtml(item.name || typeLabel);
+  const pathLabel = escapeHtml(formatSidebarPath(item.path));
+  return `<button class="recent-work-item" type="button" data-sidebar-recent-type="${type}" data-sidebar-recent-id="${escapeAttribute(item.id)}" title="${escapeAttribute(item.path)}">
+    <i data-lucide="${icon}" aria-hidden="true"></i>
+    <span>
+      <strong>${title}</strong>
+      <small>${typeLabel} · ${pathLabel}</small>
+    </span>
+  </button>`;
+}
+
+function renderNoRepositoryPanel() {
+  return `<div class="sidebar-empty-panel">
+    <strong>Open a folder to browse your Markdown notes.</strong>
+    <p>Select a note, search file names and content, then use Folder Map or Note Map when you need structure.</p>
+  </div>`;
+}
+
+function renderWorkspaceShell() {
+  const doc = getActiveDocument();
+  const vaultDocs = getVaultDocuments();
+  const headings = doc ? extractMarkdownHeadings(doc.content) : [];
+  const backlinks = doc?.path ? findBacklinks(doc, vaultDocs) : [];
+  const outgoingLinks = doc ? extractMarkdownLinks(doc.content) : [];
+  const tags = doc ? extractMarkdownTags(doc.content) : [];
+  const tasks = doc ? extractMarkdownTasks(doc.content) : [];
+  const title = doc?.title || 'No Document';
+  const displayPath = doc ? doc.path || 'Unsaved local note' : 'No file selected';
+
+  if (documentTitleLabel) documentTitleLabel.textContent = title;
+  if (documentLocationLabel) documentLocationLabel.textContent = formatSidebarPath(displayPath);
+  if (inspectorDocumentTitle) inspectorDocumentTitle.textContent = title;
+  if (inspectorDocumentPath) inspectorDocumentPath.textContent = displayPath;
+  if (inspectorDocumentState) {
+    inspectorDocumentState.textContent = doc?.dirty ? 'Unsaved' : 'Saved';
+    inspectorDocumentState.classList.toggle('dirty', Boolean(doc?.dirty));
+  }
+
+  if (inspectorMetrics) {
+    const metrics = [
+      ['Words', countWords(doc?.content || '')],
+      ['Headings', headings.length],
+      ['Links', outgoingLinks.length],
+      ['Links Here', backlinks.length],
+      ['Tags', tags.length],
+      ['Tasks', tasks.length]
+    ];
+    inspectorMetrics.innerHTML = metrics
+      .map(([label, value]) => `<span><strong>${value}</strong><small>${label}</small></span>`)
+      .join('');
+  }
+
+  if (workspaceStart) {
+    workspaceStart.hidden = !shouldShowWorkspaceStart();
+  }
+
+  const hasDocument = Boolean(doc);
+  const hasVault = Boolean(vaultDocs.length);
+  setDisabled(documentSaveButton, !hasDocument);
+  setDisabled(documentMindMapButton, !hasDocument);
+  setDisabled(documentGraphButton, !hasVault, 'Open a folder to create a map.');
+  setDisabled(inspectorOpenMindMapButton, !hasDocument);
+  setDisabled(inspectorOpenGraphButton, !hasVault, 'Open a folder to create a map.');
+  setDisabled(inspectorCopyContextButton, !hasVault, 'Open a folder before copying context for AI.');
+  setDisabled(inspectorNewContextButton, !hasVault, 'Open a folder before saving a context note.');
+}
+
+function shouldShowWorkspaceStart() {
+  if (activeVault?.path) return false;
+  if (documents.some((doc) => doc.path)) return false;
+  if (documents.some((doc) => doc.dirty)) return false;
+  if (documents.length !== 1) return false;
+
+  const doc = documents[0];
+  const content = String(doc?.content || '').trim();
+  return !content || content === sampleMarkdown.trim();
+}
+
+function formatSidebarPath(filePath) {
+  const normalized = String(filePath || '').replaceAll('\\', '/');
+  const homeMatch = normalized.match(/^\/Users\/[^/]+\//);
+  const compact = homeMatch ? `~/${normalized.slice(homeMatch[0].length)}` : normalized;
+  if (compact.length <= 52) return compact;
+  return `…${compact.slice(-51)}`;
 }
 
 function renderVaultFileTree(docs, activeDocument, query) {
@@ -6554,7 +7019,7 @@ function renderGraphPanel(vaultDocs, activeDocument) {
 
   if (!vaultDocs.length) {
     graphSummary.textContent = 'Open a folder to map notes.';
-    graphCanvas.innerHTML = '<div class="graph-empty">Open a folder to build a local note graph.</div>';
+    graphCanvas.innerHTML = '<div class="graph-empty">Open a folder to build a note map.</div>';
     return;
   }
 
@@ -6562,15 +7027,15 @@ function renderGraphPanel(vaultDocs, activeDocument) {
   const visibleGraph = getVisibleGraph(graph, activeDocument);
   const renderGraph = limitGraphForRender(visibleGraph, activeDocument?.path);
   const unresolvedCount = graph.unresolvedLinks.length;
-  const scopeLabel = graphMode === 'global' ? 'global' : 'local';
+  const scopeLabel = graphMode === 'global' ? 'all notes' : 'near this note';
   const visibleCount =
     renderGraph.nodes.length === visibleGraph.nodes.length ? `${visibleGraph.nodes.length}` : `${renderGraph.nodes.length}/${visibleGraph.nodes.length}`;
   graphSummary.textContent = `${visibleCount} ${scopeLabel} notes · ${visibleGraph.edges.length} links${
-    unresolvedCount ? ` · ${unresolvedCount} unresolved` : ''
+    unresolvedCount ? ` · ${unresolvedCount} missing` : ''
   }${renderGraph.limited ? ' · capped for speed' : ''}`;
 
   if (!renderGraph.nodes.length) {
-    graphCanvas.innerHTML = '<div class="graph-empty">No connected notes for this graph scope.</div>';
+    graphCanvas.innerHTML = '<div class="graph-empty">No connected notes for this map view.</div>';
     return;
   }
 
@@ -6978,7 +7443,7 @@ function renderGraphSvg(graph, activeDocument, options = {}) {
     })
     .join('');
 
-  return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Vault note graph">
+  return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Folder note map">
     <g class="graph-viewport"${viewportTransform}>
       ${edgeMarkup}
       ${nodeMarkup}
@@ -7705,23 +8170,23 @@ async function copyActiveMarkdown() {
 async function copyAiContextMap() {
   const content = buildAiContextMap();
   if (!content) {
-    showToast('Open a vault before creating an AI map.');
+    showToast('Open a folder before copying context for AI.');
     return;
   }
 
   await navigator.clipboard.writeText(content);
-  showToast('AI context map copied.');
+  showToast('Context copied for AI.');
 }
 
 function createAiContextMapDocument() {
   const content = buildAiContextMap();
   if (!content) {
-    showToast('Open a vault before creating an AI map.');
+    showToast('Open a folder before saving a context note.');
     return;
   }
 
   const doc = createDocument({
-    title: `${activeVault?.name || 'Vault'} AI Map.md`,
+    title: `${activeVault?.name || 'Folder'} AI Context.md`,
     content,
     dirty: true
   });
@@ -7729,7 +8194,7 @@ function createAiContextMapDocument() {
   documents.push(doc);
   activateDocument(doc.id);
   persistSession();
-  showToast('AI map note created.');
+  showToast('Context note created.');
 }
 
 function buildAiContextMap() {
@@ -7742,19 +8207,19 @@ function buildAiContextMap() {
   const generatedAt = new Date().toISOString();
   const activePath = activeDocument ? getDisplayPath(activeDocument) : 'None';
   const lines = [
-    `# ${activeVault?.name || 'Vault'} AI Context Map`,
+    `# ${activeVault?.name || 'Folder'} AI Context Map`,
     '',
     `Generated: ${generatedAt}`,
-    `Vault: ${activeVault?.name || 'Local Markdown folder'}`,
+    `Folder: ${activeVault?.name || 'Local Markdown folder'}`,
     `Active note: ${activePath}`,
     `Files: ${vaultDocs.length}`,
     `Resolved links: ${graph.edges.length}`,
-    `Unresolved links: ${graph.unresolvedLinks.length}`,
+    `Missing links: ${graph.unresolvedLinks.length}`,
     `Included note summaries: ${rankedDocs.length}${rankedDocs.length < vaultDocs.length ? ` of ${vaultDocs.length}` : ''}`,
     '',
     '## How To Use',
     '',
-    'Paste this map into Claude, OpenAI, Gemini, Ollama, or any local model when you want grounded help with this vault. Notes stay local unless you deliberately copy or send this map.',
+    'Paste this map into Claude, OpenAI, Gemini, Ollama, or any local model when you want grounded help with this folder. Notes stay local unless you deliberately copy or send this map.',
     '',
     '## Active Note',
     ''
@@ -7783,7 +8248,7 @@ function buildAiContextMap() {
   }
 
   if (graph.unresolvedLinks.length) {
-    lines.push('', '## Unresolved Links', '');
+    lines.push('', '## Missing Links', '');
     for (const link of graph.unresolvedLinks.slice(0, 80)) {
       const source = graph.nodeByPath.get(link.source)?.doc;
       if (!source) continue;
@@ -7833,7 +8298,7 @@ function appendAiDocumentSummary(lines, doc, graph, vaultDocs, options = {}) {
   lines.push(`- Headings: ${headings.length ? headings.map((heading) => heading.text).join(' | ') : 'None'}`);
   lines.push(`- Tags: ${tags.length ? tags.join(', ') : 'None'}`);
   lines.push(
-    `- Outgoing: ${
+    `- Links out: ${
       outgoing.length
         ? outgoing
             .map((edge) => {
@@ -7844,7 +8309,7 @@ function appendAiDocumentSummary(lines, doc, graph, vaultDocs, options = {}) {
         : 'None'
     }`
   );
-  lines.push(`- Backlinks: ${incoming.length ? incoming.map((link) => getDisplayPath(link.doc)).join(', ') : 'None'}`);
+  lines.push(`- Links here: ${incoming.length ? incoming.map((link) => getDisplayPath(link.doc)).join(', ') : 'None'}`);
 
   if (options.includeExcerpt) {
     const excerpt = createPlainTextExcerpt(doc.content, 480);
@@ -8183,7 +8648,7 @@ async function exportActivePdf() {
 async function publishStaticSite() {
   const payload = buildPublishSitePayload();
   if (!payload) {
-    showToast('Open a vault before publishing a static site.');
+    showToast('Open a folder before creating a website.');
     return;
   }
 
@@ -8469,6 +8934,7 @@ function updateStatus() {
   saveStateLabel.textContent = doc.dirty ? 'Unsaved' : 'Saved';
   saveStateLabel.classList.toggle('dirty', doc.dirty);
   updateActionStates();
+  renderWorkspaceShell();
   syncNativeDocumentState();
 }
 
@@ -8490,10 +8956,28 @@ function updateActionStates() {
   formatButtons.forEach((button) => setDisabled(button, !hasDocument));
 }
 
-function setDisabled(button, disabled) {
+function setDisabled(button, disabled, reason = '') {
   if (!button) return;
-  button.disabled = Boolean(disabled);
-  button.setAttribute('aria-disabled', String(Boolean(disabled)));
+  const isDisabled = Boolean(disabled);
+  button.disabled = isDisabled;
+  button.setAttribute('aria-disabled', String(isDisabled));
+  if (isDisabled && reason) {
+    button.dataset.disabledReason = reason;
+    button.setAttribute('aria-description', reason);
+    if (!button.dataset.enabledTitle) {
+      button.dataset.enabledTitle = button.getAttribute('title') || '';
+    }
+    button.setAttribute('title', reason);
+    return;
+  }
+  button.removeAttribute('aria-description');
+  delete button.dataset.disabledReason;
+  if (button.dataset.enabledTitle !== undefined) {
+    const enabledTitle = button.dataset.enabledTitle;
+    if (enabledTitle) button.setAttribute('title', enabledTitle);
+    else button.removeAttribute('title');
+    delete button.dataset.enabledTitle;
+  }
 }
 
 function updateStats(markdown) {

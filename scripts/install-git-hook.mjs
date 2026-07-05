@@ -24,8 +24,8 @@ const hookPath = path.join(hooksDir, 'post-commit');
 
 const hookScript = `#!/bin/sh
 # Auto-regenerate context map after each commit
-# Installed by shibanshu-markdown-mcp
-node "${exportScript}" "${absRepo}" --out "${path.join(absRepo, '.shibanshu')}" > /dev/null 2>&1 &
+# Installed by athena-mcp
+node "${exportScript}" "${absRepo}" --out "${path.join(absRepo, '.athena')}" > /dev/null 2>&1 &
 echo "Context map updated."
 `;
 
@@ -35,7 +35,7 @@ try {
   // Check if hook already exists
   try {
     const existing = await readFile(hookPath, 'utf8');
-    if (existing.includes('shibanshu-markdown-mcp')) {
+    if (existing.includes('athena-mcp')) {
       console.log('Hook already installed at', hookPath);
       process.exit(0);
     }

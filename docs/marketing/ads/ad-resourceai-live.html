@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>How Context Mapping Works — resourceai-in (924 files)</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0e14; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overflow: hidden; }
+canvas { position: fixed; top: 0; left: 0; z-index: 0; }
+
+.ui { position: relative; z-index: 1; pointer-events: none; }
+.ui > * { pointer-events: auto; }
+
+/* Top bar */
+.top { display: flex; justify-content: space-between; padding: 24px 32px; }
+.brand { font-size: 12px; text-transform: uppercase; letter-spacing: 3px; color: #72c7a6; }
+.repo-name { font-size: 13px; color: #667085; font-family: 'SF Mono', monospace; }
+
+/* Center headline */
+.center { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+.center h1 { font-size: 52px; font-weight: 800; line-height: 1.15; color: #fff; text-shadow: 0 0 120px rgba(114,199,166,0.2), 0 4px 30px rgba(0,0,0,0.9); }
+.center h1 span { color: #72c7a6; }
+.center .sub { font-size: 18px; color: #9aa4b2; margin-top: 16px; text-shadow: 0 2px 15px rgba(0,0,0,0.9); }
+
+/* Left panel — the journey */
+.journey { position: fixed; left: 32px; top: 50%; transform: translateY(-50%); width: 300px; }
+.step { margin-bottom: 20px; padding: 16px; background: rgba(28,33,40,0.85); border-radius: 10px; border: 1px solid rgba(48,56,68,0.6); backdrop-filter: blur(8px); transition: all 300ms ease; opacity: 0; transform: translateX(-20px); }
+.step.visible { opacity: 1; transform: translateX(0); }
+.step.active { border-color: #72c7a6; box-shadow: 0 0 20px rgba(114,199,166,0.15); }
+.step-num { font-size: 11px; font-weight: 700; color: #72c7a6; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+.step-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.step-detail { font-size: 12px; color: #9aa4b2; line-height: 1.5; }
+.step-stat { font-family: 'SF Mono', monospace; font-size: 20px; font-weight: 800; color: #72c7a6; margin-top: 6px; }
+
+/* Right panel — stats */
+.stats-panel { position: fixed; right: 32px; top: 50%; transform: translateY(-50%); width: 220px; }
+.stat-card { margin-bottom: 12px; padding: 14px 16px; background: rgba(28,33,40,0.85); border-radius: 10px; border: 1px solid rgba(48,56,68,0.6); backdrop-filter: blur(8px); }
+.stat-val { font-size: 32px; font-weight: 800; }
+.stat-val.green { color: #72c7a6; }
+.stat-val.red { color: #ff6b6b; }
+.stat-val.blue { color: #a5d6ff; }
+.stat-val.purple { color: #d2a8ff; }
+.stat-val.yellow { color: #ffc857; }
+.stat-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #667085; margin-top: 2px; }
+
+/* Bottom bar */
+.bottom { position: fixed; bottom: 24px; left: 0; width: 100%; display: flex; justify-content: center; }
+.install { font-family: 'SF Mono', monospace; font-size: 14px; background: rgba(28,33,40,0.9); padding: 12px 24px; border-radius: 10px; border: 1px solid rgba(114,199,166,0.3); color: #9aa4b2; backdrop-filter: blur(10px); }
+.install em { color: #72c7a6; font-style: normal; }
+
+/* Hub labels floating */
+.hub-labels { position: fixed; pointer-events: none; }
+.hub-label { position: absolute; font-size: 10px; font-family: 'SF Mono', monospace; color: rgba(114,199,166,0.7); white-space: nowrap; transition: opacity 200ms; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="ui">
+  <div class="top">
+    <div class="brand">Context Map Engine</div>
+    <div class="repo-name">resourceai-in &middot; 924 files &middot; 9.0 MB</div>
+  </div>
+
+  <div class="center">
+    <h1>924 files. <span>One call.</span></h1>
+    <div class="sub">Claude sees your entire architecture in 0.6 seconds</div>
+  </div>
+
+  <div class="journey">
+    <div class="step" id="s1">
+      <div class="step-num">Step 1 &middot; Scan</div>
+      <div class="step-title">Index 350 source files</div>
+      <div class="step-detail">Extract headings, links, imports, symbols, tags from every file. Skip vendor code.</div>
+      <div class="step-stat">350 files indexed</div>
+    </div>
+    <div class="step" id="s2">
+      <div class="step-num">Step 2 &middot; Graph</div>
+      <div class="step-title">Build knowledge graph</div>
+      <div class="step-detail">201 resolved edges. Find hubs, bridges, orphans, clusters. Map dependencies.</div>
+      <div class="step-stat">201 connections found</div>
+    </div>
+    <div class="step" id="s3">
+      <div class="step-num">Step 3 &middot; Route</div>
+      <div class="step-title">Compute navigation routes</div>
+      <div class="step-detail">5 prioritized reading paths. Orientation → Implementation → Hubs → Symbols → Risk.</div>
+      <div class="step-stat">5 routes &middot; 8 clusters</div>
+    </div>
+    <div class="step" id="s4">
+      <div class="step-num">Step 4 &middot; Compress</div>
+      <div class="step-title">2.36M tokens → 10,812 tokens</div>
+      <div class="step-detail">Claude gets structural understanding at 0.5% of raw cost. 95% of context window free.</div>
+      <div class="step-stat">218:1 compression</div>
+    </div>
+  </div>
+
+  <div class="stats-panel">
+    <div class="stat-card"><div class="stat-val green">218:1</div><div class="stat-lbl">Compression</div></div>
+    <div class="stat-card"><div class="stat-val red">1,180%</div><div class="stat-lbl">Raw = 12x context window</div></div>
+    <div class="stat-card"><div class="stat-val blue">5.4%</div><div class="stat-lbl">MCP = context used</div></div>
+    <div class="stat-card"><div class="stat-val purple">64</div><div class="stat-lbl">Hub degree (claude-plan.md)</div></div>
+    <div class="stat-card"><div class="stat-val yellow">215</div><div class="stat-lbl">Orphan files detected</div></div>
+  </div>
+
+  <div class="bottom">
+    <div class="install">$ <em>npx shibanshu-markdown-mcp</em> &middot; Free &middot; Open Source</div>
+  </div>
+</div>
+
+<div class="hub-labels" id="hub-labels"></div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+resize();
+addEventListener('resize', resize);
+
+// Real data from resourceai-in
+const clusterData = [
+  { name: 'src/', count: 201, color: [114,199,166] },
+  { name: 'docs/', count: 50, color: [210,168,255] },
+  { name: 'services/', count: 36, color: [165,214,255] },
+  { name: 'scripts/', count: 24, color: [255,200,87] },
+  { name: 'workers/', count: 21, color: [255,123,114] },
+  { name: 'config/', count: 14, color: [255,170,200] },
+  { name: 'lib/', count: 3, color: [200,230,180] },
+  { name: 'root', count: 1, color: [180,180,180] },
+];
+
+// Hub files from real data
+const hubFiles = [
+  { name: 'claude-plan.md', degree: 64 },
+  { name: 'audit-worker.ts', degree: 33 },
+  { name: 'types.ts', degree: 13 },
+  { name: 'dispatch.ts', degree: 10 },
+  { name: 'index.ts', degree: 9 },
+  { name: 'cost-tracker.ts', degree: 9 },
+  { name: 'judge-pipeline.ts', degree: 7 },
+  { name: 'providers/dispatch.ts', degree: 6 },
+];
+
+const nodes = [];
+const edges = [];
+
+// Generate nodes in clusters
+const TAU = Math.PI * 2;
+for (const cluster of clusterData) {
+  const angle = clusterData.indexOf(cluster) / clusterData.length * TAU;
+  const dist = 2.5;
+  const cx = Math.cos(angle) * dist;
+  const cy = Math.sin(angle) * dist * 0.6;
+  const cz = Math.sin(angle * 0.7) * 1.5;
+
+  for (let i = 0; i < Math.min(cluster.count, 40); i++) {
+    const isHub = i < 2;
+    nodes.push({
+      x: cx + (Math.random() - 0.5) * 2,
+      y: cy + (Math.random() - 0.5) * 2,
+      z: cz + (Math.random() - 0.5) * 2,
+      r: isHub ? 5 : 1.5 + Math.random() * 2,
+      color: cluster.color,
+      isHub,
+      cluster: cluster.name,
+      pulse: Math.random() * TAU,
+    });
+  }
+}
+
+// Generate edges
+for (let i = 0; i < 200; i++) {
+  const a = Math.floor(Math.random() * nodes.length);
+  let b;
+  if (Math.random() < 0.65) {
+    // Intra-cluster
+    const sameCluster = nodes.filter((n, idx) => n.cluster === nodes[a].cluster && idx !== a);
+    if (sameCluster.length === 0) continue;
+    b = nodes.indexOf(sameCluster[Math.floor(Math.random() * sameCluster.length)]);
+  } else {
+    b = Math.floor(Math.random() * nodes.length);
+  }
+  if (a !== b) edges.push([a, b]);
+}
+
+let time = 0;
+let activeStep = -1;
+
+function project(x, y, z) {
+  const cosY = Math.cos(time * 0.15), sinY = Math.sin(time * 0.15);
+  let x1 = x * cosY - z * sinY, z1 = x * sinY + z * cosY;
+  const tilt = -0.25 + Math.sin(time * 0.08) * 0.1;
+  const cosX = Math.cos(tilt), sinX = Math.sin(tilt);
+  let y1 = y * cosX - z1 * sinX, z2 = y * sinX + z1 * cosX;
+  const fov = 5;
+  const s = fov / (fov + z2 + 5);
+  return { x: x1 * s * W * 0.12 + W * 0.5, y: y1 * s * H * 0.14 + H * 0.5, z: z2, s };
+}
+
+function draw() {
+  time += 0.004;
+
+  // Animate steps
+  const newStep = Math.min(3, Math.floor(time * 0.8));
+  if (newStep !== activeStep) {
+    activeStep = newStep;
+    document.querySelectorAll('.step').forEach((el, i) => {
+      el.classList.toggle('visible', i <= activeStep);
+      el.classList.toggle('active', i === activeStep);
+    });
+  }
+
+  ctx.fillStyle = '#0a0e14';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle grid
+  ctx.strokeStyle = 'rgba(48,56,68,0.15)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < W; x += 60) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 60) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  const proj = nodes.map(n => ({ ...n, ...project(n.x, n.y, n.z) }));
+
+  // Edges
+  for (const [a, b] of edges) {
+    const na = proj[a], nb = proj[b];
+    const isBridge = na.cluster !== nb.cluster;
+    const alpha = Math.max(0.02, Math.min(0.15, na.s * 0.1));
+    ctx.strokeStyle = isBridge ? `rgba(114,199,166,${alpha * 2})` : `rgba(255,255,255,${alpha})`;
+    ctx.lineWidth = isBridge ? 1 : 0.4;
+    ctx.beginPath(); ctx.moveTo(na.x, na.y); ctx.lineTo(nb.x, nb.y); ctx.stroke();
+  }
+
+  // Data flow particles
+  for (let i = 0; i < 60; i++) {
+    const [a, b] = edges[i % edges.length];
+    const t = (time * 0.6 + i * 0.05) % 1;
+    const px = proj[a].x + (proj[b].x - proj[a].x) * t;
+    const py = proj[a].y + (proj[b].y - proj[a].y) * t;
+    ctx.fillStyle = `rgba(114,199,166,${0.5 * Math.sin(t * Math.PI)})`;
+    ctx.beginPath(); ctx.arc(px, py, 1, 0, TAU); ctx.fill();
+  }
+
+  // Nodes
+  const sorted = [...proj].sort((a, b) => a.z - b.z);
+  for (const n of sorted) {
+    const r = n.r * n.s * 2;
+    const alpha = Math.max(0.2, Math.min(1, n.s * 0.7));
+    const [cr, cg, cb] = n.color;
+
+    if (n.isHub) {
+      const pr = r * (2 + Math.sin(time * 2 + n.pulse) * 0.5);
+      const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, pr * 4);
+      g.addColorStop(0, `rgba(${cr},${cg},${cb},${alpha * 0.25})`);
+      g.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(n.x, n.y, pr * 4, 0, TAU); ctx.fill();
+
+      ctx.strokeStyle = `rgba(${cr},${cg},${cb},${alpha * 0.5})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(n.x, n.y, pr, 0, TAU); ctx.stroke();
+    }
+
+    ctx.fillStyle = `rgba(${cr},${cg},${cb},${alpha})`;
+    ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, TAU); ctx.fill();
+  }
+
+  // Cluster labels
+  const labelPositions = {};
+  for (const n of sorted) {
+    if (n.isHub && !labelPositions[n.cluster]) {
+      labelPositions[n.cluster] = { x: n.x, y: n.y - 18, alpha: Math.max(0.3, n.s * 0.8) };
+    }
+  }
+  ctx.font = '600 11px SF Mono, Fira Code, monospace';
+  ctx.textAlign = 'center';
+  for (const [name, pos] of Object.entries(labelPositions)) {
+    ctx.fillStyle = `rgba(114,199,166,${pos.alpha * 0.6})`;
+    ctx.fillText(name, pos.x, pos.y);
+  }
+
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>

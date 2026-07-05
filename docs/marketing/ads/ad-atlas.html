@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;0,800;1,300&family=Space+Mono:wght@400;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden}
+canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const cv=document.getElementById('c'),cx=cv.getContext('2d');
+let W,H;function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight}rs();addEventListener('resize',rs);
+const TAU=Math.PI*2,DUR=42;
+let t=0,lt=0;
+
+// Ambient audio
+const AC=new(window.AudioContext||window.webkitAudioContext)();
+function pad(f,s,d,v=0.02){const o=AC.createOscillator(),g=AC.createGain(),fl=AC.createBiquadFilter();o.type='sine';o.frequency.value=f;fl.type='lowpass';fl.frequency.value=500;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(v,s+3);g.gain.setValueAtTime(v,s+d-3);g.gain.linearRampToValueAtTime(0,s+d);o.connect(fl);fl.connect(g);g.connect(AC.destination);o.start(s);o.stop(s+d)}
+function chime(f,s,d=2.5,v=0.015){const o=AC.createOscillator(),g=AC.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(v,s);g.gain.exponentialRampToValueAtTime(0.0001,s+d);o.connect(g);g.connect(AC.destination);o.start(s);o.stop(s+d)}
+function boom(s){const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.setValueAtTime(60,s);o.frequency.exponentialRampToValueAtTime(15,s+1);g.gain.setValueAtTime(0.05,s);g.gain.exponentialRampToValueAtTime(0.0001,s+1.5);o.connect(g);g.connect(AC.destination);o.start(s);o.stop(s+2)}
+const now=AC.currentTime;
+pad(82,now,44);pad(123,now+1,43);pad(165,now+2,42);
+boom(now+10);
+chime(392,now+11,3);chime(523,now+11.4,3);chime(659,now+11.8,3);
+chime(784,now+30,3,0.02);chime(987,now+30.4,3,0.02);chime(1174,now+30.8,3,0.02);
+
+// Galaxy
+const nodes=[],edges=[],stars=[];
+const CLS=[[94,234,212],[196,181,253],[125,211,252],[253,211,77],[252,165,165],[167,243,208]];
+for(let ci=0;ci<6;ci++){const ang=ci/6*TAU;for(let i=0;i<30;i++){const isH=i<2;nodes.push({x:Math.cos(ang)*280+(Math.random()-0.5)*220,y:Math.sin(ang)*170+(Math.random()-0.5)*220,z:(Math.random()-0.5)*340,r:isH?9+Math.random()*6:2+Math.random()*4,col:CLS[ci],isH})}}
+for(let i=0;i<320;i++){const a=Math.floor(Math.random()*nodes.length),b=Math.floor(Math.random()*nodes.length);if(a!==b)edges.push([a,b])}
+for(let i=0;i<250;i++)stars.push({x:(Math.random()-0.5)*5000,y:(Math.random()-0.5)*3500,z:(Math.random()-0.5)*3500,b:Math.random(),s:0.2+Math.random()*0.5});
+
+function ease(x){return x<0.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2}
+function cl(x){return Math.max(0,Math.min(1,x))}
+function fi(s,d){return ease(cl((t-s)/d))}
+function fo(s,d){return 1-ease(cl((t-s)/d))}
+function proj(x,y,z,ry,sc=1){
+  const cy=Math.cos(ry),sy=Math.sin(ry);let x1=x*sc*cy-z*sc*sy,z1=x*sc*sy+z*sc*cy;
+  const rx=-0.1,crx=Math.cos(rx),srx=Math.sin(rx),y1=y*sc*crx-z1*srx,z2=y*sc*srx+z1*crx;
+  const fov=1100,s=fov/(fov+z2+700);return{x:x1*s+W/2,y:y1*s+H/2,z:z2,s}
+}
+
+const CMD='claude, refactor the auth module';
+const FILES=['Reading src/auth/login.ts','Reading src/auth/session.ts','Reading src/middleware/auth.ts','Reading src/auth/types.ts','Reading src/utils/crypto.ts','Reading src/api/users.ts','Reading src/services/billing.ts','Reading src/models/user.ts','Reading src/config/auth.ts','Reading src/routes/login.ts','Reading src/routes/register.ts','Reading src/helpers/token.ts'];
+
+function drawGalaxy(gt,ga,sc=1){
+  const bp=ease(cl(gt/6)),nv=Math.floor(bp*nodes.length),ry=gt*0.04;
+  cx.globalAlpha=ga;
+  // Nebulae — larger, more visible
+  for(const[ox,oy,r,g,b,a]of[[0.3,0.35,94,234,212,0.025],[0.7,0.6,196,181,253,0.02],[0.5,0.2,253,211,77,0.012]]){
+    const nb=cx.createRadialGradient(W*ox,H*oy,0,W*ox,H*oy,W*0.4);
+    nb.addColorStop(0,`rgba(${r},${g},${b},${a})`);nb.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=nb;cx.fillRect(0,0,W,H);
+  }
+  // Stars
+  for(const s of stars){const p=proj(s.x,s.y,s.z,ry*0.15,sc);if(p.x<0||p.x>W)continue;cx.fillStyle=`rgba(255,255,255,${s.b*(0.2+Math.sin(t*0.6+s.b*8)*0.12)})`;cx.beginPath();cx.arc(p.x,p.y,s.s*p.s,0,TAU);cx.fill()}
+  // Birth pulse rings
+  if(gt<4){for(let i=0;i<3;i++){const rr=(gt-i*0.3)*200;if(rr<0)continue;cx.strokeStyle=`rgba(94,234,212,${0.15*(1-rr/800)})`;cx.lineWidth=1.5;cx.beginPath();cx.arc(W/2,H/2,rr,0,TAU);cx.stroke()}}
+  // Edges — thicker, more visible connections
+  if(gt>2){const ea=cl((gt-2)/2.5);
+    for(const[a,b]of edges){if(a>=nv||b>=nv)continue;
+      const pa=proj(nodes[a].x,nodes[a].y,nodes[a].z,ry,sc),pb=proj(nodes[b].x,nodes[b].y,nodes[b].z,ry,sc);
+      const depth=(pa.s+pb.s)*0.5;
+      const al=Math.max(0.015,Math.min(0.12,depth*0.06))*ea;
+      cx.strokeStyle=`rgba(94,234,212,${al})`;cx.lineWidth=Math.max(0.3,depth*1.2);
+      // Curved edges
+      const mx=(pa.x+pb.x)/2,my=(pa.y+pb.y)/2,dx=pb.x-pa.x,dy=pb.y-pa.y;
+      cx.beginPath();cx.moveTo(pa.x,pa.y);cx.quadraticCurveTo(mx+dy*0.05,my-dx*0.05,pb.x,pb.y);cx.stroke();
+    }
+    // Flowing particles — energy through the graph
+    for(let i=0;i<90;i++){const ei=i%edges.length;const[a,b]=edges[ei];if(a>=nv||b>=nv)continue;
+      const ph=(t*0.08+i*0.022)%1;
+      const pa=proj(nodes[a].x,nodes[a].y,nodes[a].z,ry,sc),pb=proj(nodes[b].x,nodes[b].y,nodes[b].z,ry,sc);
+      const gl=Math.sin(ph*Math.PI)*0.35*ea*(pa.s+pb.s)*0.5;if(gl<0.015)continue;
+      const[cr,cg,cb]=nodes[a].col;
+      for(let tr=0;tr<4;tr++){
+        const tp=Math.max(0,ph-tr*0.04);
+        const tx=pa.x+(pb.x-pa.x)*tp,ty=pa.y+(pb.y-pa.y)*tp;
+        cx.fillStyle=`rgba(${cr},${cg},${cb},${gl*(1-tr*0.28)})`;
+        cx.beginPath();cx.arc(tx,ty,1.3-tr*0.25,0,TAU);cx.fill();
+      }
+    }
+  }
+  // Nodes — bigger, with clear 3D sphere shading
+  const pr=[];for(let i=0;i<nv;i++){const n=nodes[i],p=proj(n.x,n.y,n.z,ry,sc);pr.push({...n,px:p.x,py:p.y,pz:p.z,ps:p.s})}
+  pr.sort((a,b)=>a.pz-b.pz);
+  for(const n of pr){if(n.px<-60||n.px>W+60)continue;
+    const[cr,cg,cb]=n.col,r=n.r*n.ps*1.6,al=Math.max(0.12,n.ps*1.3);
+    // Hub corona + orbit ring
+    if(n.isH){
+      const pu=1+Math.sin(t*1.1+n.r)*0.1;
+      const g=cx.createRadialGradient(n.px,n.py,r,n.px,n.py,r*8*pu);
+      g.addColorStop(0,`rgba(${cr},${cg},${cb},${al*0.14})`);
+      g.addColorStop(0.3,`rgba(${cr},${cg},${cb},${al*0.04})`);
+      g.addColorStop(1,'rgba(0,0,0,0)');
+      cx.fillStyle=g;cx.beginPath();cx.arc(n.px,n.py,r*8*pu,0,TAU);cx.fill();
+      // Orbit ellipse
+      cx.strokeStyle=`rgba(${cr},${cg},${cb},${al*0.1})`;cx.lineWidth=0.6;cx.setLineDash([4,6]);
+      cx.beginPath();cx.ellipse(n.px,n.py,r*4*pu,r*1.8*pu,t*0.12,0,TAU);cx.stroke();
+      cx.setLineDash([]);
+    }
+    // Sphere
+    const ng=cx.createRadialGradient(n.px-r*0.3,n.py-r*0.35,0,n.px+r*0.1,n.py+r*0.1,r*1.15);
+    ng.addColorStop(0,`rgba(${Math.min(255,cr+100)},${Math.min(255,cg+100)},${Math.min(255,cb+100)},${al})`);
+    ng.addColorStop(0.3,`rgba(${Math.min(255,cr+30)},${Math.min(255,cg+30)},${Math.min(255,cb+30)},${al})`);
+    ng.addColorStop(0.7,`rgba(${cr},${cg},${cb},${al})`);
+    ng.addColorStop(1,`rgba(${Math.max(0,cr-60)},${Math.max(0,cg-60)},${Math.max(0,cb-60)},${al*0.4})`);
+    cx.fillStyle=ng;cx.beginPath();cx.arc(n.px,n.py,r,0,TAU);cx.fill();
+    // Specular
+    if(r>3){cx.fillStyle=`rgba(255,255,255,${al*0.4})`;cx.beginPath();cx.arc(n.px-r*0.3,n.py-r*0.35,r*0.3,0,TAU);cx.fill()}
+    // Rim light
+    if(r>4){cx.strokeStyle=`rgba(${Math.min(255,cr+60)},${Math.min(255,cg+60)},${Math.min(255,cb+60)},${al*0.15})`;cx.lineWidth=0.8;cx.beginPath();cx.arc(n.px,n.py,r+0.5,Math.PI*0.5,Math.PI*1.7);cx.stroke()}
+  }
+  cx.globalAlpha=1;
+}
+
+function txt(text,x,y,font,color,alpha=1){
+  if(alpha<0.005)return;cx.globalAlpha=alpha;cx.font=font;cx.fillStyle=color;cx.textAlign='center';cx.fillText(text,x,y);cx.textAlign='left';cx.globalAlpha=1;
+}
+
+function draw(ts){
+  if(!lt)lt=ts;t+=(ts-lt)/1000;lt=ts;if(t>DUR)t=0;
+  cx.fillStyle='#000';cx.fillRect(0,0,W,H);
+  const cw=W/2,ch=H/2;
+
+  // ════════════════════════════════════════════
+  // ACT 1: THE TERMINAL (0-10s)
+  // The opening you liked — real, tangible, relatable
+  // ════════════════════════════════════════════
+  if(t<12){
+    const a1=t<10?1:fo(10,2);
+
+    // Terminal window — centered, elegant
+    const tw=Math.min(1200,W*0.65),th=500;
+    const tx=cw-tw/2,ty=ch-th/2-20;
+
+    cx.globalAlpha=a1;
+    cx.fillStyle='#0d1117';
+    cx.beginPath();cx.roundRect(tx,ty,tw,th,14);cx.fill();
+    cx.strokeStyle='#1c2128';cx.lineWidth=1;cx.stroke();
+
+    // Window dots
+    for(const[i,c]of['#ff5f56','#ffbd2e','#27c93f'].entries()){
+      cx.fillStyle=c;cx.beginPath();cx.arc(tx+20+i*18,ty+18,5,0,TAU);cx.fill();
+    }
+
+    // Typing command
+    cx.font='500 18px "Space Mono"';
+    const chars=Math.min(CMD.length,Math.floor(t*14));
+    cx.fillStyle='#e6edf3';cx.fillText('$ '+CMD.substring(0,chars),tx+18,ty+55);
+
+    // Cursor blink
+    if(Math.sin(t*6)>0&&chars<=CMD.length){
+      const cxPos=tx+18+cx.measureText('$ '+CMD.substring(0,chars)).width+2;
+      cx.fillStyle='#5eead4';cx.fillRect(cxPos,ty+38,10,20);
+    }
+
+    // Files scrolling — fast, overwhelming
+    if(t>2.5){
+      cx.font='400 14px "Space Mono"';
+      const shown=Math.min(FILES.length,Math.floor((t-2.5)*2.5));
+      for(let i=0;i<shown;i++){
+        const fy=ty+85+i*26;if(fy>ty+th-60)continue;
+        cx.fillStyle='#6b7280';cx.fillText('  '+FILES[i]+'...',tx+18,fy);
+        // Token count in red, right-aligned
+        const tokens=Math.floor(1000+Math.random()*3000);
+        cx.fillStyle='#fca5a5';cx.textAlign='right';
+        cx.fillText(tokens.toLocaleString()+' tokens',tx+tw-18,fy);cx.textAlign='left';
+      }
+    }
+
+    // Context bar — fills dangerously
+    if(t>4){
+      const prog=cl((t-4)/4);
+      const barY=ty+th-40,barH=20,barW=tw-36;
+      cx.fillStyle='#1c2128';cx.beginPath();cx.roundRect(tx+18,barY,barW,barH,5);cx.fill();
+      cx.fillStyle=prog>0.75?'#fca5a5':'#d97706';
+      cx.beginPath();cx.roundRect(tx+18,barY,barW*prog,barH,5);cx.fill();
+      cx.fillStyle='#e6edf3';cx.font='700 11px "Space Mono"';cx.textAlign='center';
+      cx.fillText('CONTEXT  '+Math.floor(prog*94)+'%',cw,barY+14);cx.textAlign='left';
+    }
+
+    // The devastating answer — appears late, in gray, italic
+    if(t>8){
+      const va=fi(8,1)*a1;
+      cx.globalAlpha=va;cx.font='italic 300 16px "DM Sans"';cx.fillStyle='#4a5568';cx.textAlign='center';
+      cx.fillText('"The auth system appears to use some kind of session-based approach..."',cw,ty+th+50);
+      cx.textAlign='left';
+    }
+
+    cx.globalAlpha=1;
+  }
+
+  // ════════════════════════════════════════════
+  // ACT 2: THE SILENCE (10-13s)
+  // Pure black. One question. Let it breathe.
+  // ════════════════════════════════════════════
+  if(t>=10&&t<14.5){
+    const qa=Math.min(fi(11,1.2),fo(13.5,1));
+    txt('What if it already knew?',cw,ch,'300 48px "DM Sans"','#f1f5f9',qa);
+  }
+
+  // ════════════════════════════════════════════
+  // ACT 3: THE UNIVERSE (13-30s)
+  // Galaxy builds BIG. Connections visible. Breathing room.
+  // ════════════════════════════════════════════
+  if(t>=13&&t<32){
+    const gt=t-13;
+    const ga=Math.min(fi(13,2.5),t<30?1:fo(30,2));
+    drawGalaxy(gt,ga,1.15);
+
+    // One stat at a time — huge, centered, with breathing room
+
+    // Stat 1: The compression (gt 7-11)
+    if(gt>7&&gt<11){
+      const sa=Math.min(fi(20,1),fo(23.5,0.8))*ga;
+      txt('218 : 1',cw,ch-10,'800 90px "Space Mono"','#5eead4',sa);
+      txt('compression',cw,ch+40,'300 20px "DM Sans"','#6b7280',sa*0.7);
+    }
+
+    // Stat 2: The time (gt 11-15)
+    if(gt>11&&gt<15){
+      const sa=Math.min(fi(24,1),fo(27.5,0.8))*ga;
+      txt('0.6 seconds',cw,ch-10,'800 80px "Space Mono"','#f1f5f9',sa);
+      txt('to understand 924 files',cw,ch+40,'300 20px "DM Sans"','#6b7280',sa*0.7);
+    }
+
+    // Stat 3: The cost (gt 15-19)
+    if(gt>15&&gt<19){
+      const sa=Math.min(fi(28,1),fo(31.5,0.8))*ga;
+      txt('$0.03',cw,ch-20,'800 100px "Space Mono"','#c4b5fd',sa);
+      txt('not $7.08',cw,ch+35,'500 22px "DM Sans"','#fca5a5',sa*0.7);
+    }
+  }
+
+  // ════════════════════════════════════════════
+  // ACT 4: THE NAME (30-42s)
+  // Clean. Premium. Apple keynote energy.
+  // ════════════════════════════════════════════
+  if(t>=29){
+    const na=fi(30,2);
+    const cmdA=fi(33,1);
+    const tagA=fi(35,0.8);
+    const closeA=fi(37,0.8);
+
+    // Subtle ambient glow
+    const ag=cx.createRadialGradient(cw,ch-30,0,cw,ch-30,W*0.3);
+    ag.addColorStop(0,`rgba(94,234,212,${0.015*na})`);ag.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=ag;cx.fillRect(0,0,W,H);
+
+    // Orbital ring of dots
+    for(let i=0;i<20;i++){
+      const ang=i/20*TAU+t*0.15;const d=220+Math.sin(t*0.3+i)*20;
+      cx.fillStyle=`rgba(94,234,212,${0.05*na})`;
+      cx.beginPath();cx.arc(cw+Math.cos(ang)*d,ch-20+Math.sin(ang)*d*0.3,1,0,TAU);cx.fill();
+    }
+
+    // The name
+    txt('Atlas',cw,ch-80,'800 82px "DM Sans"','#f1f5f9',na);
+    txt('for codebases',cw,ch-35,'300 26px "DM Sans"','#6b7280',na*0.8);
+
+    // The command
+    const pulse=1+Math.sin(t*2)*0.01;
+    cx.save();cx.translate(cw,ch+30);cx.scale(pulse,pulse);
+    txt('npx shibanshu-markdown-mcp',0,0,'500 26px "Space Mono"','#5eead4',cmdA);
+    cx.restore();
+
+    // Tags
+    txt('19 tools  ·  auto-updating  ·  open source',cw,ch+80,'400 15px "DM Sans"','#374151',tagA);
+
+    // The closing line
+    txt('Maximum output. Minimum tokens.',cw,ch+130,'500 20px "DM Sans"','#5eead4',closeA*0.6);
+
+    // Very bottom — small
+    if(t>39){
+      const endA=fi(39,1);
+      txt('github.com/jhashibanshu-Code/markdown-viewer-mac',cw,H-40,'400 12px "Space Mono"','#1f2937',endA);
+    }
+  }
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+document.addEventListener('click',()=>{if(AC.state==='suspended')AC.resume()},{once:true});
+</script>
+</body>
+</html>

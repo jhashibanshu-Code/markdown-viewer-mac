@@ -19,10 +19,11 @@ await mkdir(vaultDir, { recursive: true });
 await createStressVault(vaultDir, totals);
 
 runChecked('validate syntax', [process.execPath, ['scripts/validate-syntax.mjs']]);
+runChecked('MCP safety', [process.execPath, ['scripts/mcp-safety-check.mjs']]);
 
 const contextResult = runChecked('context export', [
   process.execPath,
-  ['scripts/export-claude-map.mjs', vaultDir, '--out', contextDir, '--max-files', '900', '--max-bytes', '160000']
+  ['scripts/export-claude-map.mjs', vaultDir, '--out', contextDir, '--profile', 'audit', '--max-files', '900', '--max-bytes', '160000']
 ]);
 
 if (!contextResult.stdout.includes('Claude navigation guide written')) {
@@ -34,9 +35,16 @@ await access(path.join(contextDir, 'claude-context-mind-map.md'));
 await access(path.join(contextDir, 'claude-context-graph.json'));
 await access(path.join(contextDir, 'claude-context-scene.json'));
 await access(path.join(contextDir, 'llm-context-chunks.jsonl'));
+await access(path.join(contextDir, 'context-integrity.json'));
 
 const graph = JSON.parse(await readFile(path.join(contextDir, 'claude-context-graph.json'), 'utf8'));
+assert(graph.schemaVersion === 'shibanshu.context.v1', 'expected graph schema version');
+assert(graph.profile === 'audit', 'expected selected context export profile in graph JSON');
+assert(typeof graph.fingerprint === 'string' && graph.fingerprint.length >= 16, 'expected context export fingerprint');
+assert(graph.routeValidation?.ok === true, 'expected graph route validation to pass');
 assert(graph.nodes.length >= totals.markdownFiles + totals.codeFiles - 2, `expected most files to be indexed, got ${graph.nodes.length}`);
+assert(graph.nodes.every((node) => node.id && node.startLine === 1 && node.endLine >= node.startLine), 'expected stable node IDs and line ranges');
+assert(graph.edges.every((edge) => edge.id && edge.source && edge.target), 'expected stable edge IDs');
 assert(graph.navigation?.clusters?.length >= 3, 'expected clustered navigation data');
 assert(graph.navigation?.routes?.length >= 2, 'expected LLM navigation routes');
 assert(Array.isArray(graph.navigation?.orphans), 'expected orphan analysis');
@@ -54,15 +62,24 @@ assert(
 );
 assert(graph.chunks?.path === 'llm-context-chunks.jsonl' && graph.chunks.count > 0, 'expected chunk metadata in graph JSON');
 const sceneGraph = JSON.parse(await readFile(path.join(contextDir, 'claude-context-scene.json'), 'utf8'));
+assert(sceneGraph.schemaVersion === 'shibanshu.context.v1', 'expected scene schema version');
 assert(sceneGraph.profile === '3d-scene', 'expected scene export profile');
-assert(Array.isArray(sceneGraph.nodes) && sceneGraph.nodes.length <= 280, 'scene export should cap projected node count');
-assert(Array.isArray(sceneGraph.edges) && sceneGraph.edges.length <= 540, 'scene export should cap projected edge count');
+assert(sceneGraph.exportProfile === 'audit', 'expected scene to retain selected export profile');
+assert(Array.isArray(sceneGraph.nodes) && sceneGraph.nodes.length <= graph.limits.sceneNodeLimit, 'scene export should cap projected node count');
+assert(Array.isArray(sceneGraph.edges) && sceneGraph.edges.length <= graph.limits.sceneEdgeLimit, 'scene export should cap projected edge count');
 assert(typeof sceneGraph.fingerprint === 'string' && sceneGraph.fingerprint.length >= 8, 'scene export should include deterministic fingerprint');
 assert(Array.isArray(sceneGraph.readingOrder) && sceneGraph.readingOrder.length, 'scene export should include reading order');
 
 const firstChunk = JSON.parse((await readFile(path.join(contextDir, 'llm-context-chunks.jsonl'), 'utf8')).trim().split('\n')[0]);
+assert(firstChunk.schemaVersion === 'shibanshu.context.v1' && firstChunk.profile === 'audit', 'expected chunk schema/profile metadata');
 assert(firstChunk.id && firstChunk.path && firstChunk.startLine >= 1 && firstChunk.endLine >= firstChunk.startLine, 'expected stable chunk metadata');
 assert(typeof firstChunk.tokenEstimate === 'number' && firstChunk.tokenEstimate > 0, 'expected chunk token estimate');
+
+const integrity = JSON.parse(await readFile(path.join(contextDir, 'context-integrity.json'), 'utf8'));
+assert(integrity.schemaVersion === 'shibanshu.context.v1', 'expected integrity schema version');
+assert(integrity.profile === 'audit' && integrity.fingerprint === graph.fingerprint, 'expected integrity profile/fingerprint to match graph');
+assert(integrity.routeValidation?.ok === true, 'expected route validation in integrity output');
+assert(integrity.artifacts?.some((artifact) => artifact.file === 'claude-context-graph.json' && artifact.sha256?.length === 64), 'expected graph checksum in integrity output');
 
 const navigation = await readFile(path.join(contextDir, 'claude-context-navigation.md'), 'utf8');
 for (const phrase of ['Orientation Route', 'Cluster Index', 'Risk And Cleanup Route', 'Shibanshu Markdown Viewer', 'Code Import And Test Coverage Map', 'Symbol Index', 'Edge Kinds']) {

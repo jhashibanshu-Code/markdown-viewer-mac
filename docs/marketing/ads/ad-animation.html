@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Ad Animation — 30s Loop</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;width:1920px;height:1080px}
+canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+const cv=document.getElementById('c'),cx=cv.getContext('2d'),W=1920,H=1080;
+const TEAL='#5eead4',PURPLE='#c4b5fd',BLUE='#7dd3fc',GOLD='#fcd34d',RED='#ff6b6b';
+const DURATION=30;
+let t=0,lastTs=0;
+
+// Terminal text
+const CMD='claude, explain the auth architecture';
+const FILES=[
+  'Reading src/auth/login.ts.............. 3,200 tokens',
+  'Reading src/auth/session.ts............ 2,800 tokens',
+  'Reading src/middleware/auth.ts......... 2,100 tokens',
+  'Reading src/auth/types.ts.............. 1,400 tokens',
+  'Reading src/utils/crypto.ts............ 1,800 tokens',
+  'Reading src/api/users.ts............... 3,400 tokens',
+  'Reading src/api/payments.ts............ 2,900 tokens',
+  'Reading src/services/billing.ts........ 4,100 tokens',
+  'Reading src/models/user.ts............. 1,200 tokens',
+  'Reading src/models/session.ts.......... 980 tokens',
+  'Reading src/config/auth.ts............. 640 tokens',
+  'Reading src/routes/login.ts............ 1,700 tokens',
+  'Reading src/routes/register.ts......... 2,300 tokens',
+  'Reading src/helpers/token.ts........... 890 tokens',
+  'Reading src/helpers/hash.ts............ 560 tokens',
+];
+const VAGUE='"The auth system appears to use some kind of session-based..."';
+
+// Galaxy nodes
+const TAU=Math.PI*2;
+const nodes=[];
+const edges=[];
+const clusters=[
+  {name:'auth',col:[94,234,212],count:35},
+  {name:'api',col:[196,181,253],count:28},
+  {name:'services',col:[125,211,252],count:22},
+  {name:'models',col:[253,211,77],count:18},
+  {name:'utils',col:[252,165,165],count:15},
+  {name:'config',col:[167,243,208],count:10},
+];
+
+for(const cl of clusters){
+  const ci=clusters.indexOf(cl);
+  const angle=ci/clusters.length*TAU;
+  const dist=220;
+  for(let i=0;i<cl.count;i++){
+    const isHub=i<2;
+    nodes.push({
+      x:Math.cos(angle)*dist+(Math.random()-0.5)*180,
+      y:Math.sin(angle)*dist*0.55+(Math.random()-0.5)*180,
+      z:(Math.random()-0.5)*300,
+      r:isHub?8+Math.random()*6:2+Math.random()*4,
+      col:cl.col,isHub,cluster:cl.name,
+      label:isHub?(i===0?cl.name+'/index.ts':cl.name+'/types.ts'):null,
+      hubLabel:null,
+    });
+  }
+}
+// Assign hub labels
+const hubLabels=['login.ts (12 deps)','middleware.ts (bridge)','types.ts (hub)','billing.ts (14 deps)','dead code'];
+let hi=0;
+for(const n of nodes){if(n.isHub&&hi<hubLabels.length){n.hubLabel=hubLabels[hi++]}}
+
+// Edges
+for(let i=0;i<250;i++){
+  const a=Math.floor(Math.random()*nodes.length);
+  let b;
+  if(Math.random()<0.7){
+    const same=nodes.filter((n,j)=>n.cluster===nodes[a].cluster&&j!==a);
+    if(!same.length)continue;
+    b=nodes.indexOf(same[Math.floor(Math.random()*same.length)]);
+  }else{
+    b=Math.floor(Math.random()*nodes.length);
+  }
+  if(a!==b)edges.push([a,b]);
+}
+
+// Stars
+const stars=[];
+for(let i=0;i<200;i++)stars.push({x:(Math.random()-0.5)*3000,y:(Math.random()-0.5)*2000,z:(Math.random()-0.5)*2000,b:Math.random()});
+
+function ease(x){return x<0.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2}
+function lerp(a,b,t){return a+(b-a)*t}
+function clamp01(x){return Math.max(0,Math.min(1,x))}
+function fadeIn(t,start,dur){return clamp01((t-start)/dur)}
+function fadeOut(t,start,dur){return 1-clamp01((t-start)/dur)}
+
+function proj3d(x,y,z,rotY){
+  const cy=Math.cos(rotY),sy=Math.sin(rotY);
+  const x1=x*cy-z*sy,z1=x*sy+z*cy;
+  const fov=900,s=fov/(fov+z1+500);
+  return{x:x1*s+W/2,y:y*s+H/2,z:z1,s};
+}
+
+function draw(timestamp){
+  if(!lastTs)lastTs=timestamp;
+  const dt=(timestamp-lastTs)/1000;
+  lastTs=timestamp;
+  t+=dt;
+  if(t>DURATION)t=0;
+
+  cx.fillStyle='#000';
+  cx.fillRect(0,0,W,H);
+
+  // SCENE 1: Terminal (0-8s)
+  if(t<10){
+    const termAlpha=t<8?1:fadeOut(t,8,2);
+    cx.globalAlpha=termAlpha;
+
+    // Terminal background
+    cx.fillStyle='#0d1117';
+    const tx=260,ty=180,tw=1400,th=720;
+    cx.beginPath();
+    cx.roundRect(tx,ty,tw,th,16);
+    cx.fill();
+    cx.strokeStyle='#303844';
+    cx.lineWidth=1;
+    cx.stroke();
+
+    // Terminal dots
+    cx.fillStyle='#ff5f56';cx.beginPath();cx.arc(tx+24,ty+20,6,0,TAU);cx.fill();
+    cx.fillStyle='#ffbd2e';cx.beginPath();cx.arc(tx+44,ty+20,6,0,TAU);cx.fill();
+    cx.fillStyle='#27c93f';cx.beginPath();cx.arc(tx+64,ty+20,6,0,TAU);cx.fill();
+
+    // Command typing
+    cx.font='600 20px "SF Mono", "Fira Code", "Courier New", monospace';
+    const charsShown=Math.min(CMD.length,Math.floor(t*18));
+    const cmdText='$ '+CMD.substring(0,charsShown);
+    cx.fillStyle='#e6edf3';
+    cx.fillText(cmdText,tx+20,ty+65);
+
+    // Blinking cursor
+    if(Math.sin(t*6)>0&&charsShown<=CMD.length){
+      const cursorX=tx+20+cx.measureText(cmdText).width+2;
+      cx.fillStyle=TEAL;
+      cx.fillRect(cursorX,ty+47,12,22);
+    }
+
+    // File scroll
+    if(t>2.2){
+      cx.font='400 16px "SF Mono", monospace';
+      const scrollSpeed=3;
+      const filesShown=Math.min(FILES.length,Math.floor((t-2.2)*scrollSpeed));
+      for(let i=0;i<filesShown;i++){
+        const fy=ty+100+i*28;
+        if(fy>ty+th-80)continue;
+        cx.fillStyle='#8b949e';
+        cx.fillText(FILES[i],tx+20,fy);
+      }
+
+      // Red context bar
+      if(t>3){
+        const barProgress=clamp01((t-3)/4);
+        const barW=tw-40;
+        const barH=24;
+        const barY=ty+th-50;
+        cx.fillStyle='#1c2128';
+        cx.beginPath();cx.roundRect(tx+20,barY,barW,barH,6);cx.fill();
+        cx.fillStyle=barProgress>0.8?RED:'#d29922';
+        cx.beginPath();cx.roundRect(tx+20,barY,barW*barProgress,barH,6);cx.fill();
+        cx.fillStyle='#e6edf3';
+        cx.font='700 13px "SF Mono", monospace';
+        cx.fillText('CONTEXT: '+Math.floor(barProgress*97)+'%',tx+barW/2-60,barY+17);
+      }
+
+      // Vague answer
+      if(t>6.5){
+        const vagueAlpha=fadeIn(t,6.5,0.8);
+        cx.globalAlpha=vagueAlpha*termAlpha;
+        cx.font='italic 18px -apple-system, sans-serif';
+        cx.fillStyle='#6b7280';
+        cx.fillText(VAGUE,tx+20,ty+th-90);
+        cx.globalAlpha=termAlpha;
+      }
+    }
+    cx.globalAlpha=1;
+  }
+
+  // SCENE 2: "or" (8-10s)
+  if(t>=8&&t<10.5){
+    const orAlpha=Math.min(fadeIn(t,8.5,0.5),fadeOut(t,9.8,0.5));
+    cx.globalAlpha=orAlpha;
+    cx.font='300 72px -apple-system, sans-serif';
+    cx.fillStyle='#4a5568';
+    cx.textAlign='center';
+    cx.fillText('or',W/2,H/2+20);
+    cx.textAlign='left';
+    cx.globalAlpha=1;
+  }
+
+  // SCENE 3: Galaxy builds (10-22s)
+  if(t>=10&&t<28){
+    const galaxyT=t-10;
+    const galaxyAlpha=Math.min(fadeIn(t,10,1.5),t<26?1:fadeOut(t,26,2));
+    const buildProgress=clamp01(galaxyT/4); // nodes appear over 4 seconds
+    const nodesVisible=Math.floor(buildProgress*nodes.length);
+    const rotY=galaxyT*0.08;
+
+    cx.globalAlpha=galaxyAlpha;
+
+    // Nebula background
+    const nb=cx.createRadialGradient(W*0.35,H*0.4,0,W*0.35,H*0.4,W*0.4);
+    nb.addColorStop(0,'rgba(94,234,212,0.025)');nb.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=nb;cx.fillRect(0,0,W,H);
+    const nb2=cx.createRadialGradient(W*0.65,H*0.6,0,W*0.65,H*0.6,W*0.3);
+    nb2.addColorStop(0,'rgba(196,181,253,0.02)');nb2.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=nb2;cx.fillRect(0,0,W,H);
+
+    // Stars
+    for(const s of stars){
+      const p=proj3d(s.x,s.y,s.z,rotY*0.3);
+      if(p.x<0||p.x>W)continue;
+      cx.fillStyle=`rgba(255,255,255,${s.b*(0.3+Math.sin(t+s.b*12)*0.2)})`;
+      cx.beginPath();cx.arc(p.x,p.y,0.5*p.s,0,TAU);cx.fill();
+    }
+
+    // Edges
+    if(galaxyT>1.5){
+      const edgeAlpha=clamp01((galaxyT-1.5)/2);
+      for(const[a,b]of edges){
+        if(a>=nodesVisible||b>=nodesVisible)continue;
+        const pa=proj3d(nodes[a].x,nodes[a].y,nodes[a].z,rotY);
+        const pb=proj3d(nodes[b].x,nodes[b].y,nodes[b].z,rotY);
+        const isBridge=nodes[a].cluster!==nodes[b].cluster;
+        const al=Math.max(0.01,Math.min(isBridge?0.15:0.08,(pa.s+pb.s)*0.06))*edgeAlpha;
+        cx.strokeStyle=isBridge?`rgba(94,234,212,${al})`:`rgba(255,255,255,${al*0.5})`;
+        cx.lineWidth=isBridge?1:0.4;
+        cx.beginPath();cx.moveTo(pa.x,pa.y);cx.lineTo(pb.x,pb.y);cx.stroke();
+      }
+
+      // Particles
+      for(let i=0;i<60;i++){
+        const ei=i%edges.length;
+        const[a,b]=edges[ei];
+        if(a>=nodesVisible||b>=nodesVisible)continue;
+        const ph=(t*0.15+i*0.03)%1;
+        const pa=proj3d(nodes[a].x,nodes[a].y,nodes[a].z,rotY);
+        const pb=proj3d(nodes[b].x,nodes[b].y,nodes[b].z,rotY);
+        const px=pa.x+(pb.x-pa.x)*ph,py=pa.y+(pb.y-pa.y)*ph;
+        const gl=Math.sin(ph*Math.PI)*0.4*edgeAlpha;
+        if(gl<0.02)continue;
+        const[cr,cg,cb]=nodes[a].col;
+        cx.fillStyle=`rgba(${cr},${cg},${cb},${gl})`;
+        cx.beginPath();cx.arc(px,py,1.2,0,TAU);cx.fill();
+      }
+    }
+
+    // Nodes
+    const projected=[];
+    for(let i=0;i<nodesVisible;i++){
+      const n=nodes[i];
+      const p=proj3d(n.x,n.y,n.z,rotY);
+      projected.push({...n,i,px:p.x,py:p.y,pz:p.z,ps:p.s});
+    }
+    projected.sort((a,b)=>a.pz-b.pz);
+
+    for(const n of projected){
+      if(n.px<-50||n.px>W+50||n.py<-50||n.py>H+50)continue;
+      const[cr,cg,cb]=n.col;
+      const r=n.r*n.ps*1.5;
+      const al=Math.max(0.2,Math.min(1,n.ps*1.2));
+
+      // Hub glow
+      if(n.isHub){
+        const pulse=1+Math.sin(t*1.5+n.r)*0.15;
+        const g=cx.createRadialGradient(n.px,n.py,r*0.5,n.px,n.py,r*6*pulse);
+        g.addColorStop(0,`rgba(${cr},${cg},${cb},${al*0.15})`);
+        g.addColorStop(0.4,`rgba(${cr},${cg},${cb},${al*0.04})`);
+        g.addColorStop(1,'rgba(0,0,0,0)');
+        cx.fillStyle=g;
+        cx.beginPath();cx.arc(n.px,n.py,r*6*pulse,0,TAU);cx.fill();
+        cx.strokeStyle=`rgba(${cr},${cg},${cb},${al*0.2})`;
+        cx.lineWidth=0.6;
+        cx.beginPath();cx.arc(n.px,n.py,r*2.5*pulse,0,TAU);cx.stroke();
+      }
+
+      // Node sphere
+      const ng=cx.createRadialGradient(n.px-r*0.3,n.py-r*0.3,r*0.05,n.px,n.py,r*1.1);
+      ng.addColorStop(0,`rgba(${Math.min(255,cr+80)},${Math.min(255,cg+80)},${Math.min(255,cb+80)},${al})`);
+      ng.addColorStop(0.5,`rgba(${cr},${cg},${cb},${al})`);
+      ng.addColorStop(1,`rgba(${Math.max(0,cr-50)},${Math.max(0,cg-50)},${Math.max(0,cb-50)},${al*0.5})`);
+      cx.fillStyle=ng;
+      cx.beginPath();cx.arc(n.px,n.py,r,0,TAU);cx.fill();
+
+      // Specular
+      if(r>3){
+        cx.fillStyle=`rgba(255,255,255,${al*0.3})`;
+        cx.beginPath();cx.arc(n.px-r*0.25,n.py-r*0.3,r*0.3,0,TAU);cx.fill();
+      }
+
+      // Hub labels (appear after 5s of galaxy)
+      if(n.hubLabel&&galaxyT>5){
+        const lblAlpha=fadeIn(galaxyT,5+n.i*0.3,0.8)*al;
+        cx.font='600 14px "SF Mono", monospace';
+        const tw=cx.measureText(n.hubLabel).width;
+        cx.fillStyle=`rgba(0,0,0,${lblAlpha*0.85})`;
+        cx.fillRect(n.px+r+6,n.py-10,tw+12,22);
+        cx.strokeStyle=`rgba(${cr},${cg},${cb},${lblAlpha*0.3})`;
+        cx.lineWidth=0.5;
+        cx.strokeRect(n.px+r+6,n.py-10,tw+12,22);
+        const isRed=n.hubLabel.includes('dead');
+        cx.fillStyle=isRed?`rgba(252,165,165,${lblAlpha})`:`rgba(230,237,243,${lblAlpha})`;
+        cx.fillText(n.hubLabel,n.px+r+12,n.py+5);
+      }
+    }
+
+    // Green context bar (appears at 6s into galaxy)
+    if(galaxyT>6&&galaxyT<14){
+      const barAlpha=Math.min(fadeIn(galaxyT,6,1),fadeOut(galaxyT,12,2));
+      cx.globalAlpha=barAlpha*galaxyAlpha;
+      const barW=300,barH=28,barX=W-barW-60,barY=H-80;
+      cx.fillStyle='#1c2128';
+      cx.beginPath();cx.roundRect(barX,barY,barW,barH,8);cx.fill();
+      cx.fillStyle='#22c55e';
+      cx.beginPath();cx.roundRect(barX,barY,barW*0.054,barH,8);cx.fill();
+      cx.fillStyle='#e6edf3';
+      cx.font='700 13px "SF Mono", monospace';
+      cx.fillText('CONTEXT: 5.4%',barX+barW/2-55,barY+19);
+      cx.globalAlpha=galaxyAlpha;
+    }
+
+    cx.globalAlpha=1;
+  }
+
+  // SCENE 4: CTA text (22-28s)
+  if(t>=21&&t<28.5){
+    const ctaAlpha=Math.min(fadeIn(t,21.5,1),fadeOut(t,27,1.5));
+    cx.globalAlpha=ctaAlpha;
+
+    cx.font='800 68px -apple-system, "Helvetica Neue", sans-serif';
+    cx.textAlign='center';
+    cx.fillStyle='#ffffff';
+    cx.fillText('Give Claude a map.',W/2,H/2-20);
+
+    cx.font='500 28px "SF Mono", "Fira Code", monospace';
+    cx.fillStyle=TEAL;
+    cx.fillText('npx shibanshu-markdown-mcp',W/2,H/2+50);
+
+    cx.font='400 18px -apple-system, sans-serif';
+    cx.fillStyle='#4a5568';
+    cx.fillText('19 tools  ·  218:1 compression  ·  open source',W/2,H/2+95);
+
+    cx.textAlign='left';
+    cx.globalAlpha=1;
+  }
+
+  // SCENE 5: Final pulse (28-30s)
+  if(t>=28){
+    const finalAlpha=fadeIn(t,28,0.5);
+    cx.globalAlpha=finalAlpha;
+
+    cx.font='500 28px "SF Mono", monospace';
+    cx.textAlign='center';
+    const pulse=1+Math.sin(t*4)*0.05;
+    cx.fillStyle=TEAL;
+    cx.save();
+    cx.translate(W/2,H/2);
+    cx.scale(pulse,pulse);
+    cx.fillText('npx shibanshu-markdown-mcp',0,0);
+    cx.restore();
+    cx.textAlign='left';
+    cx.globalAlpha=1;
+  }
+
+  requestAnimationFrame(draw);
+}
+
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

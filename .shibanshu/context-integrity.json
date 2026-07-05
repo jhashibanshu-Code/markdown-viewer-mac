@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "shibanshu.context.v1",
+  "exporterVersion": "0.2.0",
+  "generatedAt": "2026-07-05T16:49:22.064Z",
+  "profile": "analysis",
+  "profileLabel": "Analysis",
+  "fingerprint": "2eb2e578c15b3dd8c9988589",
+  "root": "/Users/shibanshujha/Documents/markdown-viewer-mac",
+  "counts": {
+    "files": 175,
+    "markdown": 20,
+    "code": 155,
+    "edges": 4,
+    "unresolved": 2,
+    "clusters": 9,
+    "routes": 5
+  },
+  "limits": {
+    "maxFiles": 5000,
+    "maxBytes": 768000,
+    "maxDepth": 24,
+    "chunkTokens": 900,
+    "sceneNodeLimit": 280,
+    "sceneEdgeLimit": 540,
+    "includeCode": true
+  },
+  "routeValidation": {
+    "ok": true,
+    "routeCount": 5,
+    "documentRefs": 92,
+    "missingCount": 0,
+    "missing": []
+  },
+  "artifacts": [
+    {
+      "key": "contextMap",
+      "file": "claude-context-map.md",
+      "bytes": 145417,
+      "lines": 2392,
+      "sha256": "48f0f7b012eee85af1af3363cbdd22fd951138844d7cfc28a3e6d33daae4c33e"
+    },
+    {
+      "key": "mindMap",
+      "file": "claude-context-mind-map.md",
+      "bytes": 8360,
+      "lines": 251,
+      "sha256": "ce19ba6d2b66e12d5758839ba3f8483c18c697b1a81bc7c3d2d6fc6b08344d89"
+    },
+    {
+      "key": "navigation",
+      "file": "claude-context-navigation.md",
+      "bytes": 25870,
+      "lines": 373,
+      "sha256": "d8b8adbcf126b1d76f3b9562b0376500b3ceac832a499acb7a9ce8f63e6f8890"
+    },
+    {
+      "key": "chunks",
+      "file": "llm-context-chunks.jsonl",
+      "bytes": 6223918,
+      "lines": 854,
+      "sha256": "21ad385621fb3efa0f1fbb935e131f0397d46d34e7fe8005eefea70aca909ffa"
+    },
+    {
+      "key": "graph",
+      "file": "claude-context-graph.json",
+      "bytes": 331484,
+      "lines": 14241,
+      "sha256": "20e7a805f419b85d742ca23bf1ea4d7fee3d2c78e7876443ad035d37bece5544"
+    },
+    {
+      "key": "scene",
+      "file": "claude-context-scene.json",
+      "bytes": 283223,
+      "lines": 11816,
+      "sha256": "2b929e86bc49e585322bffbc003e278f16775edb2a63ec4172a7924041aec744"
+    }
+  ],
+  "warnings": [
+    "2 unresolved links were found."
+  ]
+}

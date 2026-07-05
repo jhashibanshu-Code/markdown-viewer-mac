@@ -19,16 +19,16 @@ const ignoredVaultDirectories = new Set([
   '.cache',
   '.obsidian-trash'
 ]);
-const MAX_MARKDOWN_BYTES = 25 * 1024 * 1024;
+const MAX_MARKDOWN_BYTES = 100 * 1024 * 1024;
 const MAX_EXPORT_HTML_BYTES = 40 * 1024 * 1024;
 const MAX_TEXT_EXPORT_BYTES = 12 * 1024 * 1024;
 const MAX_AUTOSAVE_BYTES = 18 * 1024 * 1024;
 const MAX_AUTOSAVE_DOCUMENTS = 80;
 const MAX_HISTORY_SNAPSHOT_BYTES = 6 * 1024 * 1024;
 const MAX_HISTORY_SNAPSHOTS_PER_FILE = 40;
-const MAX_PUBLISH_FILES = 750;
-const MAX_PUBLISH_TOTAL_BYTES = 120 * 1024 * 1024;
-const MAX_VAULT_FILES = 750;
+const MAX_PUBLISH_FILES = 3000;
+const MAX_PUBLISH_TOTAL_BYTES = 300 * 1024 * 1024;
+const MAX_VAULT_FILES = 5000;
 const MAX_VAULT_DEPTH = 16;
 const MAX_RECENT_ITEMS = 24;
 const MAX_RECENT_STORE_BYTES = 128 * 1024;
@@ -140,15 +140,15 @@ function createMenu() {
     {
       label: 'File',
       submenu: [
-        { label: 'New Document', accelerator: 'CmdOrCtrl+N', click: () => sendMenuCommand('new') },
-        { label: 'Open...', accelerator: 'CmdOrCtrl+O', click: () => sendMenuCommand('open') },
+        { label: 'New Note', accelerator: 'CmdOrCtrl+N', click: () => sendMenuCommand('new') },
+        { label: 'Open File...', accelerator: 'CmdOrCtrl+O', click: () => sendMenuCommand('open') },
         { label: 'Open Folder...', accelerator: 'Shift+CmdOrCtrl+O', click: () => sendMenuCommand('open-vault') },
-        { label: 'Command Palette...', accelerator: 'CmdOrCtrl+K', click: () => sendMenuCommand('command-palette') },
+        { label: 'Commands...', accelerator: 'CmdOrCtrl+K', click: () => sendMenuCommand('command-palette') },
         { label: 'Quick Open...', accelerator: 'CmdOrCtrl+P', click: () => sendMenuCommand('quick-open') },
         { type: 'separator' },
-        { label: 'New Vault File...', accelerator: 'Alt+CmdOrCtrl+N', click: () => sendMenuCommand('vault:new-file') },
-        { label: 'Rename Current Vault File...', click: () => sendMenuCommand('vault:rename-file') },
-        { label: 'Move Current Vault File to Trash', click: () => sendMenuCommand('vault:delete-file') },
+        { label: 'New Note In Folder...', accelerator: 'Alt+CmdOrCtrl+N', click: () => sendMenuCommand('vault:new-file') },
+        { label: 'Rename Current Note...', click: () => sendMenuCommand('vault:rename-file') },
+        { label: 'Move Current Note to Trash', click: () => sendMenuCommand('vault:delete-file') },
         ...(process.platform === 'darwin'
           ? [
               { role: 'recentDocuments' },
@@ -160,9 +160,9 @@ function createMenu() {
         { label: 'Save As...', accelerator: 'Shift+CmdOrCtrl+S', click: () => sendMenuCommand('save-as') },
         { label: 'Version History...', click: () => sendMenuCommand('history:open') },
         { type: 'separator' },
-        { label: 'Export HTML...', click: () => sendMenuCommand('export-html') },
-        { label: 'Export PDF...', click: () => sendMenuCommand('export-pdf') },
-        { label: 'Publish Static Site...', click: () => sendMenuCommand('publish:static-site') },
+        { label: 'Save HTML...', click: () => sendMenuCommand('export-html') },
+        { label: 'Save PDF...', click: () => sendMenuCommand('export-pdf') },
+        { label: 'Create Website...', click: () => sendMenuCommand('publish:static-site') },
         { type: 'separator' },
         process.platform === 'darwin' ? { role: 'close' } : { role: 'quit' }
       ]
@@ -180,7 +180,7 @@ function createMenu() {
         { label: 'Search Files...', accelerator: 'Shift+CmdOrCtrl+F', click: () => sendMenuCommand('search:global') },
         { type: 'separator' },
         {
-          label: 'Insert Mind Map From Headings',
+            label: 'Insert Note Map From Headings',
           accelerator: 'Shift+CmdOrCtrl+M',
           click: () => sendMenuCommand('insert:mind-map')
         },
@@ -209,11 +209,11 @@ function createMenu() {
     {
       label: 'View',
       submenu: [
-        { label: 'Split', accelerator: 'CmdOrCtrl+1', click: () => sendMenuCommand('view:split') },
-        { label: 'Editor', accelerator: 'CmdOrCtrl+2', click: () => sendMenuCommand('view:editor') },
-        { label: 'Preview', accelerator: 'CmdOrCtrl+3', click: () => sendMenuCommand('view:preview') },
-        { label: 'Open Graph', accelerator: 'Shift+CmdOrCtrl+G', click: () => sendMenuCommand('graph:open') },
-        { label: 'Open Mind Map Canvas', accelerator: 'Alt+Shift+CmdOrCtrl+M', click: () => sendMenuCommand('mind-map:open') },
+        { label: 'Write + Read', accelerator: 'CmdOrCtrl+1', click: () => sendMenuCommand('view:split') },
+        { label: 'Write', accelerator: 'CmdOrCtrl+2', click: () => sendMenuCommand('view:editor') },
+        { label: 'Read', accelerator: 'CmdOrCtrl+3', click: () => sendMenuCommand('view:preview') },
+        { label: 'Open Folder Map', accelerator: 'Shift+CmdOrCtrl+G', click: () => sendMenuCommand('graph:open') },
+        { label: 'Open Note Map', accelerator: 'Alt+Shift+CmdOrCtrl+M', click: () => sendMenuCommand('mind-map:open') },
         { type: 'separator' },
         { role: 'reload' },
         { role: 'toggleDevTools' },
@@ -1470,8 +1470,8 @@ function buildExportHtml({ title, body, theme, css }) {
 async function publishStaticSite(payload = {}) {
   const site = normalizePublishPayload(payload);
   const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Publish Static Site',
-    buttonLabel: 'Export Site',
+    title: 'Create Website',
+    buttonLabel: 'Create Site',
     properties: ['openDirectory', 'createDirectory']
   });
 

@@ -87,7 +87,17 @@ Runs the local CLI entrypoint during development.
 npm run context:claude -- /path/to/vault-or-repo
 ```
 
-Writes `.shibanshu/claude-context-map.md`, `.shibanshu/claude-context-navigation.md`, `.shibanshu/claude-context-mind-map.md`, `.shibanshu/claude-context-graph.json`, and `.shibanshu/llm-context-chunks.jsonl` for large Markdown vaults or repos. This is fully local and does not call an AI provider. The graph JSON includes typed edge kinds, local code imports, test-coverage edges, symbols, aliases, clusters, hubs, bridges, orphans, unresolved-link sources, and suggested LLM navigation routes.
+Writes `.shibanshu/claude-context-map.md`, `.shibanshu/claude-context-navigation.md`, `.shibanshu/claude-context-mind-map.md`, `.shibanshu/claude-context-graph.json`, `.shibanshu/claude-context-scene.json`, `.shibanshu/llm-context-chunks.jsonl`, and `.shibanshu/context-integrity.json` for large Markdown vaults or repos. This is fully local and does not call an AI provider. The graph JSON includes typed edge kinds, local code imports, test-coverage edges, symbols, aliases, clusters, hubs, bridges, orphans, unresolved-link sources, suggested LLM navigation routes, schema metadata, stable node/edge ids, and an export fingerprint.
+
+Context export profiles tune limits for different jobs:
+
+```bash
+npm run context:claude -- /path/to/vault-or-repo --profile analysis
+npm run context:claude -- /path/to/vault-or-repo --profile audit
+npm run context:claude -- /path/to/vault-or-repo --profile authoring
+npm run context:claude -- /path/to/vault-or-repo --profile presentation
+npm run context:claude -- /path/to/vault-or-repo --profile migration
+```
 
 ```bash
 npm run publish:static -- /path/to/vault --out /tmp/notes-site

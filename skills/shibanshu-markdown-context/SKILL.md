@@ -1,15 +1,15 @@
 ---
 name: shibanshu-markdown-context
-description: Use Shibanshu Markdown Viewer as a local-first Markdown vault, graph, mind-map, static publish, and LLM context system. Available as an MCP server with 14 tools. Trigger when an agent needs to inspect or create a local knowledge base, export Claude/OpenAI-ready context maps, navigate large repositories, generate mind maps or knowledge graphs, search vaults, find backlinks, save summaries as Markdown, or use shibanshu-markdown CLI commands.
+description: Use shibanshu-markdown context through Shibanshu Markdown Viewer as a local-first Markdown vault, graph, mind-map, static publish, and LLM context system. Available as an MCP server with 16 tools. Trigger when an agent needs to inspect or create a local knowledge base, export Claude/OpenAI-ready context maps, navigate large repositories, generate mind maps or knowledge graphs, search vaults, find backlinks, save summaries as Markdown, or use shibanshu-markdown CLI commands.
 ---
 
 # Shibanshu Markdown Context
 
-Use this skill to operate Shibanshu Markdown Viewer as an offline knowledge graph and context-building tool.
+Use this skill to operate Shibanshu Markdown Viewer as an offline knowledge graph and shibanshu-markdown context-building tool.
 
 ## MCP Server (Recommended)
 
-The app ships an MCP server that exposes 14 tools directly to Claude Code. Add to your Claude Code settings:
+The app ships an MCP server that exposes 16 tools directly to Claude Code. Add to your Claude Code settings:
 
 ```json
 {
@@ -40,6 +40,8 @@ The app ships an MCP server that exposes 14 tools directly to Claude Code. Add t
 | `extract_tags` | Extract #tags and frontmatter tags from a note |
 | `vault_backlinks` | Find all notes that link to a given note |
 | `publish_static_site` | Publish vault as a static HTML site with search and graph |
+| `create_daily_note` | Create a templated daily note inside a vault |
+| `generate_3d_graph_viewer` | Generate a self-contained HTML graph viewer for a vault |
 
 ### Scene and 3D Payload
 
@@ -101,6 +103,7 @@ shibanshu-markdown publish /path/to/vault --out /tmp/vault-site
 
 - Do not assume URL commands can read arbitrary paths; use file dialogs, OS file-open events, or CLI/MCP tools.
 - Prefer `vault_create_note` (MCP) or `create-note` (CLI) over shell redirection; they write atomically and protect existing files.
+- MCP note reads and writes are limited to Markdown, text, and JSON Canvas targets. Keep generated notes inside the intended vault, and pass vault-relative subfolders to daily-note workflows.
 - Keep AI exports local unless the user explicitly asks to paste or upload them.
 - Avoid opening the Electron GUI in restricted terminal environments; use MCP tools or CLI context/publish commands instead.
 

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0e14; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+canvas { display: block; }
+.overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.top-label { position: absolute; top: 32px; left: 40px; }
+.top-label .brand { font-size: 13px; text-transform: uppercase; letter-spacing: 3px; color: #72c7a6; margin-bottom: 8px; }
+.headline { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 10; }
+.headline h1 { font-size: 56px; font-weight: 800; color: #fff; line-height: 1.15; text-shadow: 0 0 80px rgba(114,199,166,0.3), 0 4px 20px rgba(0,0,0,0.8); }
+.headline h1 span { color: #72c7a6; }
+.headline p { font-size: 20px; color: #9aa4b2; margin-top: 20px; font-weight: 400; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+.bottom { position: absolute; bottom: 32px; left: 0; width: 100%; display: flex; justify-content: center; align-items: center; gap: 24px; }
+.install-cmd { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 15px; background: rgba(28,33,40,0.85); padding: 12px 20px; border-radius: 10px; border: 1px solid rgba(114,199,166,0.3); color: #9aa4b2; backdrop-filter: blur(10px); }
+.install-cmd em { color: #72c7a6; font-style: normal; }
+.stats { position: absolute; top: 32px; right: 40px; text-align: right; }
+.stat { margin-bottom: 12px; }
+.stat-value { font-size: 28px; font-weight: 800; color: #72c7a6; }
+.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #667085; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="overlay">
+  <div class="top-label">
+    <div class="brand">shibanshu-markdown-mcp</div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-value">40x</div><div class="stat-label">Compression</div></div>
+    <div class="stat"><div class="stat-value">15</div><div class="stat-label">MCP Tools</div></div>
+    <div class="stat"><div class="stat-value">97.5%</div><div class="stat-label">Less Tokens</div></div>
+  </div>
+  <div class="headline">
+    <h1>Your codebase.<br><span>As a living graph.</span></h1>
+    <p>Claude sees structure, not files. Hubs. Bridges. Routes.</p>
+  </div>
+  <div class="bottom">
+    <div class="install-cmd">$ <em>npx shibanshu-markdown-mcp</em></div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Generate a knowledge graph
+const NODE_COUNT = 120;
+const EDGE_COUNT = 180;
+const nodes = [];
+const edges = [];
+
+// Create clusters
+const clusters = [
+  { cx: -1.5, cy: -0.8, cz: 0, count: 30, color: [114, 199, 166], label: 'src/' },
+  { cx: 1.5, cy: -0.5, cz: 0.5, count: 25, color: [210, 168, 255], label: 'api/' },
+  { cx: 0, cy: 1.2, cz: -0.3, count: 25, color: [255, 123, 114], label: 'auth/' },
+  { cx: -1, cy: 0.5, cz: 1, count: 20, color: [165, 214, 255], label: 'utils/' },
+  { cx: 1.2, cy: 1, cz: -0.8, count: 20, color: [255, 200, 87], label: 'tests/' },
+];
+
+let nodeIdx = 0;
+for (const cluster of clusters) {
+  for (let i = 0; i < cluster.count; i++) {
+    const isHub = i < 2;
+    nodes.push({
+      x: cluster.cx + (Math.random() - 0.5) * 2.2,
+      y: cluster.cy + (Math.random() - 0.5) * 2.2,
+      z: cluster.cz + (Math.random() - 0.5) * 2.2,
+      r: isHub ? 6 : 2.5 + Math.random() * 2,
+      color: cluster.color,
+      isHub,
+      cluster: cluster.label,
+      pulse: Math.random() * Math.PI * 2,
+    });
+    nodeIdx++;
+  }
+}
+
+// Create edges — within clusters + bridges
+for (let i = 0; i < EDGE_COUNT; i++) {
+  let a, b;
+  if (i < EDGE_COUNT * 0.7) {
+    // Intra-cluster
+    const ci = Math.floor(Math.random() * clusters.length);
+    const offset = clusters.slice(0, ci).reduce((s, c) => s + c.count, 0);
+    a = offset + Math.floor(Math.random() * clusters[ci].count);
+    b = offset + Math.floor(Math.random() * clusters[ci].count);
+  } else {
+    // Bridge
+    a = Math.floor(Math.random() * nodes.length);
+    b = Math.floor(Math.random() * nodes.length);
+  }
+  if (a !== b) edges.push([a, b]);
+}
+
+let angleX = 0, angleY = 0;
+let time = 0;
+
+function project(x, y, z) {
+  // Rotate Y
+  const cosY = Math.cos(angleY), sinY = Math.sin(angleY);
+  let x1 = x * cosY - z * sinY;
+  let z1 = x * sinY + z * cosY;
+  // Rotate X
+  const cosX = Math.cos(angleX), sinX = Math.sin(angleX);
+  let y1 = y * cosX - z1 * sinX;
+  let z2 = y * sinX + z1 * cosX;
+  // Perspective
+  const fov = 4;
+  const scale = fov / (fov + z2 + 4);
+  return {
+    x: x1 * scale * (W * 0.18) + W / 2,
+    y: y1 * scale * (H * 0.18) + H / 2,
+    z: z2,
+    scale
+  };
+}
+
+function draw() {
+  time += 0.003;
+  angleY = time * 0.4;
+  angleX = Math.sin(time * 0.3) * 0.3 - 0.2;
+
+  ctx.fillStyle = '#0a0e14';
+  ctx.fillRect(0, 0, W, H);
+
+  // Project all nodes
+  const projected = nodes.map(n => {
+    const p = project(n.x, n.y, n.z);
+    return { ...n, px: p.x, py: p.y, pz: p.z, ps: p.scale };
+  });
+
+  // Sort by z for painter's algorithm
+  const sortedEdges = edges.map(([a, b]) => ({
+    a: projected[a], b: projected[b],
+    z: (projected[a].pz + projected[b].pz) / 2
+  })).sort((a, b) => a.z - b.z);
+
+  // Draw edges
+  for (const edge of sortedEdges) {
+    const alpha = Math.max(0.03, Math.min(0.2, edge.a.ps * 0.15));
+    const isBridge = edge.a.cluster !== edge.b.cluster;
+    if (isBridge) {
+      ctx.strokeStyle = `rgba(114, 199, 166, ${alpha * 1.5})`;
+      ctx.lineWidth = 0.8;
+    } else {
+      ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.lineWidth = 0.5;
+    }
+    ctx.beginPath();
+    ctx.moveTo(edge.a.px, edge.a.py);
+    ctx.lineTo(edge.b.px, edge.b.py);
+    ctx.stroke();
+  }
+
+  // Sort nodes by z
+  const sortedNodes = [...projected].sort((a, b) => a.pz - b.pz);
+
+  // Draw nodes
+  for (const n of sortedNodes) {
+    const r = n.r * n.ps * 1.5;
+    const alpha = Math.max(0.3, Math.min(1, n.ps * 0.8));
+    const [cr, cg, cb] = n.color;
+
+    if (n.isHub) {
+      // Glow
+      const pulseR = r * (1.8 + Math.sin(time * 2 + n.pulse) * 0.4);
+      const glow = ctx.createRadialGradient(n.px, n.py, 0, n.px, n.py, pulseR * 3);
+      glow.addColorStop(0, `rgba(${cr}, ${cg}, ${cb}, ${alpha * 0.3})`);
+      glow.addColorStop(1, `rgba(${cr}, ${cg}, ${cb}, 0)`);
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(n.px, n.py, pulseR * 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Ring
+      ctx.strokeStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha * 0.6})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(n.px, n.py, pulseR, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Node dot
+    ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(n.px, n.py, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Floating particles along edges
+  for (let i = 0; i < 30; i++) {
+    const edge = sortedEdges[Math.floor(i * sortedEdges.length / 30)];
+    if (!edge) continue;
+    const t = (time * 0.5 + i * 0.1) % 1;
+    const px = edge.a.px + (edge.b.px - edge.a.px) * t;
+    const py = edge.a.py + (edge.b.py - edge.a.py) * t;
+    ctx.fillStyle = `rgba(114, 199, 166, ${0.4 * Math.sin(t * Math.PI)})`;
+    ctx.beginPath();
+    ctx.arc(px, py, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>

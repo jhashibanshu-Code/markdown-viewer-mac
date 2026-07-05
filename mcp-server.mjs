@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Shibanshu Markdown Viewer — MCP Server
+ * Athena Viewer — MCP Server
  *
  * Exposes the app's markdown vault, graph, mind-map, context-map, and
  * note-creation capabilities as Model Context Protocol tools that
@@ -24,14 +24,14 @@ import crypto from 'node:crypto';
 
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_PATH = path.join(__dirname, 'bin', 'shibanshu-markdown.mjs');
+const CLI_PATH = path.join(__dirname, 'bin', 'athena.mjs');
 const EXPORT_SCRIPT = path.join(__dirname, 'scripts', 'export-claude-map.mjs');
 
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown', '.mdown', '.mkd', '.txt', '.canvas']);
 const IGNORED_DIRS = new Set(['.git', '.hg', '.svn', 'node_modules', 'dist', 'release', 'build', '.next', '.cache', '.venv', 'vendor', 'target', 'coverage']);
-const MAX_VAULT_FILES = 2000;
+const MAX_VAULT_FILES = 5000;
 const MAX_VAULT_DEPTH = 16;
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
 const MAX_SEARCH_RESULTS = 50;
 
 // ─── Tool definitions ────────────────────────────────────────────────
@@ -106,7 +106,7 @@ const TOOLS = [
       type: 'object',
       properties: {
         path: { type: 'string', description: 'Absolute path to the vault/repo to analyze' },
-        output_dir: { type: 'string', description: 'Output directory (default: <path>/.shibanshu)' },
+        output_dir: { type: 'string', description: 'Output directory (default: <path>/.athena)' },
         max_files: { type: 'number', description: 'Max files to index (default 5000)' },
         max_bytes: { type: 'number', description: 'Max file size in bytes to read (default 768000)' },
         chunk_tokens: { type: 'number', description: 'Target tokens per JSONL chunk (default 900)' }
@@ -116,7 +116,7 @@ const TOOLS = [
   },
   {
     name: 'read_context_map',
-    description: 'Read a previously generated context map file. Use after generate_context_map.',
+    description: 'Read a previously generated context map file. Use after generate_context_map. For large maps, use section to read a specific part, or offset/limit to paginate.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -126,6 +126,12 @@ const TOOLS = [
           description: 'Which context file to read',
           enum: ['navigation', 'map', 'mind-map', 'graph', 'scene', 'chunks', 'integrity']
         },
+        section: {
+          type: 'string',
+          description: 'Read only a specific section of the map by heading name (e.g. "Hub And Bridge Files", "Symbol Index", "File Summaries"). Omit to read the full file.'
+        },
+        offset: { type: 'number', description: 'Character offset to start reading from (default 0). Use with limit to paginate large files.' },
+        limit: { type: 'number', description: 'Max characters to return (default 100000). Use with offset to paginate.' },
         output_dir: { type: 'string', description: 'Output directory if non-default was used' }
       },
       required: ['path', 'file']
@@ -233,7 +239,7 @@ const TOOLS = [
       type: 'object',
       properties: {
         path: { type: 'string', description: 'Absolute path to the vault/repo to visualize' },
-        output: { type: 'string', description: 'Output HTML file path (defaults to <path>/.shibanshu/graph-viewer.html)' },
+        output: { type: 'string', description: 'Output HTML file path (defaults to <path>/.athena/graph-viewer.html)' },
         max_files: { type: 'number', description: 'Max files to include (default 500)' },
         open: { type: 'boolean', description: 'Auto-open in browser after generating (default true)' }
       },
@@ -723,7 +729,7 @@ async function handleVaultSearch({ path: vaultPath, query, max_results }) {
 
 async function handleGenerateContextMap({ path: rootPath, output_dir, max_files, max_bytes, chunk_tokens }) {
   const sourceRoot = await assertDirectoryPath(rootPath, 'Source path');
-  const outDir = output_dir ? normalizeAbsolutePath(output_dir, 'Output directory') : path.join(sourceRoot, '.shibanshu');
+  const outDir = output_dir ? normalizeAbsolutePath(output_dir, 'Output directory') : path.join(sourceRoot, '.athena');
   const args = [EXPORT_SCRIPT, sourceRoot, '--out', outDir];
   if (max_files) args.push('--max-files', String(max_files));
   if (max_bytes) args.push('--max-bytes', String(max_bytes));
@@ -748,9 +754,9 @@ async function handleGenerateContextMap({ path: rootPath, output_dir, max_files,
   };
 }
 
-async function handleReadContextMap({ path: rootPath, file, output_dir }) {
+async function handleReadContextMap({ path: rootPath, file, section, offset, limit, output_dir }) {
   const sourceRoot = await assertDirectoryPath(rootPath, 'Source path');
-  const outDir = output_dir ? normalizeAbsolutePath(output_dir, 'Output directory') : path.join(sourceRoot, '.shibanshu');
+  const outDir = output_dir ? normalizeAbsolutePath(output_dir, 'Output directory') : path.join(sourceRoot, '.athena');
   const fileMap = {
     navigation: 'claude-context-navigation.md',
     map: 'claude-context-map.md',
@@ -765,20 +771,51 @@ async function handleReadContextMap({ path: rootPath, file, output_dir }) {
   if (!fileName) throw new Error(`Unknown file type: ${file}. Use: ${Object.keys(fileMap).join(', ')}`);
 
   const filePath = path.join(outDir, fileName);
-  const content = await readFile(filePath, 'utf8');
+  let content = await readFile(filePath, 'utf8');
+  const totalSize = content.length;
 
-  // For large files, truncate with a note
-  const MAX_RESPONSE = 200000;
-  if (content.length > MAX_RESPONSE) {
-    return {
-      path: filePath,
-      truncated: true,
-      total_size: content.length,
-      content: content.substring(0, MAX_RESPONSE) + `\n\n... [truncated — ${content.length - MAX_RESPONSE} chars remaining. File at: ${filePath}]`
-    };
+  // Section filter — extract content under a specific ## heading
+  if (section) {
+    const sectionPattern = new RegExp(`^## ${section.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'm');
+    const match = content.match(sectionPattern);
+    if (!match) {
+      const headings = [...content.matchAll(/^## (.+)$/gm)].map(m => m[1]);
+      return {
+        path: filePath,
+        error: `Section "${section}" not found.`,
+        available_sections: headings
+      };
+    }
+    const sectionStart = match.index;
+    const nextHeading = content.indexOf('\n## ', sectionStart + match[0].length);
+    content = nextHeading === -1
+      ? content.substring(sectionStart)
+      : content.substring(sectionStart, nextHeading);
   }
 
-  return { path: filePath, truncated: false, content };
+  // Pagination via offset/limit
+  const charOffset = Math.max(0, Math.floor(offset || 0));
+  const charLimit = Math.min(500000, Math.max(1000, Math.floor(limit || 100000)));
+  const contentSize = content.length;
+
+  if (charOffset >= contentSize) {
+    return { path: filePath, total_size: totalSize, content_size: contentSize, offset: charOffset, content: '', has_more: false };
+  }
+
+  const slice = content.substring(charOffset, charOffset + charLimit);
+  const hasMore = charOffset + charLimit < contentSize;
+
+  return {
+    path: filePath,
+    total_size: totalSize,
+    content_size: contentSize,
+    offset: charOffset,
+    length: slice.length,
+    has_more: hasMore,
+    ...(hasMore ? { next_offset: charOffset + charLimit } : {}),
+    ...(section ? { section } : {}),
+    content: slice
+  };
 }
 
 async function handleGenerateGraphJson({ path: vaultPath, max_files }) {
@@ -985,10 +1022,20 @@ async function handleGenerate3dGraphViewer({ path: repoPath, output, max_files, 
       const headings = extractMarkdownHeadings(content);
       const tags = extractMarkdownTags(content);
       const links = extractMarkdownLinks(content);
+      // Extract first meaningful line as summary (skip headings/blanks)
+      const lines = content.split('\n');
+      let summary = '';
+      for (const line of lines) {
+        const trimmed = line.replace(/^#+\s*/, '').trim();
+        if (trimmed.length > 20 && !trimmed.startsWith('import ') && !trimmed.startsWith('---')) {
+          summary = trimmed.length > 120 ? trimmed.substring(0, 120) + '...' : trimmed;
+          break;
+        }
+      }
       graphNodes.push({
         path: f.relativePath, type: f.name.match(/\.(md|markdown|mdown|mkd|txt)$/i) ? 'markdown' : 'code',
         words: countWords(content), headings: headings.map(h => h.text), tags, symbols: [],
-        imports: []
+        imports: [], summary
       });
       for (const link of links) {
         const target = link.target.replace(/#.*$/, '').trim();
@@ -1034,7 +1081,7 @@ async function handleGenerate3dGraphViewer({ path: repoPath, output, max_files, 
 }
 
 function resolveHtmlOutputPath(root, output) {
-  const outPath = output ? normalizeAbsolutePath(output, 'Output file') : path.join(root, '.shibanshu', 'graph-viewer.html');
+  const outPath = output ? normalizeAbsolutePath(output, 'Output file') : path.join(root, '.athena', 'graph-viewer.html');
   if (path.extname(outPath).toLowerCase() !== '.html') {
     throw new Error('3D graph viewer output must be an .html file.');
   }
@@ -1042,124 +1089,15 @@ function resolveHtmlOutputPath(root, output) {
 }
 
 function generateStandaloneGraphViewer(graphData) {
-  const data = JSON.stringify(graphData).replace(/</g, '\\u003c');
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Shibanshu 3D Graph Viewer</title>
-  <style>
-    :root { color-scheme: dark; --bg: #0d1017; --panel: #151a24; --line: #2b3342; --text: #eef3f8; --muted: #9aa6b6; --accent: #8bd8bb; }
-    * { box-sizing: border-box; }
-    body { margin: 0; overflow: hidden; background: var(--bg); color: var(--text); font: 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    main { display: grid; grid-template-columns: minmax(0, 1fr) 320px; height: 100vh; }
-    #stage { position: relative; min-width: 0; background: radial-gradient(circle at center, #1d2633 0, #0d1017 58%); }
-    #scene { width: 100%; height: 100%; display: block; }
-    aside { border-left: 1px solid var(--line); background: var(--panel); padding: 16px; overflow: auto; }
-    h1 { margin: 0 0 6px; font-size: 18px; }
-    h2 { margin: 18px 0 8px; color: var(--muted); font-size: 11px; letter-spacing: 0; text-transform: uppercase; }
-    p { color: var(--muted); line-height: 1.45; }
-    button { width: 100%; border: 1px solid var(--line); border-radius: 7px; background: #10151f; color: var(--text); padding: 8px 10px; text-align: left; }
-    button:hover, button.active { border-color: var(--accent); background: #12241f; }
-    .metric { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
-    .metric strong { color: var(--text); font-variant-numeric: tabular-nums; }
-    .list { display: grid; gap: 6px; }
-    .node { cursor: pointer; transition: opacity 120ms ease, transform 120ms ease; }
-    .node circle { fill: #111821; stroke: var(--accent); stroke-width: 1.5; }
-    .node text { fill: var(--text); font-size: 11px; text-anchor: middle; pointer-events: none; }
-    .edge { stroke: #536174; stroke-width: 1; opacity: 0.42; }
-    @media (max-width: 760px) { main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) 280px; } aside { border-left: 0; border-top: 1px solid var(--line); } }
-  </style>
-</head>
-<body>
-<main>
-  <section id="stage" aria-label="3D graph stage"><svg id="scene" role="img" aria-label="Repository graph"></svg></section>
-  <aside>
-    <h1>3D Graph Viewer</h1>
-    <p>Drag or wait to orbit. Select a node to inspect file context.</p>
-    <div class="metric"><span>Nodes</span><strong id="node-count">0</strong></div>
-    <div class="metric"><span>Edges</span><strong id="edge-count">0</strong></div>
-    <div class="metric"><span>Orphans</span><strong id="orphan-count">0</strong></div>
-    <h2>Selected</h2>
-    <p id="selection">Select a node.</p>
-    <h2>Hubs</h2>
-    <div class="list" id="hub-list"></div>
-  </aside>
-</main>
-<script>
-const GRAPH_DATA = ${data};
-const svg = document.getElementById('scene');
-const selection = document.getElementById('selection');
-const hubList = document.getElementById('hub-list');
-document.getElementById('node-count').textContent = GRAPH_DATA.nodes.length;
-document.getElementById('edge-count').textContent = GRAPH_DATA.edges.length;
-document.getElementById('orphan-count').textContent = GRAPH_DATA.orphans.length;
-let width = 1;
-let height = 1;
-let rotation = { x: -0.32, y: 0.42 };
-let dragging = null;
-const nodeByPath = new Map(GRAPH_DATA.nodes.map((node, index) => [node.path, { ...node, index }]));
-const points = GRAPH_DATA.nodes.map((node, index) => {
-  const phi = Math.acos(1 - 2 * (index + 0.5) / Math.max(1, GRAPH_DATA.nodes.length));
-  const theta = Math.PI * (1 + Math.sqrt(5)) * index;
-  const degree = GRAPH_DATA.edges.filter((edge) => edge.source === node.path || edge.target === node.path).length;
-  return { node, theta, phi, degree };
-});
-function escapeHtmlClient(value) {
-  return String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[character]);
-}
-function project(point) {
-  const radius = Math.min(width, height) * 0.34;
-  let x = Math.cos(point.theta) * Math.sin(point.phi);
-  let y = Math.sin(point.theta) * Math.sin(point.phi);
-  let z = Math.cos(point.phi);
-  const cosY = Math.cos(rotation.y), sinY = Math.sin(rotation.y);
-  const cosX = Math.cos(rotation.x), sinX = Math.sin(rotation.x);
-  [x, z] = [x * cosY - z * sinY, x * sinY + z * cosY];
-  [y, z] = [y * cosX - z * sinX, y * sinX + z * cosX];
-  const scale = 800 / (800 - z * radius);
-  return { x: width / 2 + x * radius * scale, y: height / 2 + y * radius * scale, z, scale };
-}
-function render() {
-  const rect = svg.getBoundingClientRect();
-  width = Math.max(320, rect.width);
-  height = Math.max(320, rect.height);
-  svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
-  const projected = new Map(points.map((point) => [point.node.path, { point, ...project(point) }]));
-  const edges = GRAPH_DATA.edges.map((edge) => {
-    const source = projected.get(edge.source);
-    const target = projected.get(edge.target);
-    if (!source || !target) return '';
-    return '<line class="edge" x1="' + source.x.toFixed(1) + '" y1="' + source.y.toFixed(1) + '" x2="' + target.x.toFixed(1) + '" y2="' + target.y.toFixed(1) + '" />';
-  }).join('');
-  const nodes = [...projected.values()].sort((a, b) => a.z - b.z).map((item) => {
-    const size = Math.min(18, 6 + item.point.degree * 1.8) * item.scale;
-    const label = escapeHtmlClient(item.point.node.path.split('/').pop());
-    const path = escapeHtmlClient(item.point.node.path);
-    return '<g class="node" data-path="' + path + '" transform="translate(' + item.x.toFixed(1) + ' ' + item.y.toFixed(1) + ')" style="opacity:' + (0.45 + item.scale * 0.55).toFixed(2) + '"><circle r="' + size.toFixed(1) + '"></circle><text y="' + (size + 14).toFixed(1) + '">' + label + '</text></g>';
-  }).join('');
-  svg.innerHTML = edges + nodes;
-}
-function selectNode(path) {
-  const node = nodeByPath.get(path);
-  if (!node) return;
-  selection.textContent = node.path + ' | ' + node.words + ' words | ' + node.headings.length + ' headings | ' + node.tags.length + ' tags';
-  svg.querySelectorAll('.node').forEach((item) => item.classList.toggle('active', item.dataset.path === path));
-}
-hubList.innerHTML = GRAPH_DATA.hubs.slice(0, 8).map((hub) => '<button type="button" data-hub="' + escapeHtmlClient(hub.path) + '">' + escapeHtmlClient(hub.path) + ' (' + hub.degree + ')</button>').join('');
-hubList.addEventListener('click', (event) => { const button = event.target.closest('[data-hub]'); if (button) selectNode(button.dataset.hub); });
-svg.addEventListener('click', (event) => { const node = event.target.closest('.node'); if (node) selectNode(node.dataset.path); });
-svg.addEventListener('pointerdown', (event) => { dragging = { x: event.clientX, y: event.clientY, rotation: { ...rotation } }; svg.setPointerCapture(event.pointerId); });
-svg.addEventListener('pointermove', (event) => { if (!dragging) return; rotation = { x: dragging.rotation.x + (event.clientY - dragging.y) / 240, y: dragging.rotation.y + (event.clientX - dragging.x) / 240 }; render(); });
-svg.addEventListener('pointerup', () => { dragging = null; });
-window.addEventListener('resize', render);
-function tick() { if (!dragging) { rotation.y += 0.0028; render(); } requestAnimationFrame(tick); }
-render();
-tick();
-</script>
-</body>
-</html>`;
+  const data = JSON.stringify(graphData).replace(/</g, '\\u003c').replace(/`/g, '\\u0060');
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shibanshu 3D Graph Viewer</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#000;color:#e6edf3;font-family:-apple-system,sans-serif;overflow:hidden;user-select:none}canvas{display:block;cursor:grab}canvas:active{cursor:grabbing}#dt{position:fixed;right:0;top:0;width:340px;height:100%;background:rgba(0,0,0,0.93);border-left:1px solid rgba(94,234,212,0.12);overflow-y:auto;padding:20px;backdrop-filter:blur(20px);transition:transform 250ms;transform:translateX(100%);z-index:30;font-size:13px}#dt.open{transform:translateX(0)}#dt h2{font-size:14px;font-family:monospace;color:#5eead4;margin-bottom:4px;word-break:break-all}#dt .b{font-size:9px;text-transform:uppercase;letter-spacing:1px;padding:2px 7px;border-radius:4px;display:inline-block;margin:0 3px 12px 0;border:1px solid rgba(255,255,255,0.08)}#dt .b.hub{color:#fcd34d;border-color:rgba(253,211,77,0.2)}#dt .b.orphan{color:#fca5a5;border-color:rgba(252,165,165,0.2)}#dt .ms{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px}#dt .m{background:rgba(255,255,255,0.02);padding:10px;border-radius:7px;text-align:center}#dt .m strong{display:block;font-size:22px;color:#5eead4;font-family:monospace}#dt .m span{font-size:8px;color:#4a5568;text-transform:uppercase}#dt h3{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#374151;margin:14px 0 6px}#dt .ei{font-size:11px;font-family:monospace;padding:5px 8px;background:rgba(255,255,255,0.015);border-radius:5px;margin-bottom:2px;cursor:pointer;border:1px solid transparent}#dt .ei:hover{border-color:rgba(94,234,212,0.2)}#dt .hi{font-size:11px;padding:4px 7px;color:#6b7280;border-left:2px solid rgba(94,234,212,0.15);margin-bottom:2px}.cb{position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);color:#4a5568;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}#tb{position:fixed;top:0;left:0;right:0;height:44px;background:rgba(0,0,0,0.7);border-bottom:1px solid rgba(255,255,255,0.03);display:flex;align-items:center;padding:0 14px;gap:8px;z-index:20;backdrop-filter:blur(12px);font-size:11px}#tb .br{text-transform:uppercase;letter-spacing:2px;color:#5eead4;font-weight:700;font-size:10px}#tb .sp{width:1px;height:16px;background:rgba(255,255,255,0.05)}#tb button{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);color:#4a5568;padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer}#tb button.a{border-color:rgba(94,234,212,0.3);color:#5eead4}#tb input{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);color:#e6edf3;padding:4px 8px;border-radius:4px;font-size:11px;width:140px;outline:none;font-family:monospace}#tb .f1{flex:1}#tb .st{color:#1f2937}#tb .st strong{color:#374151}#tt{position:fixed;pointer-events:none;background:rgba(0,0,0,0.92);border:1px solid rgba(94,234,212,0.2);padding:7px 10px;border-radius:7px;display:none;z-index:25;font-size:11px;font-family:monospace}#tt .tp{color:#5eead4}#tt .tm{color:#374151;font-size:9px;margin-top:2px}</style></head><body>
+<canvas id="c"></canvas>
+<div id="tb"><span class="br">Shibanshu 3D Graph Viewer</span><span class="sp"></span><button id="fa" class="a">All</button><button id="fh">Hubs</button><button id="fo">Orphans</button><span class="sp"></span><input id="si" placeholder="Search..."><span class="f1"></span><span class="st"><strong id="nc">0</strong> nodes <strong id="ec">0</strong> edges</span></div>
+<div id="tt"></div>
+<div id="dt"><button class="cb" id="cd">x</button><div id="dc"></div></div>
+<script>const GRAPH_DATA = ${data};const D=GRAPH_DATA;
+const cv=document.getElementById('c'),cx=cv.getContext('2d'),tt=document.getElementById('tt'),dc=document.getElementById('dc'),dt=document.getElementById('dt');let W,H;function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight}rs();addEventListener('resize',rs);const T=Math.PI*2,COL={src:[94,234,212],docs:[196,181,253],services:[125,211,252],scripts:[253,211,77],config:[249,168,212],test:[252,165,165],workers:[252,165,165],public:[167,243,208],packages:[200,180,255],electron:[255,200,150],skills:[180,230,200]},DC=[100,110,130];function gc(p){const s=p.split('/')[0];return p.includes('/')?s:'root'}function gco(p){return COL[gc(p)]||DC}const hS=new Set((D.hubs||[]).map(h=>h.path)),oS=new Set(D.orphans||[]),nM={},dg={};for(const e of D.edges){dg[e.source]=(dg[e.source]||0)+1;dg[e.target]=(dg[e.target]||0)+1}const N=D.nodes.map((n,i)=>{const cl=gc(n.path),ci=Object.keys(COL).indexOf(cl);const phi=(ci>=0?ci:Math.random()*9)/9*T+(Math.random()-0.5)*0.7;const theta=(Math.random()-0.5)*Math.PI*0.8;const dist=140+Math.random()*180+(dg[n.path]||0)*6;nM[n.path]=i;const d=dg[n.path]||0;return{...n,col:gco(n.path),x:Math.cos(phi)*Math.cos(theta)*dist,y:Math.sin(theta)*dist*0.65,z:Math.sin(phi)*Math.cos(theta)*dist,vx:0,vy:0,vz:0,deg:d,isHub:hS.has(n.path),isOrphan:oS.has(n.path),r:Math.max(4,Math.min(22,4+Math.sqrt(n.words||0)*0.15+d*1.2)),vis:true,hl:false}});const E=D.edges.map(e=>[nM[e.source],nM[e.target],e.kind]).filter(e=>e[0]!=null&&e[1]!=null);for(let it=0;it<180;it++){const a=1-it/180;for(let i=0;i<N.length;i++){for(let j=i+1;j<N.length;j++){let dx=N[j].x-N[i].x,dy=N[j].y-N[i].y,dz=N[j].z-N[i].z,d2=dx*dx+dy*dy+dz*dz;if(d2>700000)continue;let dd=Math.sqrt(d2)||1,f=Math.min(3.5,1000*a/(dd*dd));N[i].vx-=dx/dd*f;N[i].vy-=dy/dd*f;N[i].vz-=dz/dd*f;N[j].vx+=dx/dd*f;N[j].vy+=dy/dd*f;N[j].vz+=dz/dd*f}}for(const[a2,b]of E){let dx=N[b].x-N[a2].x,dy=N[b].y-N[a2].y,dz=N[b].z-N[a2].z,dd=Math.sqrt(dx*dx+dy*dy+dz*dz)||1,f=(dd-90)*0.007*a;N[a2].vx+=dx/dd*f;N[a2].vy+=dy/dd*f;N[a2].vz+=dz/dd*f;N[b].vx-=dx/dd*f;N[b].vy-=dy/dd*f;N[b].vz-=dz/dd*f}for(const n of N){n.vx-=n.x*0.0005;n.vy-=n.y*0.0005;n.vz-=n.z*0.0005;n.x+=n.vx*0.35;n.y+=n.vy*0.35;n.z+=n.vz*0.35;n.vx*=0.8;n.vy*=0.8;n.vz*=0.8}}let rY=0,rX=-0.2,zm=1,aR=true,drag=false,dsx,dsy,drx,dry,hov=null,sel=null,flt='all',sq='',t=0;const stars=[];for(let i=0;i<300;i++)stars.push({x:(Math.random()-0.5)*5000,y:(Math.random()-0.5)*5000,z:(Math.random()-0.5)*5000,b:0.2+Math.random()*0.6,s:0.3+Math.random()*0.7});function proj(x,y,z){let cy=Math.cos(rY),sy=Math.sin(rY),x1=x*cy-z*sy,z1=x*sy+z*cy,cx2=Math.cos(rX),sx=Math.sin(rX),y1=y*cx2-z1*sx,z2=y*sx+z1*cx2;const fov=1000,s=fov/(fov+z2+600);if(s<0.005)return{x:-9e3,y:-9e3,z:z2,s:0.005};return{x:x1*s*zm+W/2,y:y1*s*zm+H/2,z:z2,s}}function af(){const q=sq.toLowerCase();for(const n of N){let s=true;if(flt==='hubs')s=n.isHub;else if(flt==='orphans')s=n.isOrphan;if(q&&!n.path.toLowerCase().includes(q))s=false;n.vis=s;n.hl=q&&n.path.toLowerCase().includes(q)}}function draw(){t+=0.016;if(aR)rY+=0.001;cx.fillStyle='#000';cx.fillRect(0,0,W,H);const nb=cx.createRadialGradient(W*0.3,H*0.4,0,W*0.3,H*0.4,W*0.45);nb.addColorStop(0,'rgba(94,234,212,0.02)');nb.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=nb;cx.fillRect(0,0,W,H);const nb2=cx.createRadialGradient(W*0.7,H*0.6,0,W*0.7,H*0.6,W*0.35);nb2.addColorStop(0,'rgba(196,181,253,0.015)');nb2.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=nb2;cx.fillRect(0,0,W,H);for(const s of stars){const p=proj(s.x,s.y,s.z);if(p.x<0||p.x>W)continue;cx.fillStyle='rgba(255,255,255,'+(s.b*(0.4+Math.sin(t+s.b*15)*0.2))+')';cx.beginPath();cx.arc(p.x,p.y,s.s*p.s*zm*0.7,0,T);cx.fill()}for(const[a,b,kind]of E){if(!N[a].vis&&!N[b].vis)continue;const pa=proj(N[a].x,N[a].y,N[a].z),pb=proj(N[b].x,N[b].y,N[b].z);if(pa.s<0.01&&pb.s<0.01)continue;let al=Math.max(0.015,Math.min(0.2,(pa.s+pb.s)*0.1)),w=Math.max(0.3,(pa.s+pb.s)*1.5);if(sel!==null){if(a===sel||b===sel){al=0.5;w=2}else{al*=0.06;w*=0.3}}cx.strokeStyle=kind==='import'?'rgba(125,211,252,'+al+')':'rgba(94,234,212,'+al*0.7+')';cx.lineWidth=w;const mx=(pa.x+pb.x)/2,my=(pa.y+pb.y)/2,dx=pb.x-pa.x,dy=pb.y-pa.y;cx.beginPath();cx.moveTo(pa.x,pa.y);cx.quadraticCurveTo(mx+dy*0.06,my-dx*0.06,pb.x,pb.y);cx.stroke()}for(let i=0;i<Math.min(80,E.length*2);i++){const ei=i%E.length;const[a,b]=E[ei];if(!N[a].vis||!N[b].vis)continue;const ph=(t*0.12+i*0.031)%1,pa=proj(N[a].x,N[a].y,N[a].z),pb=proj(N[b].x,N[b].y,N[b].z),px=pa.x+(pb.x-pa.x)*ph,py=pa.y+(pb.y-pa.y)*ph,gl=Math.sin(ph*Math.PI)*(pa.s+pb.s)*0.4;if(gl<0.03)continue;const[cr,cg,cb]=N[a].col;cx.fillStyle='rgba('+cr+','+cg+','+cb+','+gl+')';cx.beginPath();cx.arc(px,py,1.3*(pa.s+pb.s)/2*zm,0,T);cx.fill()}const sorted=N.map((n,i)=>({...n,i,...proj(n.x,n.y,n.z)})).filter(n=>n.vis&&n.s>0.01);sorted.sort((a,b)=>a.z-b.z);for(const n of sorted){if(n.x<-50||n.x>W+50||n.y<-50||n.y>H+50)continue;const[cr,cg,cb]=n.col,r=Math.max(1,n.r*n.s*zm),da=Math.max(0.1,Math.min(1,n.s*1.3));let al=da;if(sel!==null&&n.i!==sel)al=da*0.12;if(n.hl)al=1;if(n.isHub&&al>0.15){const pulse=1+Math.sin(t*1.2+n.r)*0.12;const g3=cx.createRadialGradient(n.x,n.y,r,n.x,n.y,r*7*pulse);g3.addColorStop(0,'rgba('+cr+','+cg+','+cb+','+al*0.12+')');g3.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g3;cx.beginPath();cx.arc(n.x,n.y,r*7*pulse,0,T);cx.fill();cx.strokeStyle='rgba('+cr+','+cg+','+cb+','+al*0.15+')';cx.lineWidth=0.5;cx.beginPath();cx.arc(n.x,n.y,r*2.5*pulse,0,T);cx.stroke()}const ng=cx.createRadialGradient(n.x-r*0.3,n.y-r*0.3,r*0.05,n.x,n.y,r*1.1);ng.addColorStop(0,'rgba('+Math.min(255,cr+80)+','+Math.min(255,cg+80)+','+Math.min(255,cb+80)+','+al+')');ng.addColorStop(0.5,'rgba('+cr+','+cg+','+cb+','+al+')');ng.addColorStop(1,'rgba('+Math.max(0,cr-50)+','+Math.max(0,cg-50)+','+Math.max(0,cb-50)+','+al*0.6+')');cx.fillStyle=ng;cx.beginPath();cx.arc(n.x,n.y,r,0,T);cx.fill();if(r>2.5){cx.fillStyle='rgba(255,255,255,'+al*0.35+')';cx.beginPath();cx.arc(n.x-r*0.25,n.y-r*0.3,r*0.35,0,T);cx.fill()}const showL=n.isHub||n.s*zm>0.85||n.hl||n.i===sel;if(showL&&r>1.5){const label=n.path.split('/').pop(),fs=Math.max(8,Math.min(13,10*n.s*zm));cx.font='600 '+fs+'px monospace';const tw=cx.measureText(label).width,lx=n.x+r+6,ly=n.y+fs*0.35,pad=3;cx.fillStyle='rgba(0,0,0,'+al*0.8+')';cx.fillRect(lx-pad,ly-fs,tw+pad*2+(n.isHub&&n.deg>2?24:0),fs+pad*2);cx.strokeStyle='rgba('+cr+','+cg+','+cb+','+al*0.2+')';cx.lineWidth=0.5;cx.strokeRect(lx-pad,ly-fs,tw+pad*2+(n.isHub&&n.deg>2?24:0),fs+pad*2);cx.fillStyle='rgba(230,237,243,'+al*0.9+')';cx.textAlign='left';cx.fillText(label,lx,ly);if(n.isHub&&n.deg>2){cx.fillStyle='rgba('+cr+','+cg+','+cb+','+al+')';cx.font='700 '+Math.max(7,8*n.s*zm)+'px monospace';cx.fillText(String(n.deg),lx+tw+pad+2,ly)}}}requestAnimationFrame(draw)}cv.addEventListener('wheel',e=>{e.preventDefault();zm=Math.max(0.25,Math.min(4,zm*(e.deltaY>0?0.94:1.06)))},{passive:false});cv.addEventListener('mousedown',e=>{drag=true;dsx=e.clientX;dsy=e.clientY;drx=rY;dry=rX;aR=false});addEventListener('mousemove',e=>{if(drag){rY=drx+(e.clientX-dsx)*0.004;rX=Math.max(-1.3,Math.min(1.3,dry+(e.clientY-dsy)*0.004));return}const all=N.map((n,i)=>{if(!n.vis)return null;const p=proj(n.x,n.y,n.z);return{i,x:p.x,y:p.y,r:n.r*p.s*zm,s:p.s}}).filter(Boolean);all.sort((a,b)=>b.s-a.s);let found=null;for(const p of all){const dx=e.clientX-p.x,dy=e.clientY-p.y;if(dx*dx+dy*dy<(p.r+5)*(p.r+5)){found=p.i;break}}hov=found;if(found!==null){const n=N[found];tt.style.display='block';tt.style.left=(e.clientX+12)+'px';tt.style.top=(e.clientY-8)+'px';tt.innerHTML='<div class="tp">'+n.path+'</div><div class="tm">'+n.type+' · '+n.words+' words · '+n.deg+' connections'+(n.isHub?' · HUB':'')+'</div>'+(n.summary?'<div style="color:#6b7280;font-size:10px;margin-top:4px;max-width:250px">'+n.summary+'</div>':'');cv.style.cursor='pointer'}else{tt.style.display='none';cv.style.cursor='grab'}});addEventListener('mouseup',()=>{if(drag){drag=false;setTimeout(()=>{aR=true},1500)}});cv.addEventListener('click',()=>{if(hov!==null){sel=hov;showD(N[sel])}else{sel=null;dt.classList.remove('open')}});cv.addEventListener('dblclick',()=>{if(hov!==null){sel=hov;showD(N[sel]);zm=Math.min(4,zm*1.4)}});function showD(n){dt.classList.add('open');const inc=E.filter(e=>e[1]===nM[n.path]).map(e=>({path:N[e[0]].path,kind:e[2]}));const out=E.filter(e=>e[0]===nM[n.path]).map(e=>({path:N[e[1]].path,kind:e[2]}));let h='<h2>'+n.path+'</h2><span class="b">'+n.type+'</span>';if(n.isHub)h+='<span class="b hub">hub '+n.deg+'</span>';if(n.isOrphan)h+='<span class="b orphan">orphan</span>';if(n.summary)h+='<p style="color:#9aa4b2;font-size:12px;line-height:1.4;margin:0 0 14px;border-left:2px solid rgba(94,234,212,0.2);padding-left:8px">'+n.summary+'</p>';h+='<div class="ms"><div class="m"><strong>'+n.words+'</strong><span>Words</span></div><div class="m"><strong>'+n.deg+'</strong><span>Degree</span></div><div class="m"><strong>'+inc.length+'</strong><span>In</span></div><div class="m"><strong>'+out.length+'</strong><span>Out</span></div></div>';const hd=(n.headings||[]).filter(Boolean);if(hd.length){h+='<h3>Structure ('+hd.length+')</h3>';hd.slice(0,12).forEach(x=>{h+='<div class="hi">'+x+'</div>'})}if(inc.length){h+='<h3>Imported by ('+inc.length+')</h3>';inc.forEach(e=>{h+='<div class="ei" onclick="nav(\\''+e.path+'\\')">'+e.path+'</div>'})}if(out.length){h+='<h3>Imports ('+out.length+')</h3>';out.forEach(e=>{h+='<div class="ei" onclick="nav(\\''+e.path+'\\')">'+e.path+'</div>'})}dc.innerHTML=h}window.nav=function(p){const i=nM[p];if(i!=null){sel=i;showD(N[i])}};document.getElementById('cd').addEventListener('click',()=>{dt.classList.remove('open');sel=null});const FB={all:'fa',hubs:'fh',orphans:'fo'};for(const[f,id]of Object.entries(FB)){document.getElementById(id).addEventListener('click',()=>{flt=f;af();document.querySelectorAll('#tb button').forEach(b=>b.classList.remove('a'));document.getElementById(id).classList.add('a')})}document.getElementById('si').addEventListener('input',e=>{sq=e.target.value;af()});document.getElementById('nc').textContent=N.length;document.getElementById('ec').textContent=E.length;af();draw();</script></body></html>`;
 }
 
 async function getLatestGitCommitTime(repoPath) {
@@ -1172,7 +1110,7 @@ async function getLatestGitCommitTime(repoPath) {
 }
 
 async function getMapGenerationTime(repoPath) {
-  const mapPath = path.join(repoPath, '.shibanshu', 'claude-context-navigation.md');
+  const mapPath = path.join(repoPath, '.athena', 'claude-context-navigation.md');
   try {
     const s = await stat(mapPath);
     return s.mtime;
@@ -1182,7 +1120,7 @@ async function getMapGenerationTime(repoPath) {
 }
 
 async function regenerateMap(repoPath) {
-  const args = [EXPORT_SCRIPT, repoPath, '--out', path.join(repoPath, '.shibanshu')];
+  const args = [EXPORT_SCRIPT, repoPath, '--out', path.join(repoPath, '.athena')];
   const { stdout } = await execFileAsync('node', args, { maxBuffer: 50 * 1024 * 1024, timeout: 120000 });
   return stdout.trim();
 }
@@ -1236,12 +1174,12 @@ async function handleEnableAutoMapping({ path: repoPath, refresh_now }) {
   // Install post-commit hook
   const hooksDir = path.join(root, '.git', 'hooks');
   const hookPath = path.join(hooksDir, 'post-commit');
-  const marker = '# shibanshu-markdown-mcp auto-mapping';
+  const marker = '# athena-mcp auto-mapping';
 
   const hookScript = `#!/bin/sh
 ${marker}
-node "${EXPORT_SCRIPT}" "${root}" --out "${path.join(root, '.shibanshu')}" > /dev/null 2>&1 &
-echo "[shibanshu] Context map updated."
+node "${EXPORT_SCRIPT}" "${root}" --out "${path.join(root, '.athena')}" > /dev/null 2>&1 &
+echo "[athena] Context map updated."
 `;
 
   await mkdir(hooksDir, { recursive: true });
@@ -1310,7 +1248,7 @@ async function handleSetupRepo({ path: repoPath }) {
 ${marker}
 ## Context Map (auto-generated)
 
-This repo has an auto-updating context map at \`.shibanshu/\`.
+This repo has an auto-updating context map at \`.athena/\`.
 
 **At the start of every session**, use the \`check_map_freshness\` tool to verify the map is current, then use \`read_context_map\` with \`file: "navigation"\` to understand the repo structure before making changes.
 
@@ -1347,15 +1285,15 @@ ${marker}
     results.steps.push({ step: 'claude_md', status: 'error', detail: e.message });
   }
 
-  // Step 4: Add .shibanshu to .gitignore
+  // Step 4: Add .athena to .gitignore
   const gitignorePath = path.join(root, '.gitignore');
   try {
     let gitignore = '';
     try { gitignore = await readFile(gitignorePath, 'utf8'); } catch { /* no gitignore */ }
-    if (!gitignore.includes('.shibanshu')) {
-      const updated = gitignore.trimEnd() + '\n\n# Context map (auto-generated)\n.shibanshu/\n';
+    if (!gitignore.includes('.athena')) {
+      const updated = gitignore.trimEnd() + '\n\n# Context map (auto-generated)\n.athena/\n';
       await fsp.writeFile(gitignorePath, updated, 'utf8');
-      results.steps.push({ step: 'gitignore', status: 'ok', detail: 'Added .shibanshu/ to .gitignore' });
+      results.steps.push({ step: 'gitignore', status: 'ok', detail: 'Added .athena/ to .gitignore' });
     } else {
       results.steps.push({ step: 'gitignore', status: 'ok', detail: 'Already in .gitignore' });
     }
@@ -1399,7 +1337,7 @@ const HANDLER_MAP = {
 };
 
 const server = new Server(
-  { name: 'shibanshu-markdown', version: '0.1.0' },
+  { name: 'athena', version: '0.1.0' },
   { capabilities: { tools: {} } }
 );
 

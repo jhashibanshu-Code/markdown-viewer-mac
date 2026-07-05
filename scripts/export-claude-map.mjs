@@ -43,7 +43,7 @@ const IGNORED_DIRECTORIES = new Set([
 const DEFAULT_MAX_FILES = 5000;
 const DEFAULT_MAX_BYTES = 750 * 1024;
 const DEFAULT_MAX_DEPTH = 24;
-const DEFAULT_OUTPUT_DIR = '.shibanshu';
+const DEFAULT_OUTPUT_DIR = '.athena';
 const DEFAULT_CHUNK_TOKENS = 900;
 const MAX_CHUNKS = 20000;
 const DEFAULT_SCENE_NODE_LIMIT = 280;
@@ -52,6 +52,66 @@ const DEFAULT_SCENE_PERSPECTIVE = 900;
 const SCENE_LAYOUT_WIDTH = 1160;
 const SCENE_LAYOUT_HEIGHT = 760;
 const SCENE_ROTATION = { x: -18, y: -34, z: 0 };
+const CONTEXT_SCHEMA_VERSION = 'shibanshu.context.v1';
+const CONTEXT_EXPORTER_VERSION = '0.2.0';
+const DEFAULT_CONTEXT_PROFILE = 'analysis';
+const CONTEXT_PROFILES = {
+  analysis: {
+    label: 'Analysis',
+    maxFiles: DEFAULT_MAX_FILES,
+    maxBytes: DEFAULT_MAX_BYTES,
+    maxDepth: DEFAULT_MAX_DEPTH,
+    chunkTokens: DEFAULT_CHUNK_TOKENS,
+    sceneNodeLimit: DEFAULT_SCENE_NODE_LIMIT,
+    sceneEdgeLimit: DEFAULT_SCENE_EDGE_LIMIT,
+    scenePerspective: DEFAULT_SCENE_PERSPECTIVE,
+    includeCode: true
+  },
+  audit: {
+    label: 'Audit',
+    maxFiles: 7000,
+    maxBytes: 1024 * 1024,
+    maxDepth: 30,
+    chunkTokens: 850,
+    sceneNodeLimit: 360,
+    sceneEdgeLimit: 760,
+    scenePerspective: DEFAULT_SCENE_PERSPECTIVE,
+    includeCode: true
+  },
+  authoring: {
+    label: 'Authoring',
+    maxFiles: 3500,
+    maxBytes: 650 * 1024,
+    maxDepth: DEFAULT_MAX_DEPTH,
+    chunkTokens: 700,
+    sceneNodeLimit: 240,
+    sceneEdgeLimit: 480,
+    scenePerspective: DEFAULT_SCENE_PERSPECTIVE,
+    includeCode: true
+  },
+  presentation: {
+    label: 'Presentation',
+    maxFiles: 2500,
+    maxBytes: 520 * 1024,
+    maxDepth: 20,
+    chunkTokens: 650,
+    sceneNodeLimit: 180,
+    sceneEdgeLimit: 360,
+    scenePerspective: 960,
+    includeCode: true
+  },
+  migration: {
+    label: 'Migration',
+    maxFiles: 8000,
+    maxBytes: 900 * 1024,
+    maxDepth: 32,
+    chunkTokens: 780,
+    sceneNodeLimit: 340,
+    sceneEdgeLimit: 720,
+    scenePerspective: DEFAULT_SCENE_PERSPECTIVE,
+    includeCode: true
+  }
+};
 
 const MEDIA_LINK_EXTENSION_PATTERN = /\.(avif|bmp|gif|heic|jpeg|jpg|m4a|mov|mp3|mp4|ogg|opus|pdf|png|svg|wav|webm|webp)(?:[?#].*)?$/i;
 
@@ -68,6 +128,9 @@ const files = await discoverFiles(rootPath, options);
 const documents = await readDocuments(rootPath, files, options.maxBytes);
 const graph = buildGraph(documents);
 const analysis = analyzeRepositoryContext(documents, graph);
+options.generatedAt = new Date().toISOString();
+options.exportFingerprint = buildContextExportFingerprint(rootPath, documents, graph, analysis, options);
+const routeValidation = validateNavigationRoutes(analysis.routes, documents);
 const markdown = renderClaudeContextMap(rootPath, documents, graph, options, analysis);
 const mindMapMarkdown = renderClaudeMindMap(rootPath, documents, graph, options, analysis);
 const navigationMarkdown = renderClaudeNavigationGuide(rootPath, documents, graph, options, analysis);
@@ -80,20 +143,35 @@ const navigationPath = path.join(outputDir, 'claude-context-navigation.md');
 const graphPath = path.join(outputDir, 'claude-context-graph.json');
 const chunksPath = path.join(outputDir, 'llm-context-chunks.jsonl');
 const scenePath = path.join(outputDir, 'claude-context-scene.json');
+const integrityPath = path.join(outputDir, 'context-integrity.json');
 
 await writeFile(markdownPath, markdown, 'utf8');
 await writeFile(mindMapPath, mindMapMarkdown, 'utf8');
 await writeFile(navigationPath, navigationMarkdown, 'utf8');
 await writeFile(chunksPath, contextChunks, 'utf8');
-const graphPayload = buildClaudeContextGraphPayload(rootPath, documents, graph, analysis, contextChunks, options);
-await writeFile(graphPath, JSON.stringify(graphPayload, null, 2), 'utf8');
+const graphPayload = buildClaudeContextGraphPayload(rootPath, documents, graph, analysis, contextChunks, options, routeValidation);
+const graphJson = `${JSON.stringify(graphPayload, null, 2)}\n`;
+await writeFile(graphPath, graphJson, 'utf8');
 
 const scenePayload = buildScenePayload(rootPath, documents, graph, analysis, graphPayload, {
-  nodeLimit: DEFAULT_SCENE_NODE_LIMIT,
-  edgeLimit: DEFAULT_SCENE_EDGE_LIMIT,
-  perspective: DEFAULT_SCENE_PERSPECTIVE
+  nodeLimit: options.sceneNodeLimit,
+  edgeLimit: options.sceneEdgeLimit,
+  perspective: options.scenePerspective,
+  profile: options.profile,
+  profileLabel: options.profileLabel,
+  exportFingerprint: options.exportFingerprint
 });
-await writeFile(scenePath, JSON.stringify(scenePayload, null, 2), 'utf8');
+const sceneJson = `${JSON.stringify(scenePayload, null, 2)}\n`;
+await writeFile(scenePath, sceneJson, 'utf8');
+const integrityPayload = buildContextIntegrityPayload(rootPath, options, documents, graph, analysis, routeValidation, [
+  { key: 'contextMap', file: 'claude-context-map.md', content: markdown },
+  { key: 'mindMap', file: 'claude-context-mind-map.md', content: mindMapMarkdown },
+  { key: 'navigation', file: 'claude-context-navigation.md', content: navigationMarkdown },
+  { key: 'chunks', file: 'llm-context-chunks.jsonl', content: contextChunks },
+  { key: 'graph', file: 'claude-context-graph.json', content: graphJson },
+  { key: 'scene', file: 'claude-context-scene.json', content: sceneJson }
+]);
+await writeFile(integrityPath, `${JSON.stringify(integrityPayload, null, 2)}\n`, 'utf8');
 
 console.log(`Claude context map written: ${markdownPath}`);
 console.log(`Claude mind map written: ${mindMapPath}`);
@@ -101,24 +179,38 @@ console.log(`Claude navigation guide written: ${navigationPath}`);
 console.log(`LLM context chunks written: ${chunksPath}`);
 console.log(`3D scene graph written: ${scenePath}`);
 console.log(`Graph JSON written: ${graphPath}`);
-console.log(`${documents.length} files indexed, ${graph.edges.length} resolved links, ${graph.unresolvedLinks.length} unresolved links.`);
+console.log(`Context integrity written: ${integrityPath}`);
+console.log(
+  `${documents.length} files indexed, ${graph.edges.length} resolved links, ${graph.unresolvedLinks.length} unresolved links. Profile: ${options.profile}. Fingerprint: ${options.exportFingerprint}.`
+);
 
 function parseArgs(args) {
   const parsed = {
     rootPath: null,
     outputDir: null,
-    maxFiles: DEFAULT_MAX_FILES,
-    maxBytes: DEFAULT_MAX_BYTES,
-    maxDepth: DEFAULT_MAX_DEPTH,
-    chunkTokens: DEFAULT_CHUNK_TOKENS,
+    profile: DEFAULT_CONTEXT_PROFILE,
+    maxFiles: null,
+    maxBytes: null,
+    maxDepth: null,
+    chunkTokens: null,
+    sceneNodeLimit: null,
+    sceneEdgeLimit: null,
+    scenePerspective: null,
     includeCode: true,
-    help: false
+    help: false,
+    explicit: new Set()
   };
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === '--help' || arg === '-h') {
       parsed.help = true;
+      continue;
+    }
+    if (arg === '--profile') {
+      parsed.profile = args[index + 1] || DEFAULT_CONTEXT_PROFILE;
+      parsed.explicit.add('profile');
+      index += 1;
       continue;
     }
     if (arg === '--out') {
@@ -128,26 +220,49 @@ function parseArgs(args) {
     }
     if (arg === '--max-files') {
       parsed.maxFiles = Number(args[index + 1]) || DEFAULT_MAX_FILES;
+      parsed.explicit.add('maxFiles');
       index += 1;
       continue;
     }
     if (arg === '--max-bytes') {
       parsed.maxBytes = Number(args[index + 1]) || DEFAULT_MAX_BYTES;
+      parsed.explicit.add('maxBytes');
       index += 1;
       continue;
     }
     if (arg === '--max-depth') {
       parsed.maxDepth = Number(args[index + 1]) || DEFAULT_MAX_DEPTH;
+      parsed.explicit.add('maxDepth');
       index += 1;
       continue;
     }
     if (arg === '--chunk-tokens') {
       parsed.chunkTokens = Math.max(200, Number(args[index + 1]) || DEFAULT_CHUNK_TOKENS);
+      parsed.explicit.add('chunkTokens');
+      index += 1;
+      continue;
+    }
+    if (arg === '--scene-node-limit') {
+      parsed.sceneNodeLimit = Math.max(24, Number(args[index + 1]) || DEFAULT_SCENE_NODE_LIMIT);
+      parsed.explicit.add('sceneNodeLimit');
+      index += 1;
+      continue;
+    }
+    if (arg === '--scene-edge-limit') {
+      parsed.sceneEdgeLimit = Math.max(24, Number(args[index + 1]) || DEFAULT_SCENE_EDGE_LIMIT);
+      parsed.explicit.add('sceneEdgeLimit');
+      index += 1;
+      continue;
+    }
+    if (arg === '--scene-perspective') {
+      parsed.scenePerspective = Math.max(240, Number(args[index + 1]) || DEFAULT_SCENE_PERSPECTIVE);
+      parsed.explicit.add('scenePerspective');
       index += 1;
       continue;
     }
     if (arg === '--markdown-only') {
       parsed.includeCode = false;
+      parsed.explicit.add('includeCode');
       continue;
     }
     if (!parsed.rootPath) {
@@ -155,18 +270,47 @@ function parseArgs(args) {
     }
   }
 
-  return parsed;
+  return normalizeContextOptions(parsed);
+}
+
+function normalizeContextOptions(parsed) {
+  const profileName = String(parsed.profile || DEFAULT_CONTEXT_PROFILE).trim().toLowerCase();
+  const profile = CONTEXT_PROFILES[profileName];
+  if (!profile) {
+    throw new Error(`Unknown context profile: ${parsed.profile}. Use one of: ${Object.keys(CONTEXT_PROFILES).join(', ')}.`);
+  }
+
+  const explicit = parsed.explicit || new Set();
+  return {
+    rootPath: parsed.rootPath,
+    outputDir: parsed.outputDir,
+    profile: profileName,
+    profileLabel: profile.label,
+    maxFiles: explicit.has('maxFiles') ? parsed.maxFiles : profile.maxFiles,
+    maxBytes: explicit.has('maxBytes') ? parsed.maxBytes : profile.maxBytes,
+    maxDepth: explicit.has('maxDepth') ? parsed.maxDepth : profile.maxDepth,
+    chunkTokens: explicit.has('chunkTokens') ? parsed.chunkTokens : profile.chunkTokens,
+    sceneNodeLimit: explicit.has('sceneNodeLimit') ? parsed.sceneNodeLimit : profile.sceneNodeLimit,
+    sceneEdgeLimit: explicit.has('sceneEdgeLimit') ? parsed.sceneEdgeLimit : profile.sceneEdgeLimit,
+    scenePerspective: explicit.has('scenePerspective') ? parsed.scenePerspective : profile.scenePerspective,
+    includeCode: explicit.has('includeCode') ? parsed.includeCode : profile.includeCode,
+    help: parsed.help
+  };
 }
 
 function printUsage() {
   console.log(`Usage: npm run context:claude -- <folder> [options]
 
 Options:
-  --out <folder>          Output folder. Default: <folder>/.shibanshu
-  --max-files <number>    Maximum files to index. Default: ${DEFAULT_MAX_FILES}
-  --max-bytes <number>    Skip files larger than this many bytes. Default: ${DEFAULT_MAX_BYTES}
-  --max-depth <number>    Maximum folder depth. Default: ${DEFAULT_MAX_DEPTH}
-  --chunk-tokens <number>  Approximate target tokens per JSONL chunk. Default: ${DEFAULT_CHUNK_TOKENS}
+  --profile <name>        Context profile: ${Object.keys(CONTEXT_PROFILES).join(', ')}. Default: ${DEFAULT_CONTEXT_PROFILE}
+  --out <folder>          Output folder. Default: <folder>/.athena
+  --max-files <number>    Maximum files to index. Overrides selected profile.
+  --max-bytes <number>    Skip files larger than this many bytes. Overrides selected profile.
+  --max-depth <number>    Maximum folder depth. Overrides selected profile.
+  --chunk-tokens <number>  Approximate target tokens per JSONL chunk. Overrides selected profile.
+  --scene-node-limit <n>   Maximum nodes in 3D scene export. Overrides selected profile.
+  --scene-edge-limit <n>   Maximum edges in 3D scene export. Overrides selected profile.
+  --scene-perspective <n>  3D projection perspective. Overrides selected profile.
   --markdown-only         Index only Markdown/text files
 `);
 }
@@ -390,18 +534,35 @@ function analyzeRepositoryContext(documents, graph) {
   };
 }
 
-function buildClaudeContextGraphPayload(rootPath, documents, graph, analysis, contextChunks, options = {}) {
+function buildClaudeContextGraphPayload(rootPath, documents, graph, analysis, contextChunks, options = {}, routeValidation = null) {
   const chunkLines = String(contextChunks || '')
     .trim()
     .split('\n')
     .filter(Boolean);
 
   return {
+    schemaVersion: CONTEXT_SCHEMA_VERSION,
+    exporterVersion: CONTEXT_EXPORTER_VERSION,
+    profile: options.profile || DEFAULT_CONTEXT_PROFILE,
+    profileLabel: options.profileLabel || CONTEXT_PROFILES[DEFAULT_CONTEXT_PROFILE].label,
+    fingerprint: options.exportFingerprint,
     root: rootPath,
-    generatedAt: new Date().toISOString(),
+    generatedAt: options.generatedAt || new Date().toISOString(),
+    limits: {
+      maxFiles: Number(options.maxFiles),
+      maxBytes: Number(options.maxBytes),
+      maxDepth: Number(options.maxDepth),
+      chunkTokens: Number(options.chunkTokens) || DEFAULT_CHUNK_TOKENS,
+      sceneNodeLimit: Number(options.sceneNodeLimit) || DEFAULT_SCENE_NODE_LIMIT,
+      sceneEdgeLimit: Number(options.sceneEdgeLimit) || DEFAULT_SCENE_EDGE_LIMIT,
+      includeCode: Boolean(options.includeCode)
+    },
     nodes: graph.nodes.map((node) => ({
+      id: buildStableNodeId(node.relativePath),
       path: node.relativePath,
       type: node.type,
+      startLine: 1,
+      endLine: node.lines,
       words: node.words,
       headings: node.headings.map((heading) => heading.text),
       tags: node.tags,
@@ -414,6 +575,7 @@ function buildClaudeContextGraphPayload(rootPath, documents, graph, analysis, co
       }))
     })),
     edges: graph.edges.map((edge) => ({
+      id: buildStableEdgeId(edge),
       source: edge.source.relativePath,
       target: edge.target.relativePath,
       kind: edge.kind,
@@ -434,6 +596,7 @@ function buildClaudeContextGraphPayload(rootPath, documents, graph, analysis, co
       count: chunkLines.length,
       targetTokens: Number(options.chunkTokens) || DEFAULT_CHUNK_TOKENS
     },
+    routeValidation,
     navigation: serializeContextAnalysis(analysis)
   };
 }
@@ -522,9 +685,14 @@ function buildScenePayload(rootPath, documents, graph, analysis, graphPayload, o
   );
 
   return {
+    schemaVersion: CONTEXT_SCHEMA_VERSION,
+    exporterVersion: CONTEXT_EXPORTER_VERSION,
     profile: '3d-scene',
+    exportProfile: options.profile || DEFAULT_CONTEXT_PROFILE,
+    exportProfileLabel: options.profileLabel || CONTEXT_PROFILES[DEFAULT_CONTEXT_PROFILE].label,
+    exportFingerprint: options.exportFingerprint || graphPayload.fingerprint,
     root: rootPath,
-    generatedAt: new Date().toISOString(),
+    generatedAt: graphPayload.generatedAt || new Date().toISOString(),
     activePath,
     counts: {
       nodes: documents.length,
@@ -937,6 +1105,122 @@ function buildSceneFingerprint(nodes = [], edges = [], routeScoreByPath = new Ma
   return hashString(`${nodeTokens.join('|')}|${edgeTokens.join('|')}`);
 }
 
+function buildContextExportFingerprint(rootPath, documents, graph, analysis, options = {}) {
+  const payload = {
+    schemaVersion: CONTEXT_SCHEMA_VERSION,
+    profile: options.profile || DEFAULT_CONTEXT_PROFILE,
+    limits: {
+      maxFiles: Number(options.maxFiles),
+      maxBytes: Number(options.maxBytes),
+      maxDepth: Number(options.maxDepth),
+      chunkTokens: Number(options.chunkTokens),
+      includeCode: Boolean(options.includeCode)
+    },
+    rootName: path.basename(rootPath),
+    nodes: documents.map((doc) => ({
+      path: doc.relativePath,
+      type: doc.type,
+      size: doc.size,
+      lines: doc.lines,
+      words: doc.words,
+      headings: doc.headings.map((heading) => `${heading.line}:${heading.depth}:${heading.text}`),
+      tags: doc.tags,
+      aliases: doc.aliases,
+      symbols: doc.symbols.map((symbol) => `${symbol.kind}:${symbol.name}:${symbol.line}`),
+      contentHash: sha256String(doc.content).slice(0, 24)
+    })),
+    edges: graph.edges
+      .map((edge) => `${edge.source.relativePath}->${edge.target.relativePath}:${edge.kind}:${edge.specifier || ''}:${edge.line || 0}`)
+      .sort(),
+    unresolved: graph.unresolvedLinks.map((link) => `${link.source.relativePath}->${link.target}:${link.kind}:${link.line || 0}`).sort(),
+    routes: (analysis.routes || []).map((route) => ({
+      name: route.name,
+      documents: route.documents.map((doc) => doc.relativePath)
+    }))
+  };
+  return sha256String(JSON.stringify(payload)).slice(0, 24);
+}
+
+function validateNavigationRoutes(routes = [], documents = []) {
+  const validPaths = new Set(documents.map((doc) => doc.relativePath));
+  const missing = [];
+  let documentRefs = 0;
+
+  for (const route of routes) {
+    for (const doc of route.documents || []) {
+      documentRefs += 1;
+      const docPath = doc?.relativePath || doc;
+      if (!validPaths.has(docPath)) {
+        missing.push({
+          route: route.name,
+          path: docPath
+        });
+      }
+    }
+  }
+
+  return {
+    ok: missing.length === 0,
+    routeCount: routes.length,
+    documentRefs,
+    missingCount: missing.length,
+    missing: missing.slice(0, 80)
+  };
+}
+
+function buildContextIntegrityPayload(rootPath, options, documents, graph, analysis, routeValidation, artifacts) {
+  const artifactRecords = artifacts.map((artifact) => ({
+    key: artifact.key,
+    file: artifact.file,
+    bytes: Buffer.byteLength(artifact.content || '', 'utf8'),
+    lines: String(artifact.content || '').split('\n').length,
+    sha256: sha256String(artifact.content || '')
+  }));
+  const warnings = [];
+  if (!routeValidation?.ok) warnings.push('Navigation routes reference files that were not emitted.');
+  if (documents.length >= Number(options.maxFiles || 0)) warnings.push('File discovery reached the selected max-files limit.');
+  if (graph.unresolvedLinks.length) warnings.push(`${graph.unresolvedLinks.length} unresolved links were found.`);
+
+  return {
+    schemaVersion: CONTEXT_SCHEMA_VERSION,
+    exporterVersion: CONTEXT_EXPORTER_VERSION,
+    generatedAt: options.generatedAt || new Date().toISOString(),
+    profile: options.profile || DEFAULT_CONTEXT_PROFILE,
+    profileLabel: options.profileLabel || CONTEXT_PROFILES[DEFAULT_CONTEXT_PROFILE].label,
+    fingerprint: options.exportFingerprint,
+    root: rootPath,
+    counts: {
+      files: documents.length,
+      markdown: documents.filter((doc) => doc.type === 'markdown').length,
+      code: documents.filter((doc) => doc.type === 'code').length,
+      edges: graph.edges.length,
+      unresolved: graph.unresolvedLinks.length,
+      clusters: analysis.clusters.length,
+      routes: analysis.routes.length
+    },
+    limits: {
+      maxFiles: Number(options.maxFiles),
+      maxBytes: Number(options.maxBytes),
+      maxDepth: Number(options.maxDepth),
+      chunkTokens: Number(options.chunkTokens),
+      sceneNodeLimit: Number(options.sceneNodeLimit),
+      sceneEdgeLimit: Number(options.sceneEdgeLimit),
+      includeCode: Boolean(options.includeCode)
+    },
+    routeValidation,
+    artifacts: artifactRecords,
+    warnings
+  };
+}
+
+function buildStableNodeId(relativePath) {
+  return `node:${hashString(relativePath)}`;
+}
+
+function buildStableEdgeId(edge) {
+  return `edge:${hashString(`${edge.source.relativePath}->${edge.target.relativePath}:${edge.kind}:${edge.specifier || edge.text || ''}:${edge.line || 0}`)}`;
+}
+
 function normalizeSceneRotation(rotation) {
   const normalized = {
     x: Number(rotation?.x) || SCENE_ROTATION.x,
@@ -953,6 +1237,10 @@ function normalizeSceneRotation(rotation) {
 
 function hashString(value) {
   return createHash('sha1').update(String(value || '')).digest('hex').slice(0, 16);
+}
+
+function sha256String(value) {
+  return createHash('sha256').update(String(value || '')).digest('hex');
 }
 
 function hashStringToNumber(value) {
@@ -1253,7 +1541,7 @@ function serializeContextAnalysis(analysis) {
 }
 
 function renderClaudeContextMap(root, documents, graph, config, analysis) {
-  const generatedAt = new Date().toISOString();
+  const generatedAt = config.generatedAt || new Date().toISOString();
   const markdownDocs = documents.filter((doc) => doc.type === 'markdown');
   const codeDocs = documents.filter((doc) => doc.type === 'code');
   const topLinked = analysis.hubs.slice(0, 30);
@@ -1261,6 +1549,9 @@ function renderClaudeContextMap(root, documents, graph, config, analysis) {
     `# Claude Context Map`,
     '',
     `Generated: ${generatedAt}`,
+    `Schema: ${CONTEXT_SCHEMA_VERSION}`,
+    `Profile: ${config.profile || DEFAULT_CONTEXT_PROFILE} (${config.profileLabel || CONTEXT_PROFILES[DEFAULT_CONTEXT_PROFILE].label})`,
+    `Fingerprint: ${config.exportFingerprint || 'pending'}`,
     `Root: ${root}`,
     `Files indexed: ${documents.length}`,
     `Markdown/text files: ${markdownDocs.length}`,
@@ -1413,7 +1704,7 @@ function renderClaudeContextMap(root, documents, graph, config, analysis) {
 }
 
 function renderClaudeMindMap(root, documents, graph, config, analysis) {
-  const generatedAt = new Date().toISOString();
+  const generatedAt = config.generatedAt || new Date().toISOString();
   const rootLabel = cleanMermaidMindMapLabel(path.basename(root) || 'Repository');
   const topLinked = analysis.hubs.slice(0, 30);
   const highSignal = topLinked.length ? topLinked.map((item) => item.doc) : documents.slice(0, 30);
@@ -1423,6 +1714,9 @@ function renderClaudeMindMap(root, documents, graph, config, analysis) {
     '# Claude Context Mind Map',
     '',
     `Generated: ${generatedAt}`,
+    `Schema: ${CONTEXT_SCHEMA_VERSION}`,
+    `Profile: ${config.profile || DEFAULT_CONTEXT_PROFILE} (${config.profileLabel || CONTEXT_PROFILES[DEFAULT_CONTEXT_PROFILE].label})`,
+    `Fingerprint: ${config.exportFingerprint || 'pending'}`,
     `Root: ${root}`,
     `Files indexed: ${documents.length}`,
     `Resolved links: ${graph.edges.length}`,
@@ -1523,11 +1817,14 @@ function renderClaudeMindMap(root, documents, graph, config, analysis) {
 }
 
 function renderClaudeNavigationGuide(root, documents, graph, config, analysis) {
-  const generatedAt = new Date().toISOString();
+  const generatedAt = config.generatedAt || new Date().toISOString();
   const lines = [
     '# Claude Context Navigation Guide',
     '',
     `Generated: ${generatedAt}`,
+    `Schema: ${CONTEXT_SCHEMA_VERSION}`,
+    `Profile: ${config.profile || DEFAULT_CONTEXT_PROFILE} (${config.profileLabel || CONTEXT_PROFILES[DEFAULT_CONTEXT_PROFILE].label})`,
+    `Fingerprint: ${config.exportFingerprint || 'pending'}`,
     `Root: ${root}`,
     `Files indexed: ${documents.length}`,
     `Resolved links: ${graph.edges.length}`,
@@ -1624,8 +1921,8 @@ function renderClaudeNavigationGuide(root, documents, graph, config, analysis) {
   lines.push('- Open the folder in Shibanshu Markdown Viewer to browse this same graph visually.');
   lines.push('- Use the graph search to jump between hubs and bridge files.');
   lines.push('- Use Mind Map on a specific note to inspect headings, tasks, backlinks, and unresolved links.');
-  lines.push('- Use Copy AI Map after changing notes to create a fresh model-readable map.');
-  lines.push('- Use `shibanshu-markdown context <folder> --out <folder>` to regenerate this guide offline.');
+  lines.push('- Use Copy for AI after changing notes to create a fresh model-readable map.');
+  lines.push('- Use `athena context <folder> --out <folder>` to regenerate this guide offline.');
 
   return `${lines.join('\n').trimEnd()}\n`;
 }
@@ -2110,7 +2407,7 @@ function renderContextChunks(documents, config) {
       const line = lines[index];
       const nextEstimate = estimateTokens(`${line}\n`);
       if (chunkLines.length && tokenEstimate + nextEstimate > targetTokens) {
-        chunks.push(buildContextChunk(doc, startLine, index, chunkLines.join('\n'), tokenEstimate, chunks.length));
+        chunks.push(buildContextChunk(doc, startLine, index, chunkLines.join('\n'), tokenEstimate, chunks.length, config));
         startLine = index + 1;
         chunkLines = [];
         tokenEstimate = 0;
@@ -2122,7 +2419,7 @@ function renderContextChunks(documents, config) {
 
     if (chunks.length >= MAX_CHUNKS) break;
     if (chunkLines.length) {
-      chunks.push(buildContextChunk(doc, startLine, startLine + chunkLines.length - 1, chunkLines.join('\n'), tokenEstimate, chunks.length));
+      chunks.push(buildContextChunk(doc, startLine, startLine + chunkLines.length - 1, chunkLines.join('\n'), tokenEstimate, chunks.length, config));
     }
     if (chunks.length >= MAX_CHUNKS) break;
   }
@@ -2130,13 +2427,16 @@ function renderContextChunks(documents, config) {
   return chunks.map((chunk) => JSON.stringify(chunk)).join('\n') + (chunks.length ? '\n' : '');
 }
 
-function buildContextChunk(doc, startLine, endLine, text, tokenEstimate, index) {
+function buildContextChunk(doc, startLine, endLine, text, tokenEstimate, index, config = {}) {
   const id = createHash('sha1')
     .update(`${doc.relativePath}:${startLine}:${endLine}:${index}`)
     .digest('hex')
     .slice(0, 16);
   return {
+    schemaVersion: CONTEXT_SCHEMA_VERSION,
+    profile: config.profile || DEFAULT_CONTEXT_PROFILE,
     id,
+    nodeId: buildStableNodeId(doc.relativePath),
     path: doc.relativePath,
     type: doc.type,
     startLine,

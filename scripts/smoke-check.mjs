@@ -10,6 +10,7 @@ const requiredFiles = [
   'bin/shibanshu-markdown.mjs',
   'electron/main.cjs',
   'electron/preload.cjs',
+  'mcp-server.mjs',
   'src/renderer.js',
   'src/styles.css',
   'docs/research.md',
@@ -26,6 +27,7 @@ const requiredFiles = [
   'scripts/release-readiness.mjs',
   'scripts/generate-download-page.mjs',
   'scripts/local-preview.mjs',
+  'scripts/mcp-safety-check.mjs',
   'scripts/package-mac-zip.mjs',
   'scripts/verify-mac-app.mjs',
   'scripts/diagnose-mac-launch.mjs',
@@ -49,6 +51,7 @@ const megaStressPlan = await readFile(path.join(root, 'docs/mega-stress-test-pla
 const packageJson = await readFile(path.join(root, 'package.json'), 'utf8');
 const claudeExporter = await readFile(path.join(root, 'scripts/export-claude-map.mjs'), 'utf8');
 const staticPublisher = await readFile(path.join(root, 'scripts/publish-static-site.mjs'), 'utf8');
+const mcpServer = await readFile(path.join(root, 'mcp-server.mjs'), 'utf8');
 const stressCheck = await readFile(path.join(root, 'scripts/stress-check.mjs'), 'utf8');
 const syntaxValidator = await readFile(path.join(root, 'scripts/validate-syntax.mjs'), 'utf8');
 const releaseChecksums = await readFile(path.join(root, 'scripts/release-checksums.mjs'), 'utf8');
@@ -252,6 +255,10 @@ if (!renderer.includes('renderVaultSidebar') || !renderer.includes('findBacklink
   throw new Error('Renderer is missing the vault sidebar/index implementation.');
 }
 
+if (!renderer.includes('const vaultFiles = Array.isArray(vault.files) ? vault.files : []') || renderer.includes('!vault?.files?.length')) {
+  throw new Error('Opening an empty repository must keep the sidebar in repository mode.');
+}
+
 if (
   !renderer.includes('renderVaultFileTree') ||
   !renderer.includes('buildVaultFileTree') ||
@@ -301,6 +308,9 @@ if (
   !renderer.includes('renderFullGraphMinimap') ||
   !renderer.includes('centerFullGraphFromMinimap') ||
   !renderer.includes('fitFullGraphToView') ||
+  !renderer.includes('exportFullGraphWithProfile') ||
+  !renderer.includes('Save 3D Map File') ||
+  !renderer.includes('Auto Rotate 3D Map') ||
   !renderer.includes('exportFullGraphJson') ||
   !renderer.includes('exportFullGraphContext') ||
   !renderer.includes('buildFullGraphContextMarkdown') ||
@@ -330,6 +340,11 @@ if (!renderer.includes('openCommandPalette') || !renderer.includes('getCommandPa
 if (
   !renderer.includes('openQuickOpen') ||
   !renderer.includes('refreshRecentItems') ||
+  !renderer.includes('renderSidebarRecentWork') ||
+  !renderer.includes('handleSidebarRecentWorkClick') ||
+  !renderer.includes('handleActivitySurface') ||
+  !renderer.includes('renderWorkspaceShell') ||
+  !renderer.includes('shouldShowWorkspaceStart') ||
   !renderer.includes('getRecentCommandPaletteItems') ||
   !renderer.includes('openRecentVault') ||
   !renderer.includes('openRecentFile') ||
@@ -418,6 +433,20 @@ if (
 
 if (!html.includes('vault-sidebar') || !html.includes('graph-canvas') || !html.includes('copy-ai-map')) {
   throw new Error('Built HTML is missing the vault sidebar, graph, or AI map controls.');
+}
+
+if (!html.includes('recent-work-list') || !html.includes('sidebar-open-vault') || !html.includes('sidebar-open-file')) {
+  throw new Error('Built HTML is missing recent-work or sidebar open controls.');
+}
+
+if (
+  !html.includes('activity-rail') ||
+  !html.includes('workspace-start') ||
+  !html.includes('document-workbench') ||
+  !html.includes('workspace-inspector') ||
+  !html.includes('inspector-metrics')
+) {
+  throw new Error('Built HTML is missing the 2.0 workspace shell.');
 }
 
 if (!html.includes('new-vault-file') || !html.includes('rename-vault-file') || !html.includes('delete-vault-file')) {
@@ -553,6 +582,7 @@ if (
   !packageJson.includes('"context:claude"') ||
   !packageJson.includes('"publish:static"') ||
   !packageJson.includes('"validate:syntax"') ||
+  !packageJson.includes('"mcp:safety"') ||
   !packageJson.includes('"stress"') ||
   !packageJson.includes('"release:checksums"') ||
   !packageJson.includes('"release:readiness"') ||
@@ -565,6 +595,10 @@ if (
   !packageJson.includes('"test:ui"')
 ) {
   throw new Error('Package scripts are missing validation, stress, release, context, publish, UI smoke, or dev-signing helpers.');
+}
+
+if (!packageJson.includes('"mcp-server.mjs"')) {
+  throw new Error('Electron package file list does not include the MCP server.');
 }
 
 if (
@@ -645,6 +679,9 @@ if (
   !claudeExporter.includes('getEdgeKindCounts') ||
   !claudeExporter.includes('analyzeRepositoryContext') ||
     !claudeExporter.includes('serializeContextAnalysis') ||
+    !claudeExporter.includes('CONTEXT_SCHEMA_VERSION') ||
+    !claudeExporter.includes('context-integrity.json') ||
+    !claudeExporter.includes('buildContextIntegrityPayload') ||
     !claudeExporter.includes('claude-context-navigation.md') ||
     !claudeExporter.includes('claude-context-mind-map.md') ||
     !claudeExporter.includes('claude-context-graph.json') ||
@@ -660,6 +697,22 @@ if (!syntaxValidator.includes('node:child_process') || !syntaxValidator.includes
 
 if (!stressCheck.includes('Extreme stress check passed') || !stressCheck.includes('createStressVault') || !stressCheck.includes('javascript:alert')) {
   throw new Error('Extreme stress check is incomplete.');
+}
+
+if (!stressCheck.includes('scripts/mcp-safety-check.mjs')) {
+  throw new Error('Stress check does not exercise MCP safety.');
+}
+
+if (
+  !mcpServer.includes('assertReadableMarkdownFile') ||
+  !mcpServer.includes('atomicCreateUtf8File') ||
+  !mcpServer.includes('normalizeVaultRelativePath') ||
+  !mcpServer.includes('generateStandaloneGraphViewer') ||
+  !mcpServer.includes('resolveHtmlOutputPath') ||
+  !mcpServer.includes('context-integrity.json') ||
+  !mcpServer.includes("scene: 'claude-context-scene.json'")
+) {
+  throw new Error('MCP server is missing path safety, atomic creation, or complete context artifact support.');
 }
 
 if (!releaseChecksums.includes('SHA256SUMS') || !releaseChecksums.includes('release-manifest.json') || !releaseChecksums.includes('mac-zip')) {

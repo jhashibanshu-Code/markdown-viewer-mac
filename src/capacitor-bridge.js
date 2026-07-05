@@ -285,7 +285,8 @@ export function createCapacitorNative() {
     },
 
     async createVaultFile(payload) {
-      const { vaultPath, relativePath, content } = payload || {};
+      const { relativePath, content } = payload || {};
+      const vaultPath = payload?.vaultPath || payload?.rootPath;
       if (!vaultPath || !relativePath) throw new Error('Missing vault path or file name.');
 
       const fullPath = vaultPath.endsWith('/')

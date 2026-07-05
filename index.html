@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'; frame-src 'none'; img-src 'self' data: blob: https://localhost capacitor:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:* https://localhost capacitor:;"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shibanshu Markdown Viewer</title>
+    <script type="module" crossorigin src="./assets/index-DW3Hlwh3.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-ByRKlXI0.css">
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div class="brand">
+          <button class="icon-button sidebar-toggle-btn" id="sidebar-toggle" type="button" title="Toggle sidebar" aria-label="Toggle sidebar">
+            <i data-lucide="menu" aria-hidden="true"></i>
+          </button>
+          <i data-lucide="file-text" aria-hidden="true"></i>
+          <span>Shibanshu Markdown</span>
+        </div>
+
+        <div class="document-stats" aria-live="polite">
+          <span id="reading-time">0 min</span>
+          <span id="word-count">0 words</span>
+          <span id="char-count">0 chars</span>
+        </div>
+
+        <div class="header-actions">
+          <button class="icon-button" id="global-search-trigger" type="button" title="Search files" aria-label="Search files">
+            <i data-lucide="search" aria-hidden="true"></i>
+          </button>
+          <button class="icon-button" id="version-history-trigger" type="button" title="Version history" aria-label="Version history">
+            <i data-lucide="history" aria-hidden="true"></i>
+          </button>
+          <button class="icon-button" id="command-palette-trigger" type="button" title="Commands" aria-label="Commands">
+            <i data-lucide="command" aria-hidden="true"></i>
+          </button>
+          <button class="icon-button" id="theme-toggle" type="button" title="Toggle theme" aria-label="Toggle theme">
+            <i data-lucide="moon" aria-hidden="true"></i>
+          </button>
+        </div>
+      </header>
+
+      <nav class="toolbar" aria-label="Markdown actions">
+        <div class="toolbar-group">
+          <button class="tool-button" id="open-file" type="button" title="Open file (Cmd+O)">
+            <i data-lucide="folder-open" aria-hidden="true"></i>
+            <span>Open File</span>
+          </button>
+          <button class="tool-button" id="open-vault" type="button" title="Open folder (Cmd+Shift+O)">
+            <i data-lucide="folder-root" aria-hidden="true"></i>
+            <span>Open Folder</span>
+          </button>
+          <button class="tool-button" id="new-tab" type="button" title="New note (Cmd+N)">
+            <i data-lucide="plus" aria-hidden="true"></i>
+            <span>New Note</span>
+          </button>
+          <button class="tool-button" id="daily-note" type="button" title="Today's daily note">
+            <i data-lucide="calendar" aria-hidden="true"></i>
+            <span>Daily Note</span>
+          </button>
+          <button class="tool-button" id="save-file" type="button" title="Save (Cmd+S)">
+            <i data-lucide="save" aria-hidden="true"></i>
+            <span>Save</span>
+          </button>
+          <button class="tool-button" id="save-file-as" type="button" title="Save As (Cmd+Shift+S)">
+            <i data-lucide="save-all" aria-hidden="true"></i>
+            <span>Save As</span>
+          </button>
+        </div>
+
+        <div class="toolbar-group edit-toolbar" aria-label="Edit actions">
+          <button class="tool-button" id="undo-btn" type="button" title="Undo (Cmd+Z)">
+            <i data-lucide="undo-2" aria-hidden="true"></i>
+            <span>Undo</span>
+          </button>
+          <button class="tool-button" id="redo-btn" type="button" title="Redo (Cmd+Shift+Z)">
+            <i data-lucide="redo-2" aria-hidden="true"></i>
+            <span>Redo</span>
+          </button>
+          <button class="tool-button" id="cut-btn" type="button" title="Cut (Cmd+X)">
+            <i data-lucide="scissors" aria-hidden="true"></i>
+            <span>Cut</span>
+          </button>
+          <button class="tool-button" id="copy-selection-btn" type="button" title="Copy (Cmd+C)">
+            <i data-lucide="clipboard-copy" aria-hidden="true"></i>
+            <span>Copy</span>
+          </button>
+          <button class="tool-button" id="paste-btn" type="button" title="Paste (Cmd+V)">
+            <i data-lucide="clipboard-paste" aria-hidden="true"></i>
+            <span>Paste</span>
+          </button>
+          <button class="tool-button" id="find-replace-btn" type="button" title="Find &amp; Replace (Cmd+F)">
+            <i data-lucide="search" aria-hidden="true"></i>
+            <span>Find</span>
+          </button>
+        </div>
+
+        <div class="toolbar-group segmented" role="radiogroup" aria-label="View mode">
+          <button class="segment-button active" type="button" data-view-mode="split" title="Split view" aria-pressed="true">
+            <i data-lucide="columns-2" aria-hidden="true"></i>
+            <span>Write + Read</span>
+          </button>
+          <button class="segment-button" type="button" data-view-mode="editor" title="Editor view" aria-pressed="false">
+            <i data-lucide="edit-3" aria-hidden="true"></i>
+            <span>Write</span>
+          </button>
+          <button class="segment-button" type="button" data-view-mode="preview" title="Preview view" aria-pressed="false">
+            <i data-lucide="eye" aria-hidden="true"></i>
+            <span>Read</span>
+          </button>
+        </div>
+
+        <div class="toolbar-group format-toolbar" aria-label="Markdown formatting">
+          <button class="tool-button format-button" type="button" data-format-command="heading" title="Heading (Ctrl+H)">
+            <i data-lucide="heading-1" aria-hidden="true"></i>
+            <span>H1</span>
+          </button>
+          <button class="tool-button format-button" type="button" data-format-command="bold" title="Bold (Cmd+B)">
+            <i data-lucide="bold" aria-hidden="true"></i>
+            <span>Bold</span>
+          </button>
+          <button class="tool-button format-button" type="button" data-format-command="italic" title="Italic (Cmd+I)">
+            <i data-lucide="italic" aria-hidden="true"></i>
+            <span>Italic</span>
+          </button>
+          <button class="tool-button format-button" type="button" data-format-command="link" title="Insert link">
+            <i data-lucide="link-2" aria-hidden="true"></i>
+            <span>Link</span>
+          </button>
+          <button class="tool-button format-button" type="button" data-format-command="code" title="Inline code">
+            <i data-lucide="code" aria-hidden="true"></i>
+            <span>Code</span>
+          </button>
+          <button class="tool-button format-button" type="button" data-format-command="quote" title="Block quote">
+            <i data-lucide="quote" aria-hidden="true"></i>
+            <span>Quote</span>
+          </button>
+          <button class="tool-button format-button" type="button" data-format-command="task" title="Task list">
+            <i data-lucide="list-todo" aria-hidden="true"></i>
+            <span>Task</span>
+          </button>
+          <button class="tool-button format-button" type="button" data-format-command="table" title="Insert table">
+            <i data-lucide="table-2" aria-hidden="true"></i>
+            <span>Table</span>
+          </button>
+        </div>
+
+        <div class="toolbar-group">
+          <button class="tool-button" id="copy-markdown" type="button" title="Copy entire document">
+            <i data-lucide="copy" aria-hidden="true"></i>
+            <span>Copy Note</span>
+          </button>
+          <button class="tool-button" id="open-mind-map" type="button" title="Map this note">
+            <i data-lucide="network" aria-hidden="true"></i>
+            <span>Note Map</span>
+          </button>
+          <button class="tool-button" id="insert-mind-map" type="button" title="Insert a Mermaid map at the cursor">
+            <i data-lucide="network" aria-hidden="true"></i>
+            <span>Add Map</span>
+          </button>
+          <button class="tool-button" id="export-html" type="button" title="Export as HTML">
+            <i data-lucide="code-2" aria-hidden="true"></i>
+            <span>Save HTML</span>
+          </button>
+          <button class="tool-button" id="export-pdf" type="button" title="Export as PDF">
+            <i data-lucide="file-down" aria-hidden="true"></i>
+            <span>Save PDF</span>
+          </button>
+          <button class="tool-button" id="publish-vault" type="button" title="Create a local website">
+            <i data-lucide="external-link" aria-hidden="true"></i>
+            <span>Website</span>
+          </button>
+          <button class="tool-button" id="reveal-file" type="button" title="Reveal in Finder">
+            <i data-lucide="external-link" aria-hidden="true"></i>
+            <span>Finder</span>
+          </button>
+        </div>
+      </nav>
+
+      <div class="tabs-bar" id="tabs-bar" role="tablist" aria-label="Open documents"></div>
+
+      <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+
+      <main class="workspace split" id="workspace">
+        <nav class="activity-rail" aria-label="Primary workspace views">
+          <button class="activity-button active" type="button" data-activity-surface="workspace" title="Workspace" aria-label="Workspace" aria-pressed="true">
+            <i data-lucide="folder-open" aria-hidden="true"></i>
+          </button>
+          <button class="activity-button" type="button" data-activity-surface="search" title="Search" aria-label="Search" aria-pressed="false">
+            <i data-lucide="search" aria-hidden="true"></i>
+          </button>
+          <button class="activity-button" type="button" data-activity-surface="graph" title="Folder Map" aria-label="Folder Map" aria-pressed="false">
+            <i data-lucide="network" aria-hidden="true"></i>
+          </button>
+          <button class="activity-button" type="button" data-activity-surface="context" title="Note Map" aria-label="Note Map" aria-pressed="false">
+            <i data-lucide="columns-2" aria-hidden="true"></i>
+          </button>
+          <button class="activity-button" type="button" data-activity-surface="command" title="Commands" aria-label="Commands" aria-pressed="false">
+            <i data-lucide="command" aria-hidden="true"></i>
+          </button>
+          <button class="activity-button rail-bottom" type="button" data-activity-surface="publish" title="Publish" aria-label="Publish" aria-pressed="false">
+            <i data-lucide="external-link" aria-hidden="true"></i>
+          </button>
+        </nav>
+
+        <aside class="vault-sidebar" id="vault-sidebar" aria-label="Folder browser">
+          <div class="vault-header">
+            <div>
+              <span class="sidebar-label">Folder</span>
+              <strong id="vault-name">No folder</strong>
+            </div>
+            <span id="vault-count">0 files</span>
+          </div>
+
+          <div class="vault-primary-actions" aria-label="Open workspace">
+            <button class="sidebar-action primary" id="sidebar-open-vault" type="button">
+              <i data-lucide="folder-open" aria-hidden="true"></i>
+              <span>Open Folder</span>
+            </button>
+            <button class="sidebar-action" id="sidebar-open-file" type="button">
+              <i data-lucide="file-text" aria-hidden="true"></i>
+              <span>Open File</span>
+            </button>
+          </div>
+
+          <section class="sidebar-section recent-work-section" aria-labelledby="recent-work-heading">
+            <div class="sidebar-section-header">
+              <h2 id="recent-work-heading">Recent Work</h2>
+            </div>
+            <div class="recent-work-list" id="recent-work-list"></div>
+          </section>
+
+          <label class="vault-search">
+            <i data-lucide="search" aria-hidden="true"></i>
+            <input id="vault-search" type="search" placeholder="Search files" autocomplete="off" />
+          </label>
+
+          <section class="sidebar-section" aria-labelledby="vault-files-heading">
+            <div class="sidebar-section-header">
+              <h2 id="vault-files-heading">Files</h2>
+              <div class="file-actions">
+                <button class="sidebar-icon-action" id="new-vault-file" type="button" title="New note in this folder" aria-label="New note in this folder">
+                  <i data-lucide="file-plus-2" aria-hidden="true"></i>
+                </button>
+                <button class="sidebar-icon-action" id="rename-vault-file" type="button" title="Rename current note" aria-label="Rename current note">
+                  <i data-lucide="pencil" aria-hidden="true"></i>
+                </button>
+                <button class="sidebar-icon-action danger" id="delete-vault-file" type="button" title="Move current note to Trash" aria-label="Move current note to Trash">
+                  <i data-lucide="trash-2" aria-hidden="true"></i>
+                </button>
+              </div>
+            </div>
+            <div class="vault-list" id="vault-file-list"></div>
+          </section>
+
+          <section class="sidebar-section" aria-labelledby="vault-graph-heading">
+            <div class="sidebar-section-header">
+              <h2 id="vault-graph-heading">Folder Map</h2>
+              <div class="mini-segmented" role="radiogroup" aria-label="Map range">
+                <button class="mini-segment active" type="button" data-graph-mode="local" aria-pressed="true">This Note</button>
+                <button class="mini-segment" type="button" data-graph-mode="global" aria-pressed="false">All Notes</button>
+              </div>
+            </div>
+            <p class="graph-summary" id="graph-summary">Open a folder to map notes.</p>
+            <div class="graph-canvas" id="graph-canvas" tabindex="0" aria-label="Folder map"></div>
+            <div class="graph-actions">
+              <button class="sidebar-action" id="open-full-graph" type="button">Open Map</button>
+              <button class="sidebar-action" id="copy-ai-map" type="button">Copy for AI</button>
+              <button class="sidebar-action" id="new-ai-map" type="button">Save Map Note</button>
+            </div>
+          </section>
+        </aside>
+
+        <section class="document-workbench" aria-label="Document workspace">
+          <section class="workspace-start" id="workspace-start" aria-labelledby="workspace-start-title">
+            <div class="workspace-start-main">
+              <span class="sidebar-label">Markdown Workspace</span>
+              <h1 id="workspace-start-title">Open a folder and start writing.</h1>
+              <p>Pick a Markdown folder or file. The app shows your notes, preview, outline, links, and maps.</p>
+              <div class="workspace-start-actions">
+                <button class="sidebar-action primary" id="start-open-vault" type="button">
+                  <i data-lucide="folder-open" aria-hidden="true"></i>
+                  <span>Open Folder</span>
+                </button>
+                <button class="sidebar-action" id="start-open-file" type="button">
+                  <i data-lucide="file-text" aria-hidden="true"></i>
+                  <span>Open File</span>
+                </button>
+                <button class="sidebar-action" id="start-new-note" type="button">
+                  <i data-lucide="plus" aria-hidden="true"></i>
+                  <span>New Note</span>
+                </button>
+              </div>
+            </div>
+            <aside class="workspace-start-recent" aria-labelledby="workspace-start-recent-title">
+              <div class="sidebar-section-header">
+                <h2 id="workspace-start-recent-title">Recent Work</h2>
+                <button class="sidebar-icon-action" id="start-command-palette" type="button" title="Commands" aria-label="Commands">
+                  <i data-lucide="command" aria-hidden="true"></i>
+                </button>
+              </div>
+              <div class="recent-work-list start-recent-list" id="start-recent-list"></div>
+            </aside>
+          </section>
+
+          <header class="document-strip">
+            <div class="document-identity">
+              <span class="sidebar-label">Active Document</span>
+              <strong id="document-title">Untitled.md</strong>
+              <small id="document-location">No file selected</small>
+            </div>
+            <div class="document-strip-actions" aria-label="Document actions">
+              <button class="icon-button compact" id="document-save" type="button" title="Save" aria-label="Save">
+                <i data-lucide="save" aria-hidden="true"></i>
+              </button>
+              <button class="icon-button compact" id="document-mind-map" type="button" title="Open Note Map" aria-label="Open Note Map">
+                <i data-lucide="network" aria-hidden="true"></i>
+              </button>
+              <button class="icon-button compact" id="document-graph" type="button" title="Open Folder Map" aria-label="Open Folder Map">
+                <i data-lucide="columns-2" aria-hidden="true"></i>
+              </button>
+            </div>
+          </header>
+
+          <div class="document-panes">
+            <section class="pane editor-pane" aria-label="Markdown editor">
+              <div id="markdown-editor" aria-label="Markdown editor"></div>
+            </section>
+
+            <section class="pane preview-pane" aria-label="Markdown preview">
+              <article id="markdown-preview" class="markdown-body"></article>
+            </section>
+          </div>
+        </section>
+
+        <aside class="workspace-inspector" id="workspace-inspector" aria-label="Document inspector">
+          <section class="inspector-card" aria-labelledby="inspector-document-heading">
+            <div class="sidebar-section-header">
+              <h2 id="inspector-document-heading">Document</h2>
+              <span id="inspector-document-state">Saved</span>
+            </div>
+            <strong id="inspector-document-title">Untitled.md</strong>
+            <p id="inspector-document-path">No file selected</p>
+            <div class="inspector-metrics" id="inspector-metrics"></div>
+          </section>
+
+          <section class="sidebar-section inspector-section" aria-labelledby="vault-outline-heading">
+            <h2 id="vault-outline-heading">Outline</h2>
+            <div class="outline-list" id="outline-list"></div>
+          </section>
+
+          <section class="sidebar-section inspector-section" aria-labelledby="vault-backlinks-heading">
+            <h2 id="vault-backlinks-heading">Links Here</h2>
+            <div class="backlink-list" id="backlink-list"></div>
+          </section>
+
+          <section class="inspector-card" aria-labelledby="inspector-context-heading">
+            <div class="sidebar-section-header">
+              <h2 id="inspector-context-heading">Maps and AI</h2>
+            </div>
+            <p>Turn this folder into a map you can read or share with Claude/ChatGPT.</p>
+            <div class="inspector-action-grid">
+              <button class="sidebar-action" id="inspector-open-graph" type="button">Folder Map</button>
+              <button class="sidebar-action" id="inspector-open-mind-map" type="button">Note Map</button>
+              <button class="sidebar-action" id="inspector-copy-context" type="button">Copy for AI</button>
+              <button class="sidebar-action" id="inspector-new-context" type="button">Save Map Note</button>
+            </div>
+          </section>
+        </aside>
+      </main>
+
+      <footer class="status-bar">
+        <span id="file-path">Untitled</span>
+        <span id="save-state">Saved</span>
+      </footer>
+
+      <div class="drop-overlay" id="drop-overlay" aria-hidden="true">
+        <div class="drop-message">
+          <i data-lucide="file-input" aria-hidden="true"></i>
+          <span>Drop Markdown files to open</span>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="command-palette" hidden>
+        <section class="command-panel" role="dialog" aria-modal="true" aria-labelledby="command-palette-title">
+          <h2 id="command-palette-title">Commands</h2>
+          <label class="command-search">
+            <i data-lucide="command" aria-hidden="true"></i>
+            <input id="command-search" type="search" placeholder="Search commands and notes" autocomplete="off" />
+          </label>
+          <div class="command-results" id="command-results" role="listbox" aria-label="Commands and notes"></div>
+        </section>
+      </div>
+
+      <div class="modal-backdrop" id="global-search" hidden>
+        <section class="search-panel" role="dialog" aria-modal="true" aria-labelledby="global-search-title">
+          <h2 id="global-search-title">Search</h2>
+          <label class="command-search">
+            <i data-lucide="search" aria-hidden="true"></i>
+            <input id="global-search-input" type="search" placeholder="Search files and content" autocomplete="off" />
+          </label>
+          <p class="search-summary" id="global-search-summary">0 results</p>
+          <div class="search-results" id="global-search-results" role="listbox" aria-label="Search results"></div>
+        </section>
+      </div>
+
+      <div class="modal-backdrop" id="recovery-modal" hidden>
+        <section class="recovery-panel" role="dialog" aria-modal="true" aria-labelledby="recovery-title">
+          <header class="recovery-header">
+            <div>
+              <span class="sidebar-label">Recovery</span>
+              <h2 id="recovery-title">Unsaved Drafts Found</h2>
+              <p id="recovery-summary">Restore unsaved work from the app's autosave store.</p>
+            </div>
+          </header>
+          <div class="recovery-list" id="recovery-list"></div>
+          <div class="recovery-actions">
+            <button class="tool-button" id="restore-drafts" type="button">
+              <i data-lucide="history" aria-hidden="true"></i>
+              <span>Restore Drafts</span>
+            </button>
+            <button class="tool-button" id="discard-drafts" type="button">
+              <i data-lucide="trash-2" aria-hidden="true"></i>
+              <span>Discard Drafts</span>
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <div class="modal-backdrop" id="history-modal" hidden>
+        <section class="history-panel" role="dialog" aria-modal="true" aria-labelledby="history-title">
+          <header class="history-header">
+            <div>
+              <span class="sidebar-label">History</span>
+              <h2 id="history-title">Version History</h2>
+              <p id="history-summary">Saved snapshots for the active file.</p>
+            </div>
+            <button class="icon-button" id="close-history" type="button" title="Close history" aria-label="Close history">
+              <i data-lucide="x" aria-hidden="true"></i>
+            </button>
+          </header>
+          <div class="history-list" id="history-list" role="listbox" aria-label="Version history snapshots"></div>
+        </section>
+      </div>
+
+      <div class="modal-backdrop graph-modal" id="full-graph-modal" hidden>
+        <section class="graph-panel" role="dialog" aria-modal="true" aria-labelledby="full-graph-title">
+          <header class="graph-panel-header">
+            <div>
+              <span class="sidebar-label">Folder Map</span>
+              <strong id="full-graph-title">Map</strong>
+              <p id="full-graph-summary">Open a folder to map notes.</p>
+            </div>
+              <div class="graph-panel-controls">
+                <span class="graph-zoom-value" id="full-graph-zoom-value">100%</span>
+                <button class="icon-button" id="full-graph-zoom-out" type="button" title="Zoom out" aria-label="Zoom out">
+                  <i data-lucide="zoom-out" aria-hidden="true"></i>
+                </button>
+                <button class="icon-button" id="full-graph-rotate-left" type="button" title="Rotate left" aria-label="Rotate map left">
+                  <i data-lucide="chevron-left" aria-hidden="true"></i>
+                </button>
+                <button class="icon-button" id="full-graph-rotate-right" type="button" title="Rotate right" aria-label="Rotate map right">
+                  <i data-lucide="chevron-right" aria-hidden="true"></i>
+                </button>
+                <button class="icon-button" id="full-graph-rotate-up" type="button" title="Rotate up" aria-label="Rotate map up">
+                  <i data-lucide="chevron-up" aria-hidden="true"></i>
+                </button>
+                <button class="icon-button" id="full-graph-rotate-down" type="button" title="Rotate down" aria-label="Rotate map down">
+                  <i data-lucide="chevron-down" aria-hidden="true"></i>
+                </button>
+                <button class="icon-button" id="full-graph-rotation-reset" type="button" title="Reset map rotation" aria-label="Reset map rotation">
+                  <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+                </button>
+                <button class="icon-button" id="full-graph-auto-rotate" type="button" title="Auto rotate" aria-label="Auto rotate map">
+                  <i data-lucide="rotate-cw" aria-hidden="true"></i>
+                </button>
+                <span class="full-graph-rotation-readout" id="full-graph-rotation-readout">-18° / -34°</span>
+                <button class="icon-button" id="full-graph-fit" type="button" title="Fit map to view" aria-label="Fit map to view">
+                  <i data-lucide="maximize-2" aria-hidden="true"></i>
+                </button>
+                <button class="icon-button" id="full-graph-reset" type="button" title="Reset map view" aria-label="Reset map view">
+                  <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+              </button>
+              <button class="icon-button" id="full-graph-zoom-in" type="button" title="Zoom in" aria-label="Zoom in">
+                <i data-lucide="zoom-in" aria-hidden="true"></i>
+              </button>
+              <button class="icon-button" id="close-full-graph" type="button" title="Close map" aria-label="Close map">
+                <i data-lucide="x" aria-hidden="true"></i>
+              </button>
+            </div>
+          </header>
+
+          <div class="full-graph-layout">
+            <div class="full-graph-stage" id="full-graph-stage">
+              <div class="full-graph-canvas" id="full-graph-canvas" tabindex="0" aria-label="Full folder map"></div>
+              <div class="full-graph-minimap" id="full-graph-minimap" role="button" tabindex="0" aria-label="Map minimap"></div>
+              <div class="graph-preview-popover" id="full-graph-preview-popover" role="dialog" aria-label="Map preview" hidden></div>
+            </div>
+
+            <aside class="full-graph-inspector" aria-label="Map controls">
+              <label class="vault-search full-graph-search">
+                <i data-lucide="search" aria-hidden="true"></i>
+                <input id="full-graph-search" type="search" placeholder="Find a note in the map" autocomplete="off" />
+              </label>
+
+              <div class="full-graph-scope" role="radiogroup" aria-label="Map range">
+                <button class="mini-segment active" type="button" data-full-graph-mode="local" aria-pressed="true" title="Show notes connected to the active note">This Note</button>
+                <button class="mini-segment" type="button" data-full-graph-mode="global" aria-pressed="false" title="Show every note in the folder">All Notes</button>
+              </div>
+
+              <div class="graph-filter-panel" aria-label="Map filters">
+                <label class="graph-folder-filter">
+                  <span>Folder</span>
+                  <select id="full-graph-folder-filter">
+                    <option value="all">All folders</option>
+                  </select>
+                </label>
+                <label class="graph-folder-filter">
+                  <span>Type</span>
+                  <select id="full-graph-extension-filter">
+                    <option value="all">All types</option>
+                  </select>
+                </label>
+                <div class="graph-filter-toggles">
+                  <label class="graph-filter-toggle">
+                    <input id="full-graph-filter-tagged" type="checkbox" />
+                    <span>Tags</span>
+                  </label>
+                  <label class="graph-filter-toggle">
+                    <input id="full-graph-filter-orphans" type="checkbox" />
+                    <span>No Links</span>
+                  </label>
+                  <label class="graph-filter-toggle">
+                    <input id="full-graph-filter-unresolved" type="checkbox" />
+                    <span>Missing Links</span>
+                  </label>
+                  <label class="graph-filter-toggle">
+                    <input id="full-graph-filter-backlinks" type="checkbox" />
+                    <span>Links Here</span>
+                  </label>
+                  <label class="graph-filter-toggle">
+                    <input id="full-graph-filter-outgoing" type="checkbox" />
+                    <span>Links Out</span>
+                  </label>
+                  <label class="graph-filter-toggle">
+                    <input id="full-graph-filter-media" type="checkbox" />
+                    <span>Media</span>
+                  </label>
+                  <label class="graph-filter-toggle">
+                    <input id="full-graph-filter-canvas" type="checkbox" />
+                    <span>Board Files</span>
+                  </label>
+                </div>
+                <label class="graph-depth-filter">
+                  <span>Steps from note <output id="full-graph-depth-value">1</output></span>
+                  <input id="full-graph-depth" type="range" min="1" max="4" step="1" value="1" />
+                </label>
+                <div class="graph-preset-row">
+                  <select id="full-graph-preset" aria-label="Saved map views">
+                    <option value="">Saved views</option>
+                  </select>
+                  <button class="icon-button compact" id="full-graph-save-preset" type="button" title="Save map view" aria-label="Save map view">
+                    <i data-lucide="save" aria-hidden="true"></i>
+                  </button>
+                  <button class="icon-button compact" id="full-graph-delete-preset" type="button" title="Delete map view" aria-label="Delete map view">
+                    <i data-lucide="trash-2" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="full-graph-actions">
+                <button class="sidebar-action" id="copy-ai-map-graph" type="button">Copy for AI</button>
+                <button class="sidebar-action" id="new-ai-map-graph" type="button">Save Map Note</button>
+              </div>
+              <div class="full-graph-space-controls" role="radiogroup" aria-label="Map space mode">
+                <button class="mini-segment active" type="button" data-full-graph-space="2d" aria-pressed="true" title="Use a flat map">2D</button>
+                <button class="mini-segment" type="button" data-full-graph-space="3d" aria-pressed="false" title="Use a 3D map with rotate and export">3D</button>
+              </div>
+              <label class="graph-folder-filter graph-export-profile">
+                <span>Export As</span>
+                <select id="full-graph-export-profile" title="Choose what to export">
+                  <option value="navigation">Navigation file</option>
+                  <option value="llm">Claude / ChatGPT notes</option>
+                  <option value="audit">Full audit file</option>
+                  <option value="presentation">Presentation image</option>
+                  <option value="compact">Compact map</option>
+                  <option value="scene">3D scene file</option>
+                </select>
+              </label>
+              <div class="graph-export-actions">
+                <button class="sidebar-action" id="export-graph-json" type="button">Save JSON</button>
+                <button class="sidebar-action" id="export-graph-svg" type="button">Save SVG</button>
+                <button class="sidebar-action" id="export-graph-context" type="button">Save Context</button>
+              </div>
+
+              <article class="graph-detail-card" id="full-graph-detail" aria-live="polite"></article>
+
+              <div class="full-graph-list" id="full-graph-list" role="listbox" aria-label="Map notes"></div>
+            </aside>
+          </div>
+        </section>
+      </div>
+
+      <div class="modal-backdrop graph-modal" id="mind-map-modal" hidden>
+        <section class="graph-panel mind-map-panel" role="dialog" aria-modal="true" aria-labelledby="mind-map-title">
+          <header class="graph-panel-header">
+            <div>
+              <span class="sidebar-label">Note Map</span>
+              <strong id="mind-map-title">Map</strong>
+              <p id="mind-map-summary">Open a note to see headings, links, tasks, tags, and links back to it.</p>
+            </div>
+            <div class="graph-panel-controls">
+              <button class="icon-button" id="mind-map-zoom-out" type="button" title="Zoom out" aria-label="Zoom out">
+                <i data-lucide="zoom-out" aria-hidden="true"></i>
+              </button>
+              <button class="icon-button" id="mind-map-reset" type="button" title="Reset note map view" aria-label="Reset note map view">
+                <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+              </button>
+              <button class="icon-button" id="mind-map-zoom-in" type="button" title="Zoom in" aria-label="Zoom in">
+                <i data-lucide="zoom-in" aria-hidden="true"></i>
+              </button>
+              <button class="icon-button" id="close-mind-map" type="button" title="Close note map" aria-label="Close note map">
+                <i data-lucide="x" aria-hidden="true"></i>
+              </button>
+            </div>
+          </header>
+
+          <div class="mind-map-layout">
+            <div class="mind-map-stage" id="mind-map-stage">
+              <div class="mind-map-canvas" id="mind-map-canvas" tabindex="0" aria-label="Note map canvas"></div>
+            </div>
+
+            <aside class="mind-map-inspector" aria-label="Mind map controls">
+              <label class="vault-search mind-map-search">
+                <i data-lucide="search" aria-hidden="true"></i>
+                <input id="mind-map-search" type="search" placeholder="Find in this map" autocomplete="off" />
+              </label>
+
+              <div class="mind-map-actions">
+                <button class="sidebar-action" id="copy-mind-map-context" type="button">Copy for Claude</button>
+                <button class="sidebar-action" id="new-mind-map-context" type="button">Save Map Note</button>
+                <button class="sidebar-action" id="insert-mind-map-from-canvas" type="button">Insert Diagram</button>
+              </div>
+
+              <article class="graph-detail-card" id="mind-map-detail" aria-live="polite"></article>
+
+              <div class="mind-map-list" id="mind-map-list" role="listbox" aria-label="Mind map nodes"></div>
+            </aside>
+          </div>
+        </section>
+      </div>
+
+      <button class="mobile-fab" id="mobile-new-note" type="button" title="New note" aria-label="New note">
+        <i data-lucide="plus" aria-hidden="true"></i>
+      </button>
+
+      <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+    </div>
+
+  </body>
+</html>

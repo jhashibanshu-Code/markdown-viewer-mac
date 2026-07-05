@@ -228,7 +228,7 @@ try {
   await page.waitForSelector('#full-graph-canvas svg .graph-node');
 
   const graphSummary = await page.textContent('#full-graph-summary');
-  if (!graphSummary?.includes('global notes') || !graphSummary.includes('links')) {
+  if (!graphSummary?.includes('all notes') || !graphSummary.includes('links')) {
     throw new Error(`Full graph summary is not populated: ${graphSummary}`);
   }
   for (const selector of [
@@ -396,7 +396,7 @@ try {
     compactGraphRotationBefore
   );
   await page.click('#full-graph-auto-rotate');
-  await page.waitForFunction(() => document.querySelector('#full-graph-auto-rotate')?.textContent.includes('Stop Orbit'));
+  await page.waitForFunction(() => document.querySelector('#full-graph-auto-rotate')?.textContent.includes('Stop Rotate'));
   await page.waitForTimeout(240);
   const compactGraphRotationAfterAuto = await page.textContent('#full-graph-rotation-readout');
   await page.waitForTimeout(300);
@@ -405,7 +405,7 @@ try {
     throw new Error('Auto graph rotate did not change rotation readout while active.');
   }
   await page.click('#full-graph-auto-rotate');
-  await page.waitForFunction(() => document.querySelector('#full-graph-auto-rotate')?.textContent.includes('Auto Orbit'));
+  await page.waitForFunction(() => document.querySelector('#full-graph-auto-rotate')?.textContent.includes('Auto Rotate'));
 
   await page.click('[data-full-graph-mode="local"]');
   await page.locator('#full-graph-depth').evaluate((input) => {
@@ -440,7 +440,7 @@ try {
   }
   await page.click(`[data-full-graph-node-path="${vaultRoot}/Canvas/Canvas Board.md"]`);
   await page.click('#full-graph-detail [data-full-graph-focus-path]');
-  await page.waitForFunction(() => document.querySelector('#full-graph-summary')?.textContent.includes('local notes'));
+  await page.waitForFunction(() => document.querySelector('#full-graph-summary')?.textContent.includes('near this note'));
   await page.click('#full-graph-detail [data-full-graph-expand-path]');
   await page.waitForFunction(() => document.querySelector('#full-graph-summary')?.textContent.includes('depth 3'));
   const focusedGraphTab = await page.textContent('.tab.active');
@@ -454,11 +454,32 @@ try {
 
   await page.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
   await page.waitForSelector('#command-palette:not([hidden])');
-  await page.fill('#command-search', 'graph');
+  const commandTitle = await page.textContent('#command-palette-title');
+  if (commandTitle !== 'Commands') {
+    throw new Error(`Command palette title should be simplified to Commands, got: ${commandTitle}`);
+  }
+  const commandScrollMetrics = await page.locator('#command-results').evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+    overflowY: getComputedStyle(element).overflowY
+  }));
+  if (commandScrollMetrics.overflowY !== 'auto' || commandScrollMetrics.scrollHeight <= commandScrollMetrics.clientHeight) {
+    throw new Error(`Command palette results are not scrollable: ${JSON.stringify(commandScrollMetrics)}`);
+  }
+  const commandPaletteText = await page.textContent('#command-palette');
+  if (
+    commandPaletteText?.includes('Command Palette') ||
+    commandPaletteText?.includes('New Document') ||
+    commandPaletteText?.includes('Open Vault') ||
+    commandPaletteText?.includes('Split View')
+  ) {
+    throw new Error(`Command palette still contains old UI copy: ${commandPaletteText.slice(0, 240)}`);
+  }
+  await page.fill('#command-search', 'map');
   await page.waitForSelector('.command-item');
   const commandText = await page.textContent('#command-results');
-  if (!commandText?.includes('Open Graph') || !commandText.includes('Export Graph JSON')) {
-    throw new Error('Command palette did not show the Open Graph command.');
+  if (!commandText?.includes('Open Folder Map') || !commandText.includes('Save Map JSON')) {
+    throw new Error('Command palette did not show the simplified map commands.');
   }
 
   await page.click('.command-item');
@@ -478,17 +499,17 @@ try {
   await page.fill('#command-search', 'publish');
   await page.waitForSelector('.command-item');
   const publishCommandText = await page.textContent('#command-results');
-  if (!publishCommandText?.includes('Publish Static Site')) {
-    throw new Error('Command palette did not show the static publish command.');
+  if (!publishCommandText?.includes('Create Website')) {
+    throw new Error('Command palette did not show the Create Website command.');
   }
   await page.keyboard.press('Escape');
 
   await page.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
-  await page.fill('#command-search', 'new document');
+  await page.fill('#command-search', 'new note');
   await page.click('.command-item');
   const tabText = await page.textContent('#tabs-bar');
   if (!tabText?.includes('Untitled')) {
-    throw new Error('Command palette did not create a new document.');
+    throw new Error('Command palette did not create a new note.');
   }
 
   await page.click('[data-view-mode="preview"]');

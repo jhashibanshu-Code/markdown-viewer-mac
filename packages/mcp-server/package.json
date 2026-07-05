@@ -1,12 +1,12 @@
 {
-  "name": "shibanshu-markdown-mcp",
-  "version": "0.1.0",
-  "description": "MCP server for Claude Code — 40x context compression for codebases via knowledge graphs, navigation routes, and mind maps",
+  "name": "athena-mcp",
+  "version": "0.3.1",
+  "description": "MCP server for Claude Code — 218x context compression for codebases. Knowledge graphs, navigation routes, auto-updating maps, 3D visualizer. 19 tools. One setup command.",
   "author": "Shibanshu Jha",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "shibanshu-markdown-mcp": "mcp-server.mjs"
+    "athena-mcp": "mcp-server.mjs"
   },
   "main": "mcp-server.mjs",
   "files": [

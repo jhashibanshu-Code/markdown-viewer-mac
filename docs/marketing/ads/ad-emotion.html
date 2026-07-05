@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;0,800;1,300;1,400&family=Space+Mono:wght@400;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden}
+canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const cv=document.getElementById('c'),cx=cv.getContext('2d');
+let W,H;function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight}rs();addEventListener('resize',rs);
+const TAU=Math.PI*2,DUR=40;
+let t=0,lt=0;
+
+// Audio
+const AC=new(window.AudioContext||window.webkitAudioContext)();
+function mkPad(freq,start,dur,vol=0.025){
+  const o=AC.createOscillator(),g=AC.createGain(),f=AC.createBiquadFilter();
+  o.type='sine';o.frequency.value=freq;f.type='lowpass';f.frequency.value=600;
+  g.gain.setValueAtTime(0,start);g.gain.linearRampToValueAtTime(vol,start+2.5);
+  g.gain.setValueAtTime(vol,start+dur-3);g.gain.linearRampToValueAtTime(0,start+dur);
+  o.connect(f);f.connect(g);g.connect(AC.destination);o.start(start);o.stop(start+dur);
+}
+function mkChime(freq,start,dur=2,vol=0.018){
+  const o=AC.createOscillator(),g=AC.createGain();
+  o.type='triangle';o.frequency.value=freq;
+  g.gain.setValueAtTime(vol,start);g.gain.exponentialRampToValueAtTime(0.0001,start+dur);
+  o.connect(g);g.connect(AC.destination);o.start(start);o.stop(start+dur);
+}
+function mkBoom(start,vol=0.06){
+  const o=AC.createOscillator(),g=AC.createGain();
+  o.type='sine';o.frequency.setValueAtTime(80,start);o.frequency.exponentialRampToValueAtTime(20,start+0.8);
+  g.gain.setValueAtTime(vol,start);g.gain.exponentialRampToValueAtTime(0.0001,start+1.2);
+  o.connect(g);g.connect(AC.destination);o.start(start);o.stop(start+1.5);
+}
+const now=AC.currentTime;
+mkPad(82,now,42);mkPad(123,now+0.5,41);mkPad(165,now+1,40);mkPad(247,now+2,39);
+mkChime(392,now+5,3);mkChime(523,now+5.3,3);
+mkBoom(now+8);
+mkChime(659,now+12,2);mkChime(784,now+12.3,2);mkChime(987,now+12.6,2);
+mkBoom(now+20);
+mkChime(523,now+27,3,0.025);mkChime(659,now+27.3,3,0.025);mkChime(784,now+27.6,3,0.025);mkChime(987,now+28,3,0.025);
+
+// Galaxy nodes
+const nodes=[],edges=[],stars=[];
+const CLS=[[94,234,212],[196,181,253],[125,211,252],[253,211,77],[252,165,165],[167,243,208]];
+for(let ci=0;ci<6;ci++){const ang=ci/6*TAU;for(let i=0;i<25;i++){const isH=i<2;nodes.push({x:Math.cos(ang)*240+(Math.random()-0.5)*190,y:Math.sin(ang)*140+(Math.random()-0.5)*190,z:(Math.random()-0.5)*280,r:isH?7+Math.random()*5:1.5+Math.random()*3.5,col:CLS[ci],isH})}}
+for(let i=0;i<260;i++){const a=Math.floor(Math.random()*nodes.length),b=Math.floor(Math.random()*nodes.length);if(a!==b)edges.push([a,b])}
+for(let i=0;i<220;i++)stars.push({x:(Math.random()-0.5)*4000,y:(Math.random()-0.5)*3000,z:(Math.random()-0.5)*3000,b:Math.random(),s:0.3+Math.random()*0.5});
+
+function ease(x){return x<0.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2}
+function cl(x){return Math.max(0,Math.min(1,x))}
+function fi(s,d){return ease(cl((t-s)/d))}
+function fo(s,d){return 1-ease(cl((t-s)/d))}
+function proj(x,y,z,ry){
+  const cy=Math.cos(ry),sy=Math.sin(ry),x1=x*cy-z*sy,z1=x*sy+z*cy;
+  const rx=-0.12,crx=Math.cos(rx),srx=Math.sin(rx),y1=y*crx-z1*srx,z2=y*srx+z1*crx;
+  const s=1000/(1000+z2+600);return{x:x1*s+W/2,y:y1*s+H/2,z:z2,s}
+}
+
+function txt(text,x,y,font,color,alpha=1,align='center'){
+  if(alpha<0.01)return;
+  cx.globalAlpha=alpha;cx.font=font;cx.fillStyle=color;cx.textAlign=align;
+  cx.fillText(text,x,y);cx.textAlign='left';cx.globalAlpha=1;
+}
+
+// Heartbeat pulse
+function heartbeat(x,y,radius,alpha){
+  const beat=Math.pow(Math.max(0,Math.sin(t*4)),8)*0.4;
+  const g=cx.createRadialGradient(x,y,0,x,y,radius);
+  g.addColorStop(0,`rgba(252,165,165,${(alpha*0.08+beat*alpha)*0.5})`);
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  cx.fillStyle=g;cx.fillRect(x-radius,y-radius,radius*2,radius*2);
+}
+
+function drawGalaxy(gt,ga,scale=1){
+  const bp=ease(cl(gt/5)),nv=Math.floor(bp*nodes.length),ry=gt*0.05;
+  cx.globalAlpha=ga;
+  // Nebulae
+  const n1=cx.createRadialGradient(W*0.35,H*0.4,0,W*0.35,H*0.4,W*0.35);
+  n1.addColorStop(0,'rgba(94,234,212,0.02)');n1.addColorStop(1,'rgba(0,0,0,0)');
+  cx.fillStyle=n1;cx.fillRect(0,0,W,H);
+  const n2=cx.createRadialGradient(W*0.65,H*0.55,0,W*0.65,H*0.55,W*0.3);
+  n2.addColorStop(0,'rgba(196,181,253,0.015)');n2.addColorStop(1,'rgba(0,0,0,0)');
+  cx.fillStyle=n2;cx.fillRect(0,0,W,H);
+  // Stars
+  for(const s of stars){const p=proj(s.x,s.y,s.z,ry*0.2);if(p.x<0||p.x>W)continue;cx.fillStyle=`rgba(255,255,255,${s.b*(0.25+Math.sin(t*0.7+s.b*10)*0.15)})`;cx.beginPath();cx.arc(p.x,p.y,s.s*p.s,0,TAU);cx.fill()}
+  // Birth pulse
+  if(gt<3){const rr=gt*220;cx.strokeStyle=`rgba(94,234,212,${0.2*(1-gt/3)})`;cx.lineWidth=2;cx.beginPath();cx.arc(W/2,H/2,rr,0,TAU);cx.stroke()}
+  // Edges + particles
+  if(gt>1.5){const ea=cl((gt-1.5)/2);
+    for(const[a,b]of edges){if(a>=nv||b>=nv)continue;const pa=proj(nodes[a].x*scale,nodes[a].y*scale,nodes[a].z*scale,ry),pb=proj(nodes[b].x*scale,nodes[b].y*scale,nodes[b].z*scale,ry);cx.strokeStyle=`rgba(94,234,212,${Math.min(0.07,(pa.s+pb.s)*0.035)*ea})`;cx.lineWidth=0.4;cx.beginPath();cx.moveTo(pa.x,pa.y);cx.lineTo(pb.x,pb.y);cx.stroke()}
+    for(let i=0;i<70;i++){const ei=i%edges.length;const[a,b]=edges[ei];if(a>=nv||b>=nv)continue;const ph=(t*0.1+i*0.027)%1;const pa=proj(nodes[a].x*scale,nodes[a].y*scale,nodes[a].z*scale,ry),pb=proj(nodes[b].x*scale,nodes[b].y*scale,nodes[b].z*scale,ry);const px=pa.x+(pb.x-pa.x)*ph,py=pa.y+(pb.y-pa.y)*ph,gl=Math.sin(ph*Math.PI)*0.3*ea;if(gl<0.02)continue;const[cr,cg,cb]=nodes[a].col;for(let tr=0;tr<3;tr++){const tp=Math.max(0,ph-tr*0.05);const tx=pa.x+(pb.x-pa.x)*tp,ty=pa.y+(pb.y-pa.y)*tp;cx.fillStyle=`rgba(${cr},${cg},${cb},${gl*(1-tr*0.35)})`;cx.beginPath();cx.arc(tx,ty,1-tr*0.25,0,TAU);cx.fill()}}
+  }
+  // Nodes
+  const pr=[];for(let i=0;i<nv;i++){const n=nodes[i],p=proj(n.x*scale,n.y*scale,n.z*scale,ry);pr.push({...n,px:p.x,py:p.y,pz:p.z,ps:p.s})}pr.sort((a,b)=>a.pz-b.pz);
+  for(const n of pr){if(n.px<-40||n.px>W+40)continue;const[cr,cg,cb]=n.col,r=n.r*n.ps*1.3,al=Math.max(0.15,n.ps*1.2);if(n.isH){const pu=1+Math.sin(t*1.3+n.r)*0.12;const g=cx.createRadialGradient(n.px,n.py,r,n.px,n.py,r*6*pu);g.addColorStop(0,`rgba(${cr},${cg},${cb},${al*0.12})`);g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.beginPath();cx.arc(n.px,n.py,r*6*pu,0,TAU);cx.fill();cx.strokeStyle=`rgba(${cr},${cg},${cb},${al*0.12})`;cx.lineWidth=0.5;cx.setLineDash([3,5]);cx.beginPath();cx.ellipse(n.px,n.py,r*3*pu,r*1.2*pu,t*0.15,0,TAU);cx.stroke();cx.setLineDash([])}const ng=cx.createRadialGradient(n.px-r*0.3,n.py-r*0.3,0,n.px,n.py,r*1.1);ng.addColorStop(0,`rgba(${Math.min(255,cr+80)},${Math.min(255,cg+80)},${Math.min(255,cb+80)},${al})`);ng.addColorStop(0.5,`rgba(${cr},${cg},${cb},${al})`);ng.addColorStop(1,`rgba(${Math.max(0,cr-50)},${Math.max(0,cg-50)},${Math.max(0,cb-50)},${al*0.5})`);cx.fillStyle=ng;cx.beginPath();cx.arc(n.px,n.py,r,0,TAU);cx.fill();if(r>2.5){cx.fillStyle=`rgba(255,255,255,${al*0.3})`;cx.beginPath();cx.arc(n.px-r*0.25,n.py-r*0.3,r*0.3,0,TAU);cx.fill()}}
+  cx.globalAlpha=1;
+}
+
+function draw(ts){
+  if(!lt)lt=ts;t+=(ts-lt)/1000;lt=ts;if(t>DUR)t=0;
+  cx.fillStyle='#000';cx.fillRect(0,0,W,H);
+  const cw=W/2,ch=H/2;
+
+  // ══════════════════════════════════════
+  // ACT 1: THE COST OF BLINDNESS (0-8s)
+  // ══════════════════════════════════════
+  if(t<10){
+    const a1=t<8?1:fo(8,2);
+    heartbeat(cw,ch,400,a1);
+
+    // "$5,000" burns in the center — huge, impossible to ignore
+    if(t>0.3){
+      const dollarA=fi(0.3,1.5)*a1;
+      const dollarPulse=1+Math.sin(t*2)*0.02;
+      cx.save();cx.translate(cw,ch-40);cx.scale(dollarPulse,dollarPulse);
+      txt('$5,000','0','0','800 110px "Space Mono"','#fca5a5',dollarA);
+      cx.restore();
+      txt('per developer, per month','cw',ch+40,'300 22px "DM Sans"','#6b7280',dollarA*0.8);
+    }
+
+    // Context line
+    if(t>2.5){
+      const ctxA=fi(2.5,1)*a1;
+      txt('burned on AI reading the wrong files.',cw,ch+85,'300i 20px "DM Sans"','#4a5568',ctxA);
+    }
+
+    // The devastating stat
+    if(t>4.5){
+      const statA=fi(4.5,0.8)*a1;
+      txt('924 files. Claude sees 78.',cw,ch+145,'500 28px "DM Sans"','#e6edf3',statA);
+    }
+
+    // Blind to 91%
+    if(t>6){
+      const blindA=fi(6,0.8)*a1;
+      txt('Blind to 91% of your codebase.',cw,ch+195,'700 24px "DM Sans"','#fca5a5',blindA);
+    }
+  }
+
+  // ══════════════════════════════════════
+  // ACT 2: THE TURN (8-12s)
+  // ══════════════════════════════════════
+  if(t>=8&&t<14){
+    const turnA=Math.min(fi(9,1),fo(12.5,1.5));
+
+    // Screen flash
+    if(t>8&&t<8.3){
+      cx.fillStyle=`rgba(94,234,212,${0.08*(1-(t-8)/0.3)})`;
+      cx.fillRect(0,0,W,H);
+    }
+
+    txt('What if your AI could see everything',cw,ch-25,'300 38px "DM Sans"','#f1f5f9',turnA);
+    txt('in 0.6 seconds?',cw,ch+30,'700 42px "DM Sans"','#5eead4',turnA);
+  }
+
+  // ══════════════════════════════════════
+  // ACT 3: THE UNIVERSE (12-27s)
+  // ══════════════════════════════════════
+  if(t>=12&&t<29){
+    const gt=t-12;
+    const ga=Math.min(fi(12,2),t<27?1:fo(27,2));
+    drawGalaxy(gt,ga);
+
+    // Overlay text — the value props, timed to music chimes
+    if(gt>3&&gt<7){
+      const ta=Math.min(fi(15,0.8),fo(18.5,0.8));
+      txt('Every connection mapped.',cw,H*0.12,'300 26px "DM Sans"','#9ca3af',ta*ga);
+      txt('Every dead file found.',cw,H*0.12+35,'300 26px "DM Sans"','#9ca3af',ta*ga*0.8);
+    }
+
+    // The three stats — dramatic, one at a time
+    if(gt>6&&gt<11){
+      // Stat 1: compression
+      const s1=fi(18,0.7)*ga;
+      if(s1>0.01){
+        cx.globalAlpha=s1;
+        cx.font='700 72px "Space Mono"';cx.fillStyle='#5eead4';cx.textAlign='center';
+        cx.fillText('218:1',W*0.2,ch);
+        cx.font='400 14px "DM Sans"';cx.fillStyle='#4a5568';
+        cx.fillText('compression',W*0.2,ch+28);
+        cx.globalAlpha=1;
+      }
+
+      // Stat 2: cost
+      const s2=fi(19,0.7)*ga;
+      if(s2>0.01){
+        cx.globalAlpha=s2;
+        cx.font='700 72px "Space Mono"';cx.fillStyle='#f1f5f9';cx.textAlign='center';
+        cx.fillText('$0.03',cw,ch);
+        cx.font='400 14px "DM Sans"';cx.fillStyle='#4a5568';
+        cx.fillText('replaces $7.08 per task',cw,ch+28);
+        cx.globalAlpha=1;
+      }
+
+      // Stat 3: accuracy
+      const s3=fi(20,0.7)*ga;
+      if(s3>0.01){
+        cx.globalAlpha=s3;
+        cx.font='700 72px "Space Mono"';cx.fillStyle='#c4b5fd';cx.textAlign='center';
+        cx.fillText('1st try',W*0.8,ch);
+        cx.font='400 14px "DM Sans"';cx.fillStyle='#4a5568';
+        cx.fillText('right answer, every time',W*0.8,ch+28);
+        cx.textAlign='left';cx.globalAlpha=1;
+      }
+    }
+
+    // The mental model line
+    if(gt>11&&gt<15){
+      const mmA=Math.min(fi(23,0.8),fo(26,1))*ga;
+      txt('Not files. Not search. Not guessing.',cw,H-110,'300 22px "DM Sans"','#6b7280',mmA);
+      txt('A complete mental model in one call.',cw,H-75,'500 24px "DM Sans"','#5eead4',mmA);
+    }
+  }
+
+  // ══════════════════════════════════════
+  // ACT 4: THE COMMAND (27-35s)
+  // ══════════════════════════════════════
+  if(t>=26){
+    const ctaA=fi(27,1.5);
+    const cmdA=fi(29,0.8);
+    const subA=fi(30.5,0.8);
+    const tagA=fi(32,0.8);
+
+    // Ambient glow
+    const ag=cx.createRadialGradient(cw,ch,0,cw,ch,W*0.25);
+    ag.addColorStop(0,`rgba(94,234,212,${0.02*ctaA})`);ag.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=ag;cx.fillRect(0,0,W,H);
+
+    // Orbital dots
+    for(let i=0;i<16;i++){
+      const ang=i/16*TAU+t*0.2;const d=200+Math.sin(t*0.4+i)*25;
+      cx.fillStyle=`rgba(94,234,212,${0.06*ctaA})`;
+      cx.beginPath();cx.arc(cw+Math.cos(ang)*d,ch+Math.sin(ang)*d*0.35,1.2,0,TAU);cx.fill();
+    }
+
+    txt('Change the way you code.',cw,ch-70,'700 56px "DM Sans"','#f1f5f9',ctaA);
+
+    const pulse=1+Math.sin(t*2.5)*0.012;
+    cx.save();cx.translate(cw,ch+10);cx.scale(pulse,pulse);
+    txt('npx shibanshu-markdown-mcp',0,0,'500 32px "Space Mono"','#5eead4',cmdA);
+    cx.restore();
+
+    txt('Maximum output. Minimum tokens.',cw,ch+65,'300 20px "DM Sans"','#6b7280',subA);
+    txt('19 tools  ·  auto-updating  ·  free  ·  open source',cw,ch+100,'400 15px "DM Sans"','#374151',tagA);
+
+    // Bottom line — the hook that sticks
+    if(t>33){
+      const hookA=fi(33,1);
+      txt('Your AI finally sees the whole picture.',cw,ch+160,'300i 18px "DM Sans"','#4a5568',hookA);
+    }
+  }
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+document.addEventListener('click',()=>{if(AC.state==='suspended')AC.resume()},{once:true});
+</script>
+</body>
+</html>

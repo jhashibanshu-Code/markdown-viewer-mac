@@ -22,10 +22,11 @@ Make `Markdown context -> compact navigation map` fast, reliable, and trustworth
 - Re-running the same export with no changes yields stable node/edge IDs.
 
 ### Immediate work
-- Add repository-scale profile presets (`analysis`, `audit`, `authoring`, `presentation`).
-- Add explicit schema version + fingerprint on each exported artifact.
-- Add route-aware export throttles and deterministic ordering for reproducibility.
-- Add integrity check output in CLI and app status (`hash + counts + warning flags`).
+- Done: repository-scale profile presets (`analysis`, `audit`, `authoring`, `presentation`, `migration`) are wired into the context exporter.
+- Done: graph, scene, Markdown guide, and JSONL chunk outputs include schema/profile/fingerprint metadata.
+- Done: `context-integrity.json` records artifact checksums, route validation, export counts, limits, and warnings.
+- Done: stress tests assert schema, selected profile, stable node/edge IDs, route validation, and checksums.
+- Next: add route-aware export throttles and deterministic ordering controls for very large route sets.
 
 ## Plan B — Cosmetic: Surface, Clarity, and Interaction Polish
 
@@ -45,10 +46,12 @@ Raise the app’s day-to-day clarity so large graphs and documents stay navigabl
 - No truncated controls in mind-map and full-graph lists at typical data ranges.
 
 ### Immediate work
-- Normalize button and control state styling for all graph and mind-map actions.
+- In progress: graph 3D controls now expose explicit disabled reasons when the map is in 2D mode.
+- Done: graph mode/export controls have concise titles for inspection without adding visible instructional text.
+- Next: normalize button and control state styling for all graph and mind-map actions.
 - Improve empty-state copy and loading feedback for heavy graph generation and export.
 - Standardize visual badges for node types (`orphan`, `media`, `unresolved`, `hub`).
-- Add compact tooltips for non-obvious actions (rotation, presets, scene export).
+- Done: compact tooltips cover graph scope, graph space, export profile, and 3D rotation/orbit constraints.
 
 ## Plan C — Functionality: Core Writing and Reliability
 
@@ -88,7 +91,7 @@ Make graph and mind-map interaction feel intentional and high-control for human 
 - One command can open a vault, render graph, navigate to a route, and export LLM context.
 
 ### Immediate work
-- Add command-palette entries for graph transforms, presets, and scene exports.
+- Done: command palette entries now cover 3D graph open, global graph scope, fit/reset view, auto orbit, reset 3D rotation, 3D scene export, and LLM context export.
 - Add graph-to-context handoff from selected route/hub.
 - Add interaction rule tests for every graph and mind-map control.
 - Expand 3D scene export with explicit viewpoint persistence.

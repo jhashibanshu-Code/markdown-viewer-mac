@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>shibanshu-markdown-mcp — Premium Ad</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;width:100vw;height:100vh}
+canvas{display:block;position:fixed;top:0;left:0}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const cv=document.getElementById('c'),cx=cv.getContext('2d');
+let W,H;
+function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight}
+rs();addEventListener('resize',rs);
+
+const TAU=Math.PI*2;
+const DUR=32;
+let t=0,lt=0;
+
+// Apple-style color palette
+const MINT='#5eead4',LAV='#c4b5fd',SKY='#7dd3fc',CORAL='#fca5a5',PEARL='#f1f5f9';
+
+// Galaxy
+const nodes=[],edges=[],stars=[];
+const clusters=[
+  {col:[94,234,212],n:40},{col:[196,181,253],n:32},{col:[125,211,252],n:26},
+  {col:[253,211,77],n:20},{col:[252,165,165],n:18},{col:[167,243,208],n:12}
+];
+for(const cl of clusters){
+  const ci=clusters.indexOf(cl),ang=ci/clusters.length*TAU;
+  for(let i=0;i<cl.n;i++){
+    const isHub=i<2;
+    nodes.push({
+      x:Math.cos(ang)*250+(Math.random()-0.5)*200,
+      y:Math.sin(ang)*150+(Math.random()-0.5)*200,
+      z:(Math.random()-0.5)*300,
+      r:isHub?7+Math.random()*5:1.5+Math.random()*3.5,
+      col:cl.col,isHub
+    });
+  }
+}
+for(let i=0;i<280;i++){
+  const a=Math.floor(Math.random()*nodes.length),b=Math.floor(Math.random()*nodes.length);
+  if(a!==b)edges.push([a,b]);
+}
+for(let i=0;i<250;i++)stars.push({x:(Math.random()-0.5)*4000,y:(Math.random()-0.5)*3000,z:(Math.random()-0.5)*3000,b:Math.random(),s:0.3+Math.random()*0.6});
+
+function ease(x){return x<0.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2}
+function clamp(x){return Math.max(0,Math.min(1,x))}
+function fi(start,dur){return ease(clamp((t-start)/dur))}
+function fo(start,dur){return 1-ease(clamp((t-start)/dur))}
+function proj(x,y,z,ry){
+  const cy=Math.cos(ry),sy=Math.sin(ry),x1=x*cy-z*sy,z1=x*sy+z*cy;
+  const rx=-0.15,crx=Math.cos(rx),srx=Math.sin(rx),y1=y*crx-z1*srx,z2=y*srx+z1*crx;
+  const fov=1000,s=fov/(fov+z2+600);
+  return{x:x1*s+W/2,y:y1*s+H/2,z:z2,s};
+}
+
+// Pulse ring animation data
+const pulseRings=[];
+
+function drawText(text,x,y,font,color,alpha=1,align='center'){
+  cx.globalAlpha=alpha;cx.font=font;cx.fillStyle=color;cx.textAlign=align;
+  cx.fillText(text,x,y);cx.textAlign='left';cx.globalAlpha=1;
+}
+function appleFont(weight,size,style='normal'){return `${style} ${weight} ${size}px -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`}
+function monoFont(weight,size){return `${weight} ${size}px "SF Mono", ui-monospace, Menlo, monospace`}
+function drawCenteredPill(text,x,y,alpha,color=MINT){
+  cx.save();
+  cx.globalAlpha=alpha;
+  cx.font=appleFont(500,13);
+  const w=cx.measureText(text).width+28;
+  cx.fillStyle='rgba(255,255,255,0.035)';
+  cx.strokeStyle=`rgba(94,234,212,${0.22*alpha})`;
+  roundRect(x-w/2,y-17,w,34,17);cx.fill();cx.stroke();
+  cx.fillStyle=color;cx.textAlign='center';cx.fillText(text,x,y+5);
+  cx.restore();
+}
+function roundRect(x,y,w,h,r){
+  cx.beginPath();
+  cx.moveTo(x+r,y);cx.lineTo(x+w-r,y);cx.quadraticCurveTo(x+w,y,x+w,y+r);
+  cx.lineTo(x+w,y+h-r);cx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  cx.lineTo(x+r,y+h);cx.quadraticCurveTo(x,y+h,x,y+h-r);
+  cx.lineTo(x,y+r);cx.quadraticCurveTo(x,y,x+r,y);cx.closePath();
+}
+
+function draw(ts){
+  if(!lt)lt=ts;
+  t+=(ts-lt)/1000;lt=ts;
+  if(t>DUR)t=0;
+
+  // Black base
+  cx.fillStyle='#000';cx.fillRect(0,0,W,H);
+
+  const cw=W/2,ch=H/2;
+
+  // ═══════════════════════════════════════════
+  // SCENE 1: THE PROBLEM (0-9s)
+  // Apple-style: single line reveals, minimal, precise
+  // ═══════════════════════════════════════════
+  if(t<11){
+    const s1=fo(9.5,1.5);
+
+    // Faint pulse ring from center
+    if(t>0.5){
+      const ringAlpha=0.04*s1;
+      const ringR=((t-0.5)*80)%400;
+      cx.strokeStyle=`rgba(94,234,212,${ringAlpha*(1-ringR/400)})`;
+      cx.lineWidth=0.8;
+      cx.beginPath();cx.arc(cw,ch,ringR,0,TAU);cx.stroke();
+    }
+
+    // Line 1: the problem
+    const l1=fi(0.8,1.2)*s1;
+    drawText('Your AI reads files.', cw, ch-92, appleFont(300,52), PEARL, l1);
+    drawText('It still misses the system.', cw, ch-42, appleFont(300,30), '#8b949e', l1*0.9);
+
+    // Counter: files being read
+    if(t>2.5&&t<8){
+      const count=Math.min(924,Math.floor((t-2.5)*180));
+      const countAlpha=fi(2.5,0.8)*s1;
+
+      // Big number
+      drawText(String(count), cw, ch+58, monoFont(700,128), MINT, countAlpha*0.15);
+      drawText(String(count), cw, ch+58, monoFont(700,128), CORAL, countAlpha);
+
+      // Label
+      drawText('files reread · tokens burned · no mental model', cw, ch+98, appleFont(400,18), '#6b7280', countAlpha*0.8);
+
+      // Subtle red glow growing
+      const glow=cx.createRadialGradient(cw,ch,50,cw,ch,300);
+      glow.addColorStop(0,`rgba(252,165,165,${0.04*countAlpha*(count/924)})`);
+      glow.addColorStop(1,'rgba(0,0,0,0)');
+      cx.globalAlpha=countAlpha;cx.fillStyle=glow;cx.fillRect(0,0,W,H);cx.globalAlpha=1;
+    }
+
+    // Line 2: "Still doesn't understand."
+    if(t>6){
+      const l2=fi(6,1)*s1;
+      drawText('More context is not more understanding.', cw, ch+150, appleFont(300,28,'italic'), '#6b7280', l2);
+    }
+
+    // Cost ticker
+    if(t>7.5){
+      const cost=((t-7.5)*4.2).toFixed(2);
+      const costAlpha=fi(7.5,0.6)*s1;
+      drawText('$'+cost+' burned in one pass', cw, ch+190, monoFont(500,16), CORAL, costAlpha*0.7);
+    }
+  }
+
+  // ═══════════════════════════════════════════
+  // SCENE 2: THE SHIFT (9-11s)
+  // Single word. Silence. Apple black.
+  // ═══════════════════════════════════════════
+  if(t>=9&&t<12){
+    const shiftA=Math.min(fi(9.5,0.6),fo(11,0.8));
+    drawText('Give the model a map.', cw, ch, appleFont(300,56), PEARL, shiftA);
+  }
+
+  // ═══════════════════════════════════════════
+  // SCENE 3: THE UNIVERSE BUILDS (11-24s)
+  // Galaxy emerges from center point. Apple precision.
+  // ═══════════════════════════════════════════
+  if(t>=11&&t<26){
+    const gt=t-11;
+    const ga=Math.min(fi(11,1.5),t<24.5?1:fo(24.5,1.5));
+    const buildProg=clamp(gt/5);
+    const nodesVis=Math.floor(ease(buildProg)*nodes.length);
+    const rotY=gt*0.06;
+
+    cx.globalAlpha=ga;
+
+    // Nebulae
+    const nb=cx.createRadialGradient(cw*0.7,ch*0.8,0,cw*0.7,ch*0.8,W*0.35);
+    nb.addColorStop(0,'rgba(94,234,212,0.02)');nb.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=nb;cx.fillRect(0,0,W,H);
+    const nb2=cx.createRadialGradient(cw*1.3,ch*1.2,0,cw*1.3,ch*1.2,W*0.3);
+    nb2.addColorStop(0,'rgba(196,181,253,0.015)');nb2.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=nb2;cx.fillRect(0,0,W,H);
+
+    // Stars
+    for(const s of stars){
+      const p=proj(s.x,s.y,s.z,rotY*0.2);
+      if(p.x<0||p.x>W)continue;
+      cx.fillStyle=`rgba(255,255,255,${s.b*(0.25+Math.sin(t*0.8+s.b*10)*0.15)})`;
+      cx.beginPath();cx.arc(p.x,p.y,s.s*p.s,0,TAU);cx.fill();
+    }
+
+    // Expanding pulse ring at birth
+    if(gt<3){
+      const ringR=gt*200;
+      const ringA=0.15*(1-gt/3);
+      cx.strokeStyle=`rgba(94,234,212,${ringA})`;cx.lineWidth=1.5;
+      cx.beginPath();cx.arc(cw,ch,ringR,0,TAU);cx.stroke();
+    }
+
+    // Edges
+    if(gt>2){
+      const ea=clamp((gt-2)/2);
+      for(const[a,b]of edges){
+        if(a>=nodesVis||b>=nodesVis)continue;
+        const pa=proj(nodes[a].x,nodes[a].y,nodes[a].z,rotY);
+        const pb=proj(nodes[b].x,nodes[b].y,nodes[b].z,rotY);
+        const al=Math.max(0.008,Math.min(0.08,(pa.s+pb.s)*0.04))*ea;
+        cx.strokeStyle=`rgba(94,234,212,${al})`;cx.lineWidth=0.4;
+        cx.beginPath();cx.moveTo(pa.x,pa.y);cx.lineTo(pb.x,pb.y);cx.stroke();
+      }
+      // Particles — the pulse flowing through the graph
+      for(let i=0;i<80;i++){
+        const ei=i%edges.length;
+        const[a,b]=edges[ei];
+        if(a>=nodesVis||b>=nodesVis)continue;
+        const ph=(t*0.1+i*0.025)%1;
+        const pa=proj(nodes[a].x,nodes[a].y,nodes[a].z,rotY);
+        const pb=proj(nodes[b].x,nodes[b].y,nodes[b].z,rotY);
+        const px=pa.x+(pb.x-pa.x)*ph,py=pa.y+(pb.y-pa.y)*ph;
+        const gl=Math.sin(ph*Math.PI)*0.35*ea;
+        if(gl<0.02)continue;
+        const[cr,cg,cb]=nodes[a].col;
+        // Trail
+        for(let tr=0;tr<3;tr++){
+          const tp=Math.max(0,ph-tr*0.06);
+          const tx=pa.x+(pb.x-pa.x)*tp,ty=pa.y+(pb.y-pa.y)*tp;
+          cx.fillStyle=`rgba(${cr},${cg},${cb},${gl*(1-tr*0.3)})`;
+          cx.beginPath();cx.arc(tx,ty,1.1-tr*0.3,0,TAU);cx.fill();
+        }
+      }
+    }
+
+    // Nodes
+    const projected=[];
+    for(let i=0;i<nodesVis;i++){
+      const n=nodes[i];
+      const p=proj(n.x,n.y,n.z,rotY);
+      projected.push({...n,i,px:p.x,py:p.y,pz:p.z,ps:p.s});
+    }
+    projected.sort((a,b)=>a.pz-b.pz);
+
+    for(const n of projected){
+      if(n.px<-40||n.px>W+40||n.py<-40||n.py>H+40)continue;
+      const[cr,cg,cb]=n.col;
+      const r=n.r*n.ps*1.4;
+      const al=Math.max(0.15,Math.min(1,n.ps*1.2));
+
+      if(n.isHub){
+        const pulse=1+Math.sin(t*1.3+n.r)*0.12;
+        const g=cx.createRadialGradient(n.px,n.py,r,n.px,n.py,r*6*pulse);
+        g.addColorStop(0,`rgba(${cr},${cg},${cb},${al*0.12})`);
+        g.addColorStop(1,'rgba(0,0,0,0)');
+        cx.fillStyle=g;cx.beginPath();cx.arc(n.px,n.py,r*6*pulse,0,TAU);cx.fill();
+        // Orbit ring
+        cx.strokeStyle=`rgba(${cr},${cg},${cb},${al*0.1})`;cx.lineWidth=0.5;
+        cx.setLineDash([3,6]);
+        cx.beginPath();cx.ellipse(n.px,n.py,r*3*pulse,r*1.5*pulse,t*0.2,0,TAU);cx.stroke();
+        cx.setLineDash([]);
+      }
+
+      const ng=cx.createRadialGradient(n.px-r*0.3,n.py-r*0.3,0,n.px,n.py,r*1.1);
+      ng.addColorStop(0,`rgba(${Math.min(255,cr+90)},${Math.min(255,cg+90)},${Math.min(255,cb+90)},${al})`);
+      ng.addColorStop(0.5,`rgba(${cr},${cg},${cb},${al})`);
+      ng.addColorStop(1,`rgba(${Math.max(0,cr-50)},${Math.max(0,cg-50)},${Math.max(0,cb-50)},${al*0.5})`);
+      cx.fillStyle=ng;cx.beginPath();cx.arc(n.px,n.py,r,0,TAU);cx.fill();
+
+      if(r>3){
+        cx.fillStyle=`rgba(255,255,255,${al*0.35})`;
+        cx.beginPath();cx.arc(n.px-r*0.25,n.py-r*0.3,r*0.3,0,TAU);cx.fill();
+      }
+    }
+
+    // Text overlays on the galaxy — Apple style, minimal
+    if(gt>4&&gt<9){
+      const ta=Math.min(fi(15,1),fo(19,1));
+      drawText('Every note. Every link. Every missing connection.', cw, H-120, appleFont(300,25), '#9ca3af', ta*ga);
+    }
+
+    // Stats that fly in from sides — Apple keynote style
+    if(gt>6.5&&gt<11){
+      const s1a=fi(17.5,0.8)*ga;
+      const s2a=fi(18.3,0.8)*ga;
+      const s3a=fi(19.1,0.8)*ga;
+      const fadeAll=fo(20.5,1);
+
+      // Centered stat row
+      const statGap=Math.min(370,W*0.27);
+      const lx=cw-statGap+30*(1-ease(clamp((gt-6.5)/0.8)));
+      cx.globalAlpha=s1a*fadeAll;
+      cx.font=monoFont(700,52);cx.fillStyle=MINT;cx.textAlign='center';
+      cx.fillText('218:1',lx,ch-30);
+      cx.font=appleFont(400,15);cx.fillStyle='#6b7280';
+      cx.fillText('compression ratio',lx,ch);
+      cx.globalAlpha=1;
+
+      // Center stat
+      cx.globalAlpha=s2a*fadeAll;
+      cx.font=monoFont(700,52);cx.fillStyle=PEARL;cx.textAlign='center';
+      cx.fillText('20s',cw,ch-30);
+      cx.font=appleFont(400,15);cx.fillStyle='#6b7280';
+      cx.fillText('instead of hours of rereading',cw,ch);
+      cx.globalAlpha=1;
+
+      // Right stat
+      const rx=cw+statGap-30*(1-ease(clamp((gt-7.6)/0.8)));
+      cx.globalAlpha=s3a*fadeAll;
+      cx.font=monoFont(700,52);cx.fillStyle=CORAL;cx.textAlign='center';
+      cx.fillText('$80+',rx,ch-30);
+      cx.font=appleFont(400,15);cx.fillStyle='#6b7280';
+      cx.fillText('saved each month',rx,ch);
+      cx.textAlign='left';
+      cx.globalAlpha=1;
+    }
+
+    // Mental model explanation
+    if(gt>9.5&&gt<13){
+      const mma=Math.min(fi(20.5,0.8),fo(23,1))*ga;
+      const y=H-134;
+      const steps=['Repository','Index','Mental map','AI answer'];
+      for(let i=0;i<steps.length;i++){
+        const x=cw-300+i*200;
+        drawCenteredPill(steps[i],x,y,mma,i===2?MINT:PEARL);
+        if(i<steps.length-1){
+          cx.globalAlpha=mma;cx.strokeStyle=`rgba(94,234,212,${0.32*mma})`;cx.lineWidth=1;
+          cx.beginPath();cx.moveTo(x+80,y);cx.lineTo(x+120,y);cx.stroke();cx.globalAlpha=1;
+          const p=(t*0.9+i*0.2)%1;
+          cx.fillStyle=`rgba(94,234,212,${0.75*mma})`;
+          cx.beginPath();cx.arc(x+80+p*40,y,2.2,0,TAU);cx.fill();
+        }
+      }
+      drawText('The pulse becomes a route: hubs, bridges, gaps, and reading order.', cw, H-74, appleFont(300,21), '#8b949e', mma);
+      drawText('Not more files. A working mental model.', cw, H-44, appleFont(600,22), MINT, mma);
+    }
+
+    cx.globalAlpha=1;
+  }
+
+  // ═══════════════════════════════════════════
+  // SCENE 4: THE CTA (24-30s)
+  // Apple precision. Black. White text. One action.
+  // ═══════════════════════════════════════════
+  if(t>=23.5){
+    const ctaA=fi(24,1.2);
+    const cmdA=fi(25.5,0.8);
+    const subA=fi(26.5,0.8);
+    const finalFade=t>30?fo(30,2):1;
+    const aa=finalFade;
+
+    // Gentle teal ambient glow
+    const abg=cx.createRadialGradient(cw,ch,0,cw,ch,W*0.3);
+    abg.addColorStop(0,`rgba(94,234,212,${0.015*aa})`);abg.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=abg;cx.fillRect(0,0,W,H);
+
+    // Headline
+    drawText('Shibanshu Markdown Viewer', cw, ch-98, appleFont(700,48), PEARL, ctaA*aa);
+    drawText('A mental map for every repo.', cw, ch-48, appleFont(300,36), '#9ca3af', ctaA*aa);
+
+    // Command — the product
+    const pulse=1+Math.sin(t*3)*0.015;
+    cx.save();
+    cx.translate(cw,ch+28);cx.scale(pulse,pulse);
+    drawText('Open folder  ->  Map  ->  Copy for AI', 0, 0, monoFont(500,27), MINT, cmdA*aa);
+    cx.restore();
+
+    // Sub-stats
+    drawText('offline first  ·  3D graph  ·  note maps  ·  AI context export', cw, ch+76, appleFont(400,16), '#59616b', subA*aa);
+
+    // Time + money saved
+    if(t>27){
+      const savA=fi(27,0.8)*aa;
+      drawText('Save time. Save context cost. Stop explaining the repo twice.', cw, ch+116, appleFont(500,16), '#8b949e', savA);
+    }
+
+    // Floating particles around the text — premium feel
+    for(let i=0;i<12;i++){
+      const angle=i/12*TAU+t*0.3;
+      const dist=180+Math.sin(t*0.5+i)*30;
+      const px=cw+Math.cos(angle)*dist;
+      const py=ch+Math.sin(angle)*dist*0.4;
+      cx.fillStyle=`rgba(94,234,212,${0.08*aa})`;
+      cx.beginPath();cx.arc(px,py,1.5,0,TAU);cx.fill();
+    }
+  }
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
