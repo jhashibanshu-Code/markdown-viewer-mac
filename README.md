@@ -1,4 +1,4 @@
-# Markdown Viewer Mac
+# Shibanshu Markdown Viewer
 
 A native macOS Markdown viewer and editor built from scratch with Electron, Vite, and a secure local rendering pipeline.
 
@@ -27,10 +27,16 @@ npm run check
 Builds the renderer and runs a smoke check.
 
 ```bash
+npm run e2e
+```
+
+Builds the renderer, launches Electron, verifies the packaged UI loads CSS/JS, opens a Markdown file, clicks view controls, edits, saves, and captures `test-artifacts/e2e-app.png`.
+
+```bash
 npm run build
 ```
 
-Builds an unpacked Apple Silicon macOS app at `release/mac-arm64/Markdown Viewer Mac.app`.
+Builds an unpacked Apple Silicon macOS app at `release/mac-arm64/Shibanshu Markdown Viewer.app`.
 
 ```bash
 npm run dist

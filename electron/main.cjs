@@ -1,11 +1,15 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 
 const markdownExtensions = new Set(['.md', '.markdown', '.mdown', '.mkd', '.txt']);
 const pendingOpenPaths = [];
+const trustedFilePaths = new Set();
+const trustedWritablePaths = new Set();
 let mainWindow = null;
 let rendererIsReady = false;
+let appEntryUrl = null;
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
 
@@ -15,14 +19,14 @@ function createMainWindow() {
     height: 820,
     minWidth: 900,
     minHeight: 560,
-    title: 'Markdown Viewer Mac',
+    title: 'Shibanshu Markdown Viewer',
     show: false,
     backgroundColor: '#f6f7f9',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false
+      sandbox: true
     }
   });
 
@@ -37,6 +41,14 @@ function createMainWindow() {
     return { action: 'deny' };
   });
 
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (isAppNavigationUrl(url)) return;
+    event.preventDefault();
+    if (isSafeExternalUrl(url)) {
+      shell.openExternal(url);
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
     rendererIsReady = false;
@@ -46,7 +58,9 @@ function createMainWindow() {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    const appEntryPath = path.join(__dirname, '..', 'dist', 'index.html');
+    appEntryUrl = pathToFileURL(appEntryPath).href;
+    mainWindow.loadFile(appEntryPath);
   }
 
   return mainWindow;
@@ -149,7 +163,7 @@ async function sendOpenedFiles(pathsToOpen) {
 }
 
 async function readMarkdownFiles(pathsToOpen) {
-  const uniquePaths = [...new Set(pathsToOpen.map((filePath) => path.resolve(filePath)))];
+  const uniquePaths = [...new Set(pathsToOpen.map(normalizeFilePath).filter(Boolean))];
   const files = [];
 
   for (const filePath of uniquePaths) {
@@ -158,6 +172,7 @@ async function readMarkdownFiles(pathsToOpen) {
 
     try {
       const content = await fs.readFile(filePath, 'utf8');
+      rememberTrustedFile(filePath);
       files.push({
         path: filePath,
         name: path.basename(filePath),
@@ -170,6 +185,38 @@ async function readMarkdownFiles(pathsToOpen) {
   }
 
   return files;
+}
+
+function normalizeFilePath(filePath) {
+  if (typeof filePath !== 'string' || !filePath.trim()) return null;
+  return path.resolve(filePath);
+}
+
+function rememberTrustedFile(filePath) {
+  const normalized = normalizeFilePath(filePath);
+  if (!normalized) return;
+  trustedFilePaths.add(normalized);
+  trustedWritablePaths.add(normalized);
+}
+
+async function saveMarkdownWithDialog(content, defaultPath = 'Untitled.md') {
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Save Markdown',
+    defaultPath,
+    filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }]
+  });
+
+  if (result.canceled || !result.filePath) return null;
+
+  const normalizedPath = normalizeFilePath(result.filePath);
+  await fs.writeFile(normalizedPath, content, 'utf8');
+  rememberTrustedFile(normalizedPath);
+
+  return {
+    path: normalizedPath,
+    name: path.basename(normalizedPath),
+    lastSavedAt: Date.now()
+  };
 }
 
 function parseArgFiles(argv) {
@@ -189,9 +236,16 @@ function isSafeExternalUrl(url) {
   }
 }
 
-function buildExportHtml({ title, body, theme }) {
+function isAppNavigationUrl(url) {
+  if (isDev && url.startsWith(process.env.VITE_DEV_SERVER_URL)) return true;
+  return Boolean(appEntryUrl && url === appEntryUrl);
+}
+
+function buildExportHtml({ title, body, theme, css }) {
   const safeTitle = escapeHtml(title || 'Markdown Export');
   const mode = theme === 'dark' ? 'dark' : 'light';
+  const exportCss = sanitizeExportCss(css || '');
+  const exportBody = sanitizeExportBody(body || '');
 
   return `<!doctype html>
 <html lang="en" data-theme="${mode}">
@@ -255,12 +309,28 @@ function buildExportHtml({ title, body, theme }) {
     img, svg {
       max-width: 100%;
     }
+    ${exportCss}
   </style>
 </head>
 <body>
-  <article class="markdown-body">${body || ''}</article>
+  <article class="markdown-body">${exportBody}</article>
 </body>
 </html>`;
+}
+
+function sanitizeExportCss(css) {
+  return String(css)
+    .replace(/<\/style/gi, '<\\/style')
+    .replace(/@import[^;]+;/gi, '');
+}
+
+function sanitizeExportBody(body) {
+  return String(body)
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, '')
+    .replace(/\son[a-z]+\s*=\s*'[^']*'/gi, '')
+    .replace(/\s(?:href|src)\s*=\s*"javascript:[^"]*"/gi, '')
+    .replace(/\s(?:href|src)\s*=\s*'javascript:[^']*'/gi, '');
 }
 
 function escapeHtml(value) {
@@ -286,20 +356,25 @@ ipcMain.handle('dialog:open-markdown', async () => {
   return readMarkdownFiles(result.filePaths);
 });
 
-ipcMain.handle('file:open-paths', async (_event, pathsToOpen) => {
+ipcMain.handle('file:open-dropped-files', async (_event, pathsToOpen) => {
   if (!Array.isArray(pathsToOpen)) return [];
   return readMarkdownFiles(pathsToOpen);
 });
 
 ipcMain.handle('file:save', async (_event, payload) => {
-  const filePath = payload?.path;
+  const filePath = normalizeFilePath(payload?.path);
   const content = String(payload?.content ?? '');
 
   if (!filePath) {
     throw new Error('Missing file path.');
   }
 
+  if (!trustedWritablePaths.has(filePath)) {
+    return saveMarkdownWithDialog(content, filePath);
+  }
+
   await fs.writeFile(filePath, content, 'utf8');
+  rememberTrustedFile(filePath);
 
   return {
     path: filePath,
@@ -311,21 +386,7 @@ ipcMain.handle('file:save', async (_event, payload) => {
 ipcMain.handle('file:save-as', async (_event, payload) => {
   const content = String(payload?.content ?? '');
   const defaultPath = payload?.defaultPath || 'Untitled.md';
-  const result = await dialog.showSaveDialog(mainWindow, {
-    title: 'Save Markdown',
-    defaultPath,
-    filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }]
-  });
-
-  if (result.canceled || !result.filePath) return null;
-
-  await fs.writeFile(result.filePath, content, 'utf8');
-
-  return {
-    path: result.filePath,
-    name: path.basename(result.filePath),
-    lastSavedAt: Date.now()
-  };
+  return saveMarkdownWithDialog(content, defaultPath);
 });
 
 ipcMain.handle('file:export-html', async (_event, payload) => {
@@ -342,7 +403,8 @@ ipcMain.handle('file:export-html', async (_event, payload) => {
   const html = buildExportHtml({
     title,
     body: String(payload?.body ?? ''),
-    theme: payload?.theme
+    theme: payload?.theme,
+    css: payload?.css
   });
 
   await fs.writeFile(result.filePath, html, 'utf8');
@@ -379,7 +441,8 @@ ipcMain.handle('file:export-pdf', async (_event, payload) => {
     const html = buildExportHtml({
       title,
       body: String(payload?.body ?? ''),
-      theme: payload?.theme
+      theme: payload?.theme,
+      css: payload?.css
     });
     const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
     await exportWindow.loadURL(dataUrl);
@@ -403,8 +466,9 @@ ipcMain.handle('file:export-pdf', async (_event, payload) => {
 });
 
 ipcMain.handle('file:reveal', async (_event, filePath) => {
-  if (!filePath) return false;
-  shell.showItemInFolder(filePath);
+  const normalizedPath = normalizeFilePath(filePath);
+  if (!normalizedPath || !trustedFilePaths.has(normalizedPath)) return false;
+  shell.showItemInFolder(normalizedPath);
   return true;
 });
 
@@ -436,7 +500,7 @@ if (!lock) {
   });
 
   app.whenReady().then(() => {
-    app.setName('Markdown Viewer Mac');
+    app.setName('Shibanshu Markdown Viewer');
     createMenu();
     createMainWindow();
     queueOrOpenPaths(parseArgFiles(process.argv));

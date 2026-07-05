@@ -1,9 +1,21 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
+
+function getDroppedFilePaths(files) {
+  return Array.from(files || [])
+    .map((file) => {
+      try {
+        return webUtils.getPathForFile(file);
+      } catch (_error) {
+        return '';
+      }
+    })
+    .filter(Boolean);
+}
 
 contextBridge.exposeInMainWorld('markdownNative', {
   platform: process.platform,
   openDialog: () => ipcRenderer.invoke('dialog:open-markdown'),
-  openPaths: (paths) => ipcRenderer.invoke('file:open-paths', paths),
+  openDroppedFiles: (files) => ipcRenderer.invoke('file:open-dropped-files', getDroppedFilePaths(files)),
   saveFile: (payload) => ipcRenderer.invoke('file:save', payload),
   saveFileAs: (payload) => ipcRenderer.invoke('file:save-as', payload),
   exportHtml: (payload) => ipcRenderer.invoke('file:export-html', payload),

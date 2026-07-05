@@ -1,6 +1,8 @@
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import githubMarkdownCssText from 'github-markdown-css/github-markdown.css?inline';
 import hljs from 'highlight.js/lib/core';
+import highlightCssText from 'highlight.js/styles/github.css?inline';
 import bash from 'highlight.js/lib/languages/bash';
 import css from 'highlight.js/lib/languages/css';
 import javascript from 'highlight.js/lib/languages/javascript';
@@ -12,6 +14,7 @@ import typescript from 'highlight.js/lib/languages/typescript';
 import xml from 'highlight.js/lib/languages/xml';
 import yaml from 'highlight.js/lib/languages/yaml';
 import katex from 'katex';
+import katexCssText from 'katex/dist/katex.min.css?inline';
 import {
   Code2,
   Columns2,
@@ -36,11 +39,13 @@ import 'katex/dist/katex.min.css';
 import sampleMarkdown from './sample.md?raw';
 import './styles.css';
 
-const native = window.markdownNative;
-const SESSION_KEY = 'markdown-viewer-mac-session-v1';
-const THEME_KEY = 'markdown-viewer-mac-theme';
+const native = window.markdownNative || createUnavailableNative();
+const SESSION_KEY = 'shibanshu-markdown-viewer-session-v1';
+const THEME_KEY = 'shibanshu-markdown-viewer-theme';
 const UNTITLED_NAME = 'Untitled.md';
 const RENDER_DELAY_MS = 90;
+const VALID_VIEW_MODES = new Set(['split', 'editor', 'preview']);
+const EXPORT_CSS = [githubMarkdownCssText, highlightCssText, katexCssText].join('\n');
 
 const editor = document.getElementById('markdown-editor');
 const preview = document.getElementById('markdown-preview');
@@ -63,6 +68,7 @@ let renderGeneration = 0;
 let mermaidModule = null;
 let viewMode = 'split';
 let syncScrollLock = false;
+let sessionStorageWarningShown = false;
 
 const icons = {
   Code2,
@@ -160,7 +166,8 @@ const sanitizeOptions = {
     'y2'
   ],
   FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form'],
-  FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover']
+  FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover'],
+  ALLOW_DATA_ATTR: false
 };
 
 const mathBlockExtension = {
@@ -168,7 +175,7 @@ const mathBlockExtension = {
   level: 'block',
   start(source) {
     const index = source.match(/\$\$/)?.index;
-    return index;
+    return index === -1 ? undefined : index;
   },
   tokenizer(source) {
     const match = source.match(/^\$\$[ \t]*\n?([\s\S]+?)\n?\$\$(?:\n+|$)/);
@@ -189,7 +196,8 @@ const mathInlineExtension = {
   name: 'mathInline',
   level: 'inline',
   start(source) {
-    return source.indexOf('\\(');
+    const index = source.indexOf('\\(');
+    return index === -1 ? undefined : index;
   },
   tokenizer(source) {
     const match = source.match(/^\\\((.+?)\\\)/);
@@ -260,6 +268,30 @@ function bootstrap() {
   createIcons({ icons });
 }
 
+function createUnavailableNative() {
+  const unavailable = async () => {
+    throw new Error('Native Electron bridge is unavailable.');
+  };
+
+  return {
+    platform: 'browser',
+    openDialog: async () => [],
+    openDroppedFiles: async () => [],
+    saveFile: unavailable,
+    saveFileAs: unavailable,
+    exportHtml: unavailable,
+    exportPdf: unavailable,
+    revealFile: async () => false,
+    openExternal: async (url) => {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return true;
+    },
+    rendererReady: () => {},
+    onSystemOpenFiles: () => () => {},
+    onMenuCommand: () => () => {}
+  };
+}
+
 function hydrateTheme() {
   const savedTheme = localStorage.getItem(THEME_KEY);
   const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -299,14 +331,21 @@ function readStoredSession() {
 }
 
 function persistSession() {
-  localStorage.setItem(
-    SESSION_KEY,
-    JSON.stringify({
-      documents,
-      activeDocumentId,
-      viewMode
-    })
-  );
+  try {
+    localStorage.setItem(
+      SESSION_KEY,
+      JSON.stringify({
+        documents,
+        activeDocumentId,
+        viewMode
+      })
+    );
+  } catch (_error) {
+    if (!sessionStorageWarningShown) {
+      sessionStorageWarningShown = true;
+      showToast('Session cache is full. Save important edits to disk.');
+    }
+  }
 }
 
 function bindDomEvents() {
@@ -397,13 +436,12 @@ function bindDomEvents() {
     event.preventDefault();
     dropOverlay.classList.remove('visible');
 
-    const paths = [...event.dataTransfer.files].map((file) => file.path).filter(Boolean);
-    if (!paths.length) {
+    if (!event.dataTransfer.files.length) {
       showToast('No local file paths were available for this drop.');
       return;
     }
 
-    const opened = await native.openPaths(paths);
+    const opened = await native.openDroppedFiles(event.dataTransfer.files);
     addOpenedDocuments(opened);
   });
 
@@ -479,20 +517,48 @@ function addOpenedDocuments(opened) {
     documents = [];
   }
 
-  const newDocuments = opened.map((file) =>
-    createDocument({
+  const changedDocuments = [];
+  const skippedDirty = [];
+
+  for (const file of opened) {
+    const existing = documents.find((doc) => doc.path === file.path);
+
+    if (existing?.dirty) {
+      skippedDirty.push(existing.title);
+      continue;
+    }
+
+    if (existing) {
+      existing.title = file.name;
+      existing.content = file.content;
+      existing.dirty = false;
+      existing.lastSavedAt = file.lastSavedAt;
+      changedDocuments.push(existing);
+      continue;
+    }
+
+    const doc = createDocument({
       title: file.name,
       path: file.path,
       content: file.content,
       dirty: false,
       lastSavedAt: file.lastSavedAt
-    })
-  );
+    });
 
-  documents.push(...newDocuments);
-  activateDocument(newDocuments[0].id);
+    documents.push(doc);
+    changedDocuments.push(doc);
+  }
+
+  if (!changedDocuments.length) {
+    showToast(`Skipped ${skippedDirty.length} dirty open document${skippedDirty.length === 1 ? '' : 's'}.`);
+    return;
+  }
+
+  activateDocument(changedDocuments[0].id);
   persistSession();
-  showToast(`${newDocuments.length} file${newDocuments.length === 1 ? '' : 's'} opened.`);
+
+  const skippedMessage = skippedDirty.length ? ` ${skippedDirty.length} dirty duplicate skipped.` : '';
+  showToast(`${changedDocuments.length} file${changedDocuments.length === 1 ? '' : 's'} opened.${skippedMessage}`);
 }
 
 function activateDocument(documentId) {
@@ -628,7 +694,8 @@ async function exportActiveHtml() {
       title: stripMarkdownExtension(doc.title),
       defaultPath: `${stripMarkdownExtension(doc.title)}.html`,
       body: preview.innerHTML,
-      theme: getTheme()
+      theme: getTheme(),
+      css: EXPORT_CSS
     });
 
     if (result) showToast('HTML exported.');
@@ -645,7 +712,8 @@ async function exportActivePdf() {
     const result = await native.exportPdf({
       title: stripMarkdownExtension(doc.title),
       body: preview.innerHTML,
-      theme: getTheme()
+      theme: getTheme(),
+      css: EXPORT_CSS
     });
 
     if (result) showToast('PDF exported.');
@@ -661,7 +729,10 @@ async function revealActiveFile() {
     return;
   }
 
-  await native.revealFile(doc.path);
+  const revealed = await native.revealFile(doc.path);
+  if (!revealed) {
+    showToast('Open or save this document before revealing it.');
+  }
 }
 
 function updateStatus() {
@@ -733,7 +804,7 @@ async function renderMermaidBlocks(generation) {
 
   await Promise.all(
     blocks.map(async (block, index) => {
-      const source = block.dataset.mermaid || '';
+      const source = block.dataset.mermaid || block.textContent || '';
       const id = `mermaid-${Date.now()}-${index}-${Math.abs(hashNumber(source))}`;
 
       try {
@@ -785,7 +856,7 @@ function renderMath(source, displayMode) {
 }
 
 function setViewMode(nextMode, shouldPersist = true) {
-  viewMode = nextMode || 'split';
+  viewMode = VALID_VIEW_MODES.has(nextMode) ? nextMode : 'split';
   workspace.classList.remove('split', 'editor', 'preview');
   workspace.classList.add(viewMode);
 
@@ -821,6 +892,10 @@ function setTheme(theme, shouldPersist = true) {
   document.documentElement.dataset.theme = nextTheme;
   themeToggle?.setAttribute('aria-label', nextTheme === 'dark' ? 'Use light theme' : 'Use dark theme');
   themeToggle?.setAttribute('title', nextTheme === 'dark' ? 'Use light theme' : 'Use dark theme');
+  if (themeToggle) {
+    themeToggle.innerHTML = `<i data-lucide="${nextTheme === 'dark' ? 'sun' : 'moon'}" aria-hidden="true"></i>`;
+    createIcons({ icons });
+  }
 
   if (shouldPersist) {
     localStorage.setItem(THEME_KEY, nextTheme);

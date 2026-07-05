@@ -1,8 +1,8 @@
 ---
-title: Markdown Viewer Mac
+title: Shibanshu Markdown Viewer
 ---
 
-# Markdown Viewer Mac
+# Shibanshu Markdown Viewer
 
 Open a Markdown file from Finder, the app menu, the toolbar, or drag and drop.
 
