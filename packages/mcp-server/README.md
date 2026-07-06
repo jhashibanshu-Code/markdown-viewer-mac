@@ -1,4 +1,4 @@
-# athena-mcp
+# athena-code-mcp
 
 MCP server that gives Claude Code a structural map of your codebase — so it reads 3 files instead of 300.
 
@@ -11,7 +11,7 @@ Claude Code reads files one-by-one to understand your repo. A 200-file repo need
 One setup. Zero effort. Claude automatically understands your architecture.
 
 ```bash
-claude mcp add -s user athena npx athena-mcp
+claude mcp add -s user athena npx athena-code-mcp
 ```
 
 Then in any repo:
@@ -93,7 +93,7 @@ Your 924-file repo (2.3M tokens — 12x context window)
 
 ```bash
 # Add to Claude Code (one-time)
-claude mcp add -s user athena npx athena-mcp
+claude mcp add -s user athena npx athena-code-mcp
 
 # Set up any repo (one-time per repo)
 # Just tell Claude: "Set up this repo for context mapping"

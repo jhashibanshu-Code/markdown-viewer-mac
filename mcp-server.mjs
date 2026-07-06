@@ -29,8 +29,8 @@ const EXPORT_SCRIPT = path.join(__dirname, 'scripts', 'export-claude-map.mjs');
 
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown', '.mdown', '.mkd', '.txt', '.canvas']);
 const IGNORED_DIRS = new Set(['.git', '.hg', '.svn', 'node_modules', 'dist', 'release', 'build', '.next', '.cache', '.venv', 'vendor', 'target', 'coverage']);
-const MAX_VAULT_FILES = 5000;
-const MAX_VAULT_DEPTH = 16;
+const MAX_VAULT_FILES = 20000;
+const MAX_VAULT_DEPTH = 32;
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 const MAX_SEARCH_RESULTS = 50;
 
@@ -107,7 +107,7 @@ const TOOLS = [
       properties: {
         path: { type: 'string', description: 'Absolute path to the vault/repo to analyze' },
         output_dir: { type: 'string', description: 'Output directory (default: <path>/.athena)' },
-        max_files: { type: 'number', description: 'Max files to index (default 5000)' },
+        max_files: { type: 'number', description: 'Max files to index (default 20000)' },
         max_bytes: { type: 'number', description: 'Max file size in bytes to read (default 768000)' },
         chunk_tokens: { type: 'number', description: 'Target tokens per JSONL chunk (default 900)' }
       },
@@ -1090,7 +1090,7 @@ function resolveHtmlOutputPath(root, output) {
 
 function generateStandaloneGraphViewer(graphData) {
   const data = JSON.stringify(graphData).replace(/</g, '\\u003c').replace(/`/g, '\\u0060');
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shibanshu 3D Graph Viewer</title>
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Athena Graph Viewer</title>
 <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#000;color:#e6edf3;font-family:-apple-system,sans-serif;overflow:hidden;user-select:none}canvas{display:block;cursor:grab}canvas:active{cursor:grabbing}#dt{position:fixed;right:0;top:0;width:340px;height:100%;background:rgba(0,0,0,0.93);border-left:1px solid rgba(94,234,212,0.12);overflow-y:auto;padding:20px;backdrop-filter:blur(20px);transition:transform 250ms;transform:translateX(100%);z-index:30;font-size:13px}#dt.open{transform:translateX(0)}#dt h2{font-size:14px;font-family:monospace;color:#5eead4;margin-bottom:4px;word-break:break-all}#dt .b{font-size:9px;text-transform:uppercase;letter-spacing:1px;padding:2px 7px;border-radius:4px;display:inline-block;margin:0 3px 12px 0;border:1px solid rgba(255,255,255,0.08)}#dt .b.hub{color:#fcd34d;border-color:rgba(253,211,77,0.2)}#dt .b.orphan{color:#fca5a5;border-color:rgba(252,165,165,0.2)}#dt .ms{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px}#dt .m{background:rgba(255,255,255,0.02);padding:10px;border-radius:7px;text-align:center}#dt .m strong{display:block;font-size:22px;color:#5eead4;font-family:monospace}#dt .m span{font-size:8px;color:#4a5568;text-transform:uppercase}#dt h3{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#374151;margin:14px 0 6px}#dt .ei{font-size:11px;font-family:monospace;padding:5px 8px;background:rgba(255,255,255,0.015);border-radius:5px;margin-bottom:2px;cursor:pointer;border:1px solid transparent}#dt .ei:hover{border-color:rgba(94,234,212,0.2)}#dt .hi{font-size:11px;padding:4px 7px;color:#6b7280;border-left:2px solid rgba(94,234,212,0.15);margin-bottom:2px}.cb{position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);color:#4a5568;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}#tb{position:fixed;top:0;left:0;right:0;height:44px;background:rgba(0,0,0,0.7);border-bottom:1px solid rgba(255,255,255,0.03);display:flex;align-items:center;padding:0 14px;gap:8px;z-index:20;backdrop-filter:blur(12px);font-size:11px}#tb .br{text-transform:uppercase;letter-spacing:2px;color:#5eead4;font-weight:700;font-size:10px}#tb .sp{width:1px;height:16px;background:rgba(255,255,255,0.05)}#tb button{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);color:#4a5568;padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer}#tb button.a{border-color:rgba(94,234,212,0.3);color:#5eead4}#tb input{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);color:#e6edf3;padding:4px 8px;border-radius:4px;font-size:11px;width:140px;outline:none;font-family:monospace}#tb .f1{flex:1}#tb .st{color:#1f2937}#tb .st strong{color:#374151}#tt{position:fixed;pointer-events:none;background:rgba(0,0,0,0.92);border:1px solid rgba(94,234,212,0.2);padding:7px 10px;border-radius:7px;display:none;z-index:25;font-size:11px;font-family:monospace}#tt .tp{color:#5eead4}#tt .tm{color:#374151;font-size:9px;margin-top:2px}</style></head><body>
 <canvas id="c"></canvas>
 <div id="tb"><span class="br">Shibanshu 3D Graph Viewer</span><span class="sp"></span><button id="fa" class="a">All</button><button id="fh">Hubs</button><button id="fo">Orphans</button><span class="sp"></span><input id="si" placeholder="Search..."><span class="f1"></span><span class="st"><strong id="nc">0</strong> nodes <strong id="ec">0</strong> edges</span></div>

@@ -40,12 +40,32 @@ const IGNORED_DIRECTORIES = new Set([
   'target',
   'vendor'
 ]);
-const DEFAULT_MAX_FILES = 5000;
+const DEFAULT_MAX_FILES = 20000;
 const DEFAULT_MAX_BYTES = 750 * 1024;
 const DEFAULT_MAX_DEPTH = 24;
-const DEFAULT_OUTPUT_DIR = '.shibanshu';
+const DEFAULT_OUTPUT_DIR = '.athena';
 const DEFAULT_CHUNK_TOKENS = 900;
 const MAX_CHUNKS = 20000;
+const STOP_WORDS = new Set([
+  'a','an','the','is','are','was','were','be','been','being','have','has','had',
+  'do','does','did','will','would','shall','should','may','might','can','could',
+  'and','but','or','nor','not','no','so','if','then','else','when','where','how',
+  'what','which','who','whom','this','that','these','those','it','its','my','your',
+  'his','her','our','their','me','him','us','them','we','they','you','she','he',
+  'in','on','at','to','for','of','with','by','from','up','about','into','through',
+  'during','before','after','above','below','between','under','over','out','off',
+  'than','too','very','just','also','only','own','same','each','every','all','any',
+  'few','more','most','other','some','such','many','much','new','old','first','last',
+  'long','great','little','right','still','get','got','set','use','used','using',
+  'return','returns','const','let','var','function','class','import','export','from',
+  'require','module','default','async','await','true','false','null','undefined',
+  'string','number','boolean','object','array','type','interface','enum','void',
+  'public','private','protected','static','readonly','abstract','extends','implements',
+  'try','catch','throw','finally','switch','case','break','continue','while','for',
+  'else','elif','def','self','none','pass','yield','lambda','print','console','log',
+  'error','warn','info','debug','test','describe','expect','assert','should',
+  'todo','fixme','hack','note','param','returns','example','see','since','version'
+]);
 const DEFAULT_SCENE_NODE_LIMIT = 280;
 const DEFAULT_SCENE_EDGE_LIMIT = 540;
 const DEFAULT_SCENE_PERSPECTIVE = 900;
@@ -126,6 +146,8 @@ const rootPath = path.resolve(options.rootPath);
 const outputDir = path.resolve(options.outputDir || path.join(rootPath, DEFAULT_OUTPUT_DIR));
 const files = await discoverFiles(rootPath, options);
 const documents = await readDocuments(rootPath, files, options.maxBytes);
+enrichDocumentSummaries(documents);
+computeTfIdfTopics(documents);
 const graph = buildGraph(documents);
 const analysis = analyzeRepositoryContext(documents, graph);
 options.generatedAt = new Date().toISOString();
@@ -303,7 +325,7 @@ function printUsage() {
 
 Options:
   --profile <name>        Context profile: ${Object.keys(CONTEXT_PROFILES).join(', ')}. Default: ${DEFAULT_CONTEXT_PROFILE}
-  --out <folder>          Output folder. Default: <folder>/.shibanshu
+  --out <folder>          Output folder. Default: <folder>/.athena
   --max-files <number>    Maximum files to index. Overrides selected profile.
   --max-bytes <number>    Skip files larger than this many bytes. Overrides selected profile.
   --max-depth <number>    Maximum folder depth. Overrides selected profile.
@@ -564,6 +586,8 @@ function buildClaudeContextGraphPayload(rootPath, documents, graph, analysis, co
       startLine: 1,
       endLine: node.lines,
       words: node.words,
+      summary: node.summary || '',
+      topics: node.topics || [],
       headings: node.headings.map((heading) => heading.text),
       tags: node.tags,
       aliases: node.aliases,
@@ -641,6 +665,8 @@ function buildScenePayload(rootPath, documents, graph, analysis, graphPayload, o
       aliases: node.aliases,
       words: node.words,
       symbols: node.symbols.slice(0, 12),
+      summary: doc.summary || '',
+      topics: doc.topics || [],
       routeScore: routeScoreByPath.get(node.path) || 0,
       active: node.path === activePath,
       hasMedia: hasMediaReferences(doc),
@@ -1922,7 +1948,7 @@ function renderClaudeNavigationGuide(root, documents, graph, config, analysis) {
   lines.push('- Use the graph search to jump between hubs and bridge files.');
   lines.push('- Use Mind Map on a specific note to inspect headings, tasks, backlinks, and unresolved links.');
   lines.push('- Use Copy for AI after changing notes to create a fresh model-readable map.');
-  lines.push('- Use `shibanshu-markdown context <folder> --out <folder>` to regenerate this guide offline.');
+  lines.push('- Use `athena context <folder> --out <folder>` to regenerate this guide offline.');
 
   return `${lines.join('\n').trimEnd()}\n`;
 }
@@ -2472,4 +2498,140 @@ function createPlainTextExcerpt(markdown, maxLength) {
 
   if (!Number.isFinite(maxLength) || text.length <= maxLength) return text;
   return `${text.slice(0, maxLength - 3).trim()}...`;
+}
+
+// ─── Content Understanding ──────────────────────────────────────────
+
+function extractHeuristicSummary(content, extension, symbols) {
+  if (!content || !content.trim()) return '';
+
+  const lines = content.split('\n');
+  const ext = (extension || '').toLowerCase();
+
+  // Code files: extract module docstring + exported names
+  if (['.js','.mjs','.cjs','.ts','.tsx','.jsx'].includes(ext)) {
+    let docstring = '';
+    // Look for JSDoc /** ... */ at the top (within first 30 lines)
+    const jsDocMatch = content.slice(0, 3000).match(/\/\*\*\s*([\s\S]*?)\*\//);
+    if (jsDocMatch) {
+      docstring = jsDocMatch[1].replace(/^\s*\*\s?/gm, '').trim().split('\n')[0].trim();
+    }
+    // Or leading // comments
+    if (!docstring) {
+      const commentLines = [];
+      for (const line of lines.slice(0, 15)) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('//') && !trimmed.startsWith('#!/')) {
+          commentLines.push(trimmed.replace(/^\/\/\s*/, ''));
+        } else if (trimmed && !trimmed.startsWith('#!')) break;
+      }
+      if (commentLines.length) docstring = commentLines.join(' ').substring(0, 200);
+    }
+    // Add exported function/class names
+    const exportedNames = (symbols || [])
+      .filter(s => s.name && (s.kind === 'function' || s.kind === 'class' || s.kind === 'variable'))
+      .slice(0, 6)
+      .map(s => s.name);
+    const exports = exportedNames.length ? `Exports: ${exportedNames.join(', ')}.` : '';
+    return [docstring, exports].filter(Boolean).join(' ').substring(0, 300) || '';
+  }
+
+  // Python
+  if (ext === '.py') {
+    // Module docstring
+    const pyDocMatch = content.slice(0, 2000).match(/^(?:#!.*\n)?(?:#.*\n)*\s*(?:"""([\s\S]*?)"""|'''([\s\S]*?)''')/);
+    if (pyDocMatch) {
+      const doc = (pyDocMatch[1] || pyDocMatch[2] || '').trim().split('\n')[0];
+      const exportedNames = (symbols || []).filter(s => s.kind === 'function' || s.kind === 'class').slice(0, 6).map(s => s.name);
+      return [doc, exportedNames.length ? `Defines: ${exportedNames.join(', ')}.` : ''].filter(Boolean).join(' ').substring(0, 300);
+    }
+  }
+
+  // Markdown: first paragraph after first heading
+  if (['.md','.markdown','.mdown','.mkd','.mdx','.txt'].includes(ext)) {
+    let pastFirstHeading = false;
+    let paragraph = '';
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#')) { pastFirstHeading = true; continue; }
+      if (trimmed === '---' && !pastFirstHeading) continue; // frontmatter
+      if (pastFirstHeading && trimmed.length > 20) {
+        paragraph = trimmed.replace(/[[\]*_`#>]/g, '').trim();
+        break;
+      }
+    }
+    return paragraph.substring(0, 250) || '';
+  }
+
+  // JSON config
+  if (ext === '.json') {
+    try {
+      const obj = JSON.parse(content);
+      const parts = [];
+      if (obj.name) parts.push(obj.name);
+      if (obj.description) parts.push(obj.description);
+      if (obj.main) parts.push(`Entry: ${obj.main}`);
+      return parts.join(' — ').substring(0, 250);
+    } catch { return ''; }
+  }
+
+  // CSS: first block comment
+  if (ext === '.css') {
+    const cssComment = content.match(/\/\*([\s\S]*?)\*\//);
+    if (cssComment) return cssComment[1].replace(/\s+/g, ' ').trim().substring(0, 200);
+    return '';
+  }
+
+  return '';
+}
+
+function computeTfIdfTopics(documents) {
+  if (!documents.length) return;
+
+  // Tokenize each document
+  const docTokens = new Map();
+  const docFreq = new Map(); // how many docs contain each term
+
+  for (const doc of documents) {
+    const text = createPlainTextExcerpt(doc.content, 50000).toLowerCase();
+    const tokens = text.split(/[\s,.;:!?()\[\]{}<>"'`/\\|=+\-*&^%$#@~]+/)
+      .filter(t => t.length >= 3 && t.length <= 30 && !STOP_WORDS.has(t) && !/^\d+$/.test(t));
+
+    // Count term frequency in this doc
+    const tf = new Map();
+    for (const token of tokens) {
+      tf.set(token, (tf.get(token) || 0) + 1);
+    }
+    docTokens.set(doc.relativePath, { tf, totalTerms: tokens.length });
+
+    // Count document frequency
+    for (const term of tf.keys()) {
+      docFreq.set(term, (docFreq.get(term) || 0) + 1);
+    }
+  }
+
+  const totalDocs = documents.length;
+
+  // Compute TF-IDF and assign topics
+  for (const doc of documents) {
+    const entry = docTokens.get(doc.relativePath);
+    if (!entry || !entry.totalTerms) { doc.topics = []; continue; }
+
+    const scores = [];
+    for (const [term, count] of entry.tf) {
+      const tf = count / entry.totalTerms;
+      const idf = Math.log(totalDocs / (docFreq.get(term) || 1));
+      scores.push({ term, score: tf * idf });
+    }
+
+    scores.sort((a, b) => b.score - a.score);
+    doc.topics = scores.slice(0, 8).map(s => s.term);
+  }
+}
+
+function enrichDocumentSummaries(documents) {
+  for (const doc of documents) {
+    doc.summary = extractHeuristicSummary(doc.content, doc.extension, doc.symbols);
+    if (!doc.topics) doc.topics = [];
+  }
 }
