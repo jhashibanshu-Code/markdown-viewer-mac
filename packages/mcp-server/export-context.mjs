@@ -23,6 +23,7 @@ const CODE_EXTENSIONS = new Set([
   '.yml'
 ]);
 const IGNORED_DIRECTORIES = new Set([
+  '.athena',
   '.cache',
   '.git',
   '.hg',
@@ -30,6 +31,7 @@ const IGNORED_DIRECTORIES = new Set([
   '.nuxt',
   '.output',
   '.parcel-cache',
+  '.shibanshu',
   '.svn',
   '.venv',
   'build',
@@ -39,6 +41,11 @@ const IGNORED_DIRECTORIES = new Set([
   'release',
   'target',
   'vendor'
+]);
+const IGNORED_FILES = new Set([
+  'package-lock.json',
+  'yarn.lock',
+  'pnpm-lock.yaml'
 ]);
 const DEFAULT_MAX_FILES = 20000;
 const DEFAULT_MAX_BYTES = 750 * 1024;
@@ -157,6 +164,12 @@ const markdown = renderClaudeContextMap(rootPath, documents, graph, options, ana
 const mindMapMarkdown = renderClaudeMindMap(rootPath, documents, graph, options, analysis);
 const navigationMarkdown = renderClaudeNavigationGuide(rootPath, documents, graph, options, analysis);
 const contextChunks = renderContextChunks(documents, options);
+const contradictionsMarkdown = renderContradictionsReport(rootPath, documents, graph, options, analysis);
+const stalenessMarkdown = renderStalenessReport(rootPath, documents, graph, options, analysis);
+const semanticWarningsMarkdown = renderSemanticWarningsReport(rootPath, documents, graph, options, analysis);
+const authorityMarkdown = renderAuthorityGraphReport(rootPath, documents, graph, options, analysis);
+const repoHealthMarkdown = renderRepoHealthReport(rootPath, documents, graph, options, analysis);
+const duplicatesMarkdown = renderDuplicateReport(rootPath, documents, graph, options, analysis);
 
 await mkdir(outputDir, { recursive: true });
 const markdownPath = path.join(outputDir, 'claude-context-map.md');
@@ -166,11 +179,23 @@ const graphPath = path.join(outputDir, 'claude-context-graph.json');
 const chunksPath = path.join(outputDir, 'llm-context-chunks.jsonl');
 const scenePath = path.join(outputDir, 'claude-context-scene.json');
 const integrityPath = path.join(outputDir, 'context-integrity.json');
+const contradictionsPath = path.join(outputDir, 'contradictions.md');
+const stalenessPath = path.join(outputDir, 'staleness-report.md');
+const semanticWarningsPath = path.join(outputDir, 'semantic-warnings.md');
+const authorityPath = path.join(outputDir, 'authority-graph.md');
+const repoHealthPath = path.join(outputDir, 'repo-health.md');
+const duplicatesPath = path.join(outputDir, 'duplicates.md');
 
 await writeFile(markdownPath, markdown, 'utf8');
 await writeFile(mindMapPath, mindMapMarkdown, 'utf8');
 await writeFile(navigationPath, navigationMarkdown, 'utf8');
 await writeFile(chunksPath, contextChunks, 'utf8');
+await writeFile(contradictionsPath, contradictionsMarkdown, 'utf8');
+await writeFile(stalenessPath, stalenessMarkdown, 'utf8');
+await writeFile(semanticWarningsPath, semanticWarningsMarkdown, 'utf8');
+await writeFile(authorityPath, authorityMarkdown, 'utf8');
+await writeFile(repoHealthPath, repoHealthMarkdown, 'utf8');
+await writeFile(duplicatesPath, duplicatesMarkdown, 'utf8');
 const graphPayload = buildClaudeContextGraphPayload(rootPath, documents, graph, analysis, contextChunks, options, routeValidation);
 const graphJson = `${JSON.stringify(graphPayload, null, 2)}\n`;
 await writeFile(graphPath, graphJson, 'utf8');
@@ -191,7 +216,13 @@ const integrityPayload = buildContextIntegrityPayload(rootPath, options, documen
   { key: 'navigation', file: 'claude-context-navigation.md', content: navigationMarkdown },
   { key: 'chunks', file: 'llm-context-chunks.jsonl', content: contextChunks },
   { key: 'graph', file: 'claude-context-graph.json', content: graphJson },
-  { key: 'scene', file: 'claude-context-scene.json', content: sceneJson }
+  { key: 'scene', file: 'claude-context-scene.json', content: sceneJson },
+  { key: 'contradictions', file: 'contradictions.md', content: contradictionsMarkdown },
+  { key: 'staleness', file: 'staleness-report.md', content: stalenessMarkdown },
+  { key: 'semanticWarnings', file: 'semantic-warnings.md', content: semanticWarningsMarkdown },
+  { key: 'authority', file: 'authority-graph.md', content: authorityMarkdown },
+  { key: 'repoHealth', file: 'repo-health.md', content: repoHealthMarkdown },
+  { key: 'duplicates', file: 'duplicates.md', content: duplicatesMarkdown }
 ]);
 await writeFile(integrityPath, `${JSON.stringify(integrityPayload, null, 2)}\n`, 'utf8');
 
@@ -199,9 +230,18 @@ console.log(`Claude context map written: ${markdownPath}`);
 console.log(`Claude mind map written: ${mindMapPath}`);
 console.log(`Claude navigation guide written: ${navigationPath}`);
 console.log(`LLM context chunks written: ${chunksPath}`);
+console.log(`Contradictions report written: ${contradictionsPath}`);
+console.log(`Staleness report written: ${stalenessPath}`);
+console.log(`Semantic warnings written: ${semanticWarningsPath}`);
+console.log(`Authority graph written: ${authorityPath}`);
+console.log(`Repo health report written: ${repoHealthPath}`);
+console.log(`Duplicate report written: ${duplicatesPath}`);
 console.log(`3D scene graph written: ${scenePath}`);
 console.log(`Graph JSON written: ${graphPath}`);
 console.log(`Context integrity written: ${integrityPath}`);
+if (options.discoverySummary) {
+  console.log(renderDiscoverySummaryLine(options));
+}
 console.log(
   `${documents.length} files indexed, ${graph.edges.length} resolved links, ${graph.unresolvedLinks.length} unresolved links. Profile: ${options.profile}. Fingerprint: ${options.exportFingerprint}.`
 );
@@ -337,11 +377,121 @@ Options:
 `);
 }
 
+async function readIgnoreRules(root) {
+  const rules = [
+    { pattern: '.athena/', source: 'default', negated: false, directoryOnly: true },
+    { pattern: '.shibanshu/', source: 'default', negated: false, directoryOnly: true }
+  ];
+
+  for (const fileName of ['.gitignore', '.athenaignore']) {
+    const ignorePath = path.join(root, fileName);
+    let content = '';
+    try {
+      content = await readFile(ignorePath, 'utf8');
+    } catch (_error) {
+      continue;
+    }
+
+    const source = fileName;
+    for (const rawLine of content.split(/\r?\n/)) {
+      const trimmed = rawLine.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const negated = trimmed.startsWith('!');
+      const body = negated ? trimmed.slice(1).trim() : trimmed;
+      if (!body || body === '/') continue;
+      rules.push({
+        pattern: body,
+        source,
+        negated,
+        directoryOnly: body.endsWith('/')
+      });
+    }
+  }
+
+  return rules;
+}
+
+function createDiscoverySummary() {
+  return {
+    scannedEntries: 0,
+    candidateFiles: 0,
+    indexedFiles: 0,
+    skippedHidden: 0,
+    skippedByDirectory: {},
+    skippedByIgnore: {},
+    skippedByExtension: 0,
+    skippedByDepth: 0,
+    skippedByLimit: 0,
+    ignoreFiles: ['.gitignore', '.athenaignore']
+  };
+}
+
+function incrementCounter(record, key, amount = 1) {
+  record[key] = (record[key] || 0) + amount;
+}
+
+function shouldIgnoreByRules(relativePath, isDirectory, rules) {
+  const normalized = String(relativePath || '').replaceAll('\\', '/').replace(/\/+$/, '');
+  const basename = path.posix.basename(normalized);
+  let ignored = false;
+  let source = null;
+  let pattern = null;
+
+  for (const rule of rules) {
+    if (rule.directoryOnly && !isDirectory) continue;
+    if (!ignoreRuleMatches(rule.pattern, normalized, basename, isDirectory)) continue;
+    ignored = !rule.negated;
+    source = rule.source;
+    pattern = rule.pattern;
+  }
+
+  return { ignored, source, pattern };
+}
+
+function ignoreRuleMatches(pattern, relativePath, basename, isDirectory) {
+  let value = String(pattern || '').trim();
+  if (!value) return false;
+  if (value.endsWith('/')) value = value.slice(0, -1);
+  value = value.replaceAll('\\', '/');
+
+  if (value.startsWith('/')) {
+    const anchored = value.slice(1);
+    return matchIgnorePattern(anchored, relativePath) || (isDirectory && relativePath.startsWith(`${anchored}/`));
+  }
+
+  if (!value.includes('/')) {
+    if (matchIgnorePattern(value, basename)) return true;
+    return relativePath.split('/').some((segment) => matchIgnorePattern(value, segment));
+  }
+
+  return matchIgnorePattern(value, relativePath) || (isDirectory && relativePath.startsWith(`${value}/`));
+}
+
+function matchIgnorePattern(pattern, value) {
+  const escaped = String(pattern)
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*\*/g, '::DOUBLE_STAR::')
+    .replace(/\*/g, '[^/]*')
+    .replace(/\?/g, '[^/]')
+    .replace(/::DOUBLE_STAR::/g, '.*');
+  return new RegExp(`^${escaped}$`).test(value);
+}
+
 async function discoverFiles(root, config) {
   const discovered = [];
+  const ignoreRules = await readIgnoreRules(root);
+  const summary = createDiscoverySummary();
+  config.discoverySummary = summary;
 
   async function walk(directory, depth) {
-    if (discovered.length >= config.maxFiles || depth > config.maxDepth) return;
+    if (discovered.length >= config.maxFiles) {
+      summary.skippedByLimit += 1;
+      return;
+    }
+    if (depth > config.maxDepth) {
+      summary.skippedByDepth += 1;
+      return;
+    }
 
     let entries = [];
     try {
@@ -353,21 +503,47 @@ async function discoverFiles(root, config) {
     entries.sort((left, right) => left.name.localeCompare(right.name));
 
     for (const entry of entries) {
-      if (discovered.length >= config.maxFiles) break;
-      if (entry.name.startsWith('.') && entry.name !== '.github') continue;
+      summary.scannedEntries += 1;
+      if (discovered.length >= config.maxFiles) {
+        summary.skippedByLimit += 1;
+        break;
+      }
 
       const entryPath = path.join(directory, entry.name);
+      const relativePath = path.relative(root, entryPath).replaceAll(path.sep, '/');
+      const ignoreMatch = shouldIgnoreByRules(relativePath, entry.isDirectory(), ignoreRules);
+      if (ignoreMatch.ignored) {
+        incrementCounter(summary.skippedByIgnore, `${ignoreMatch.source}:${ignoreMatch.pattern}`);
+        continue;
+      }
+
+      if (entry.name.startsWith('.') && entry.name !== '.github') {
+        summary.skippedHidden += 1;
+        continue;
+      }
 
       if (entry.isDirectory()) {
-        if (IGNORED_DIRECTORIES.has(entry.name)) continue;
+        if (IGNORED_DIRECTORIES.has(entry.name)) {
+          incrementCounter(summary.skippedByDirectory, entry.name);
+          continue;
+        }
         await walk(entryPath, depth + 1);
         continue;
       }
 
       if (!entry.isFile()) continue;
+      summary.candidateFiles += 1;
+      if (IGNORED_FILES.has(entry.name)) {
+        incrementCounter(summary.skippedByDirectory, entry.name);
+        continue;
+      }
       const ext = path.extname(entry.name).toLowerCase();
-      if (!MARKDOWN_EXTENSIONS.has(ext) && !(config.includeCode && CODE_EXTENSIONS.has(ext))) continue;
+      if (!MARKDOWN_EXTENSIONS.has(ext) && !(config.includeCode && CODE_EXTENSIONS.has(ext))) {
+        summary.skippedByExtension += 1;
+        continue;
+      }
       discovered.push(entryPath);
+      summary.indexedFiles = discovered.length;
     }
   }
 
@@ -377,6 +553,7 @@ async function discoverFiles(root, config) {
   }
 
   await walk(root, 0);
+  summary.indexedFiles = discovered.length;
   return discovered;
 }
 
@@ -393,6 +570,7 @@ async function readDocuments(root, filePaths, maxBytes) {
       const relativePath = path.relative(root, filePath).replaceAll(path.sep, '/');
       const type = MARKDOWN_EXTENSIONS.has(ext) ? 'markdown' : 'code';
       const frontmatter = type === 'markdown' ? extractFrontmatterMetadata(content) : { aliases: [], tags: [] };
+      const symbols = extractDocumentSymbols(content, ext, type);
       documents.push({
         absolutePath: filePath,
         relativePath,
@@ -400,7 +578,9 @@ async function readDocuments(root, filePaths, maxBytes) {
         type,
         extension: ext,
         content,
+        contentHash: sha256String(content).slice(0, 24),
         size: fileStats.size,
+        modified: fileStats.mtime.toISOString(),
         words: countWords(content),
         lines: content.split(/\r?\n/).length,
         headings: extractHeadings(content),
@@ -409,7 +589,10 @@ async function readDocuments(root, filePaths, maxBytes) {
         links: type === 'markdown' ? extractDocumentLinks(relativePath, content, ext) : [],
         canvasEdges: ext === '.canvas' ? extractJsonCanvasConnectionEdges(content) : [],
         imports: type === 'code' ? extractCodeImports(content, relativePath, ext) : [],
-        symbols: extractDocumentSymbols(content, ext, type)
+        symbols,
+        calls: type === 'code' ? extractCodeCalls(content, ext) : [],
+        numericClaims: extractNumericClaims(content, relativePath, type, ext),
+        secretFindings: scanDocumentSecrets(content, relativePath)
       });
     } catch (_error) {
       // Skip unreadable files. This exporter is for mapping, not failing the whole run on one path.
@@ -422,6 +605,7 @@ async function readDocuments(root, filePaths, maxBytes) {
 function buildGraph(documents) {
   const nodes = documents;
   const keyToDocument = new Map();
+  const symbolOwners = new Map();
   const edges = [];
   const edgeKeys = new Set();
   const unresolvedLinks = [];
@@ -429,6 +613,13 @@ function buildGraph(documents) {
   for (const doc of documents) {
     for (const key of getDocumentKeys(doc)) {
       if (!keyToDocument.has(key)) keyToDocument.set(key, doc);
+    }
+    for (const symbol of doc.symbols || []) {
+      if (!['function', 'class', 'variable', 'type'].includes(symbol.kind)) continue;
+      const key = String(symbol.name || '').toLowerCase();
+      if (!key) continue;
+      if (!symbolOwners.has(key)) symbolOwners.set(key, []);
+      symbolOwners.get(key).push({ doc, symbol });
     }
   }
 
@@ -520,6 +711,26 @@ function buildGraph(documents) {
         specifier: codeImport.specifier
       });
     }
+
+    for (const call of source.calls || []) {
+      const owners = symbolOwners.get(String(call.name || '').toLowerCase()) || [];
+      for (const owner of owners.slice(0, 8)) {
+        const target = owner.doc;
+        if (!target || source.relativePath === target.relativePath) continue;
+        const edgeKey = `${source.relativePath}->${target.relativePath}:call:${call.name}:${call.line}`;
+        if (edgeKeys.has(edgeKey)) continue;
+        edgeKeys.add(edgeKey);
+        edges.push({
+          source,
+          target,
+          kind: 'call',
+          text: call.name,
+          line: call.line,
+          specifier: call.name,
+          targetSymbol: owner.symbol
+        });
+      }
+    }
   }
 
   return {
@@ -543,7 +754,7 @@ function analyzeRepositoryContext(documents, graph) {
     .sort((left, right) => right.words - left.words || left.relativePath.localeCompare(right.relativePath));
   const unresolvedBySource = getUnresolvedBySource(graph);
 
-  return {
+  const analysis = {
     metrics,
     clusters,
     hubs,
@@ -551,9 +762,511 @@ function analyzeRepositoryContext(documents, graph) {
     edgeKinds,
     symbolDocuments,
     orphans,
-    unresolvedBySource,
-    routes: buildNavigationRoutes(documents, graph, { clusters, hubs, bridges, edgeKinds, symbolDocuments, orphans, unresolvedBySource })
+    unresolvedBySource
   };
+
+  enrichRepositoryIntelligence(documents, graph, analysis);
+  analysis.routes = buildNavigationRoutes(documents, graph, analysis);
+  return analysis;
+}
+
+function enrichRepositoryIntelligence(documents, graph, analysis) {
+  analysis.nearDuplicates = detectNearDuplicateDocuments(documents, analysis);
+  analysis.contradictions = detectContradictions(documents);
+  analysis.secretFindings = documents.flatMap((doc) => doc.secretFindings || []);
+  analysis.authority = buildAuthorityGraph(documents, graph, analysis);
+  applyTrustScores(documents, graph, analysis);
+  analysis.staleness = documents
+    .map((doc) => ({
+      path: doc.relativePath,
+      score: doc.trust?.score || 0,
+      lastVerified: doc.trust?.lastVerified || doc.modified,
+      supersededBy: doc.trust?.supersededBy || null,
+      signals: doc.trust?.signals || []
+    }))
+    .sort((left, right) => left.score - right.score || left.path.localeCompare(right.path));
+  analysis.semanticWarnings = buildSemanticWarnings(documents, graph, analysis);
+  analysis.health = buildRepoHealth(documents, graph, analysis);
+}
+
+function detectContradictions(documents) {
+  const claimsByKey = new Map();
+  for (const doc of documents) {
+    for (const claim of doc.numericClaims || []) {
+      const entry = claimsByKey.get(claim.key) || [];
+      entry.push({ ...claim, path: doc.relativePath });
+      claimsByKey.set(claim.key, entry);
+    }
+  }
+
+  const contradictions = [];
+  for (const [key, claims] of claimsByKey.entries()) {
+    const distinct = new Map();
+    for (const claim of claims) {
+      const valueKey = normalizeNumericClaimValue(claim.value);
+      if (!valueKey) continue;
+      if (!distinct.has(valueKey)) distinct.set(valueKey, []);
+      distinct.get(valueKey).push(claim);
+    }
+    if (distinct.size < 2) continue;
+
+    const examples = [...distinct.values()]
+      .map((items) => items[0])
+      .sort((left, right) => left.path.localeCompare(right.path))
+      .slice(0, 6)
+      .map((claim) => ({
+        value: claim.value,
+        source: `${claim.path}:${claim.line}`,
+        excerpt: claim.excerpt
+      }));
+
+    contradictions.push({
+      key,
+      confidence: Math.min(0.92, 0.55 + distinct.size * 0.12 + examples.length * 0.03),
+      values: [...distinct.keys()],
+      examples
+    });
+  }
+
+  return contradictions.sort((left, right) => right.confidence - left.confidence || left.key.localeCompare(right.key)).slice(0, 100);
+}
+
+function extractNumericClaims(content, relativePath, type, extension) {
+  const semanticCodeExtensions = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.py', '.json', '.yaml', '.yml']);
+  if (type === 'code' && !semanticCodeExtensions.has(extension)) return [];
+  const claims = [];
+  const lines = String(content || '').split(/\r?\n/);
+  const tablePattern = /^\s*\|?\s*([^|\n]{3,80}?)\s*\|\s*([$€£₹]?\d[\d,]*(?:\.\d+)?\s*(?:%|k|m|b|K|M|B|\+)?)(?:\s*\||\s*$)/;
+  const assignmentPattern = /([A-Za-z][A-Za-z0-9 _./-]{2,70}?)\s*(?:=|:|->|\bis\b|\bare\b)\s*([$€£₹]?\d[\d,]*(?:\.\d+)?\s*(?:%|k|m|b|K|M|B|\+)?)/g;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const rawLine = lines[index];
+    const line = rawLine.trim();
+    if (!line || line.length > 240) continue;
+    if (type === 'code') {
+      if (!/^\s*(?:export\s+)?(?:const|let|var|[A-Z_][A-Z0-9_]*\s*=|["']?[A-Za-z0-9_.-]+["']?\s*:)/.test(rawLine)) continue;
+      if (/(width|height|margin|padding|font|color|rgb|rgba|timeout|delay|duration|opacity|radius|x|y|z)\b/i.test(rawLine)) continue;
+    }
+
+    const tableMatch = line.match(tablePattern);
+    if (tableMatch) {
+      addNumericClaim(claims, tableMatch[1], tableMatch[2], line, index + 1, relativePath);
+    }
+
+    for (const match of line.matchAll(assignmentPattern)) {
+      addNumericClaim(claims, match[1], match[2], line, index + 1, relativePath);
+    }
+  }
+
+  return dedupeBy(claims, (item) => `${item.key}:${item.value}:${item.line}`);
+}
+
+function addNumericClaim(claims, rawKey, rawValue, line, lineNumber, relativePath) {
+  const key = normalizeClaimKey(rawKey);
+  const value = String(rawValue || '').replace(/\s+/g, '');
+  if (!key || key.length < 3 || !/\d/.test(value)) return;
+  if (/^(http|https|localhost|version|port|line|width|height|margin|padding|font|z index|rgb|rgba)$/i.test(key)) return;
+  claims.push({
+    key,
+    value,
+    line: lineNumber,
+    source: `${relativePath}:${lineNumber}`,
+    excerpt: createPlainTextExcerpt(line, 180)
+  });
+}
+
+function normalizeClaimKey(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[`*_#[\]()"']/g, ' ')
+    .replace(/\b(the|a|an|total|current|new|old|approx|around|about|number of)\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter((token) => token.length > 1 && !STOP_WORDS.has(token))
+    .slice(-6)
+    .join(' ');
+}
+
+function normalizeNumericClaimValue(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[,$€£₹\s]/g, '')
+    .trim();
+}
+
+function scanDocumentSecrets(content, relativePath) {
+  const findings = [];
+  const patterns = [
+    { type: 'aws_access_key', regex: /\bAKIA[0-9A-Z]{16}\b/g },
+    { type: 'openai_or_stripe_key', regex: /\b(?:sk|rk)_(?:live|test|proj)?_[A-Za-z0-9_-]{20,}\b/g },
+    { type: 'payment_id', regex: /\b(?:pay|pi|ch|cus|sub)_[A-Za-z0-9]{12,}\b/g },
+    { type: 'generic_secret', regex: /\b(?:api[_-]?key|access[_-]?token|auth[_-]?token|secret|password)\b\s*[:=]\s*['"]?([A-Za-z0-9_./+=-]{20,})/gi },
+    { type: 'phone_number', regex: /(?:\+?91[-\s]?)?[6-9]\d{9}\b/g }
+  ];
+  const lines = String(content || '').split(/\r?\n/);
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    for (const pattern of patterns) {
+      pattern.regex.lastIndex = 0;
+      for (const match of line.matchAll(pattern.regex)) {
+        const secretValue = match[1] || match[0];
+        if (!secretValue || secretValue.length < 10) continue;
+        findings.push({
+          type: pattern.type,
+          source: `${relativePath}:${index + 1}`,
+          line: index + 1,
+          fingerprint: sha256String(secretValue).slice(0, 16),
+          confidence: pattern.type === 'generic_secret' ? 0.72 : 0.86
+        });
+      }
+    }
+  }
+
+  return findings.slice(0, 40);
+}
+
+function detectNearDuplicateDocuments(documents, analysis) {
+  const fingerprints = documents.map((doc) => ({
+    doc,
+    tokens: buildSimilarityTokenSet(doc)
+  }));
+  const duplicates = [];
+
+  for (let leftIndex = 0; leftIndex < fingerprints.length; leftIndex += 1) {
+    const left = fingerprints[leftIndex];
+    if (left.tokens.size < 40) continue;
+    for (let rightIndex = leftIndex + 1; rightIndex < fingerprints.length; rightIndex += 1) {
+      const right = fingerprints[rightIndex];
+      if (right.tokens.size < 40) continue;
+      if (left.doc.extension !== right.doc.extension && left.doc.type !== right.doc.type) continue;
+      const ratio = Math.min(left.doc.words, right.doc.words) / Math.max(left.doc.words || 1, right.doc.words || 1);
+      if (ratio < 0.35) continue;
+      const similarity = jaccardSimilarity(left.tokens, right.tokens);
+      if (similarity < 0.82) continue;
+      const canonical = chooseCanonicalDocument(left.doc, right.doc, analysis);
+      const duplicate = canonical.relativePath === left.doc.relativePath ? right.doc : left.doc;
+      duplicates.push({
+        left: left.doc.relativePath,
+        right: right.doc.relativePath,
+        similarity: Math.round(similarity * 100) / 100,
+        canonical: canonical.relativePath,
+        candidateToArchive: duplicate.relativePath,
+        reason: buildDuplicateReason(canonical, duplicate, analysis)
+      });
+    }
+  }
+
+  return duplicates.sort((left, right) => right.similarity - left.similarity || left.left.localeCompare(right.left)).slice(0, 120);
+}
+
+function buildSimilarityTokenSet(doc) {
+  const text = createPlainTextExcerpt(doc.content, 60000).toLowerCase();
+  const tokens = text
+    .split(/[^a-z0-9]+/g)
+    .filter((token) => token.length >= 4 && token.length <= 36 && !STOP_WORDS.has(token) && !/^\d+$/.test(token));
+  const shingles = new Set();
+  for (let index = 0; index < tokens.length - 2; index += 1) {
+    shingles.add(`${tokens[index]} ${tokens[index + 1]} ${tokens[index + 2]}`);
+    if (shingles.size >= 600) break;
+  }
+  return shingles;
+}
+
+function jaccardSimilarity(left, right) {
+  let intersection = 0;
+  const smaller = left.size < right.size ? left : right;
+  const larger = left.size < right.size ? right : left;
+  for (const item of smaller) {
+    if (larger.has(item)) intersection += 1;
+  }
+  const union = left.size + right.size - intersection;
+  return union ? intersection / union : 0;
+}
+
+function chooseCanonicalDocument(left, right, analysis) {
+  const leftScore = scoreAuthorityCandidate(left, analysis);
+  const rightScore = scoreAuthorityCandidate(right, analysis);
+  if (leftScore !== rightScore) return leftScore > rightScore ? left : right;
+  const leftTime = Date.parse(left.modified || '') || 0;
+  const rightTime = Date.parse(right.modified || '') || 0;
+  if (leftTime !== rightTime) return leftTime > rightTime ? left : right;
+  return left.relativePath.localeCompare(right.relativePath) <= 0 ? left : right;
+}
+
+function scoreAuthorityCandidate(doc, analysis) {
+  const metrics = analysis.metrics?.get(doc.relativePath) || {};
+  let score = (metrics.degree || 0) * 4 + Math.min(20, doc.words / 120);
+  if (/(^|\/)(readme|index|overview|architecture|schema|source-of-truth)\.(md|markdown|txt|json|ya?ml)$/i.test(doc.relativePath)) score += 28;
+  if (/^(docs|src|packages)\//.test(doc.relativePath)) score += 8;
+  if (isLikelyGeneratedPath(doc.relativePath)) score -= 35;
+  return score;
+}
+
+function buildDuplicateReason(canonical, duplicate, analysis) {
+  const canonicalMetrics = analysis.metrics?.get(canonical.relativePath) || {};
+  const duplicateMetrics = analysis.metrics?.get(duplicate.relativePath) || {};
+  if ((canonicalMetrics.degree || 0) !== (duplicateMetrics.degree || 0)) {
+    return `${canonical.relativePath} has higher graph degree (${canonicalMetrics.degree || 0} vs ${duplicateMetrics.degree || 0}).`;
+  }
+  const canonicalTime = canonical.modified ? canonical.modified.slice(0, 10) : 'unknown';
+  const duplicateTime = duplicate.modified ? duplicate.modified.slice(0, 10) : 'unknown';
+  return `${canonical.relativePath} appears more canonical or newer (${canonicalTime} vs ${duplicateTime}).`;
+}
+
+function buildAuthorityGraph(documents, graph, analysis) {
+  const authorities = [];
+  const topicOwners = new Map();
+
+  for (const doc of documents) {
+    const topics = new Set([...(doc.topics || []), ...doc.tags.map((tag) => tag.replace(/^#/, ''))]);
+    for (const claim of doc.numericClaims || []) topics.add(claim.key);
+    for (const topic of topics) {
+      if (!topic || topic.length < 3) continue;
+      const entry = topicOwners.get(topic) || [];
+      entry.push(doc);
+      topicOwners.set(topic, entry);
+    }
+  }
+
+  for (const [topic, docs] of topicOwners.entries()) {
+    if (docs.length < 2) continue;
+    const canonical = [...docs].sort((left, right) => scoreAuthorityCandidate(right, analysis) - scoreAuthorityCandidate(left, analysis))[0];
+    authorities.push({
+      topic,
+      canonical: canonical.relativePath,
+      confidence: Math.min(0.9, 0.5 + docs.length * 0.04 + (analysis.metrics?.get(canonical.relativePath)?.degree || 0) * 0.03),
+      sources: docs
+        .sort((left, right) => scoreAuthorityCandidate(right, analysis) - scoreAuthorityCandidate(left, analysis))
+        .slice(0, 8)
+        .map((doc) => ({
+          path: doc.relativePath,
+          score: Math.round(scoreAuthorityCandidate(doc, analysis)),
+          citation: `${doc.relativePath}:1`
+        }))
+    });
+  }
+
+  return authorities.sort((left, right) => right.confidence - left.confidence || left.topic.localeCompare(right.topic)).slice(0, 120);
+}
+
+function applyTrustScores(documents, graph, analysis) {
+  const duplicateSupersededBy = new Map();
+  for (const duplicate of analysis.nearDuplicates || []) {
+    duplicateSupersededBy.set(duplicate.candidateToArchive, duplicate.canonical);
+  }
+  const contradictionPaths = new Set(
+    (analysis.contradictions || []).flatMap((item) =>
+      (item.examples || []).map((example) => String(example.source || '').split(':')[0])
+    )
+  );
+  const secretPaths = new Set((analysis.secretFindings || []).map((finding) => String(finding.source || '').split(':')[0]));
+  const now = Date.now();
+
+  for (const doc of documents) {
+    const metrics = analysis.metrics?.get(doc.relativePath) || {};
+    const signals = [];
+    let score = 62;
+    score += Math.min(18, (metrics.degree || 0) * 3);
+    if ((metrics.incoming || 0) > 0) {
+      score += Math.min(10, metrics.incoming * 2);
+      signals.push(`${metrics.incoming} inbound reference${metrics.incoming === 1 ? '' : 's'}`);
+    }
+    if (/(^|\/)(readme|index|overview|architecture|schema|source-of-truth)\./i.test(doc.relativePath)) {
+      score += 10;
+      signals.push('canonical-looking filename');
+    }
+    const modifiedTime = Date.parse(doc.modified || '') || 0;
+    const ageDays = modifiedTime ? Math.max(0, Math.round((now - modifiedTime) / 86400000)) : null;
+    if (ageDays !== null) {
+      if (ageDays <= 30) {
+        score += 8;
+        signals.push(`modified ${ageDays} day${ageDays === 1 ? '' : 's'} ago`);
+      } else if (ageDays > 180) {
+        score -= 10;
+        signals.push(`old filesystem mtime (${ageDays} days)`);
+      }
+    }
+    if ((metrics.degree || 0) === 0) {
+      score -= 12;
+      signals.push('orphan in resolved graph');
+    }
+    if (contradictionPaths.has(doc.relativePath)) {
+      score -= 18;
+      signals.push('appears in contradiction report');
+    }
+    if (secretPaths.has(doc.relativePath)) {
+      score -= 20;
+      signals.push('contains possible secret/PII');
+    }
+    const supersededBy = duplicateSupersededBy.get(doc.relativePath) || null;
+    if (supersededBy) {
+      score -= 24;
+      signals.push(`near-duplicate superseded by ${supersededBy}`);
+    }
+    if (isLikelyGeneratedPath(doc.relativePath)) {
+      score -= 22;
+      signals.push('generated or vendored-looking path');
+    }
+
+    doc.trust = {
+      score: Math.max(0, Math.min(100, Math.round(score))),
+      lastVerified: doc.modified || null,
+      supersededBy,
+      signals: signals.slice(0, 8)
+    };
+  }
+}
+
+function buildSemanticWarnings(documents, graph, analysis) {
+  const warnings = [];
+  if (graph.unresolvedLinks.length) {
+    warnings.push({
+      type: 'broken_links',
+      severity: graph.unresolvedLinks.length > 10 ? 'high' : 'medium',
+      message: `${graph.unresolvedLinks.length} unresolved links/imports found.`,
+      citations: graph.unresolvedLinks.slice(0, 8).map((link) => `${link.source.relativePath}:${link.line || 1}`),
+      confidence: 0.92
+    });
+  }
+  for (const contradiction of (analysis.contradictions || []).slice(0, 8)) {
+    warnings.push({
+      type: 'contradiction',
+      severity: 'high',
+      message: `Conflicting values for "${contradiction.key}".`,
+      citations: contradiction.examples.map((example) => example.source),
+      confidence: contradiction.confidence
+    });
+  }
+  for (const duplicate of (analysis.nearDuplicates || []).slice(0, 8)) {
+    warnings.push({
+      type: 'near_duplicate',
+      severity: duplicate.similarity >= 0.92 ? 'medium' : 'low',
+      message: `${duplicate.left} and ${duplicate.right} are ${Math.round(duplicate.similarity * 100)}% similar.`,
+      citations: [`${duplicate.left}:1`, `${duplicate.right}:1`],
+      confidence: duplicate.similarity
+    });
+  }
+  for (const finding of (analysis.secretFindings || []).slice(0, 8)) {
+    warnings.push({
+      type: 'secret_or_pii',
+      severity: 'high',
+      message: `Possible ${finding.type} in tracked/indexed content.`,
+      citations: [finding.source],
+      confidence: finding.confidence
+    });
+  }
+
+  const lowTrust = documents.filter((doc) => (doc.trust?.score || 0) < 45).slice(0, 8);
+  if (lowTrust.length) {
+    warnings.push({
+      type: 'low_trust_files',
+      severity: 'medium',
+      message: `${lowTrust.length} low-trust files need review.`,
+      citations: lowTrust.map((doc) => `${doc.relativePath}:1`),
+      confidence: 0.74
+    });
+  }
+
+  return warnings;
+}
+
+function buildRepoHealth(documents, graph, analysis) {
+  const generated = documents.filter((doc) => isLikelyGeneratedPath(doc.relativePath));
+  const lowTrust = documents.filter((doc) => (doc.trust?.score || 0) < 45);
+  const score = Math.max(
+    0,
+    Math.min(
+      100,
+      100
+        - Math.min(24, graph.unresolvedLinks.length * 3)
+        - Math.min(20, (analysis.contradictions || []).length * 5)
+        - Math.min(18, (analysis.nearDuplicates || []).length * 2)
+        - Math.min(24, (analysis.secretFindings || []).length * 8)
+        - Math.min(16, lowTrust.length)
+        - Math.min(12, generated.length ? 8 : 0)
+    )
+  );
+
+  return {
+    score: Math.round(score),
+    files: documents.length,
+    edges: graph.edges.length,
+    unresolvedLinks: graph.unresolvedLinks.length,
+    orphans: analysis.orphans.length,
+    nearDuplicates: (analysis.nearDuplicates || []).length,
+    contradictions: (analysis.contradictions || []).length,
+    possibleSecretsOrPii: (analysis.secretFindings || []).length,
+    lowTrustFiles: lowTrust.length,
+    generatedOrVendoredIndexed: generated.length,
+    topActions: buildRepoHealthActions(documents, graph, analysis, generated, lowTrust)
+  };
+}
+
+function buildRepoHealthActions(documents, graph, analysis, generated, lowTrust) {
+  const actions = [];
+  if (generated.length) {
+    actions.push({
+      priority: 'P0',
+      action: `Exclude generated/vendored-looking paths; ${generated.length} are currently indexed.`,
+      citations: generated.slice(0, 6).map((doc) => `${doc.relativePath}:1`)
+    });
+  }
+  if ((analysis.secretFindings || []).length) {
+    actions.push({
+      priority: 'P0',
+      action: 'Review possible secrets/PII and rotate anything real.',
+      citations: analysis.secretFindings.slice(0, 8).map((finding) => finding.source)
+    });
+  }
+  if ((analysis.contradictions || []).length) {
+    actions.push({
+      priority: 'P1',
+      action: 'Resolve conflicting metric/value definitions.',
+      citations: analysis.contradictions.slice(0, 6).flatMap((item) => item.examples.map((example) => example.source)).slice(0, 10)
+    });
+  }
+  if ((analysis.nearDuplicates || []).length) {
+    actions.push({
+      priority: 'P1',
+      action: 'Choose canonical files and archive near-duplicates.',
+      citations: analysis.nearDuplicates.slice(0, 6).flatMap((item) => [`${item.left}:1`, `${item.right}:1`])
+    });
+  }
+  if (graph.unresolvedLinks.length) {
+    actions.push({
+      priority: 'P1',
+      action: 'Fix unresolved links/imports.',
+      citations: graph.unresolvedLinks.slice(0, 10).map((link) => `${link.source.relativePath}:${link.line || 1}`)
+    });
+  }
+  if (lowTrust.length) {
+    actions.push({
+      priority: 'P2',
+      action: 'Review low-trust stale/orphan files.',
+      citations: lowTrust.slice(0, 10).map((doc) => `${doc.relativePath}:1`)
+    });
+  }
+  return actions;
+}
+
+function isLikelyGeneratedPath(relativePath) {
+  return /(^|\/)(dist|build|release|node_modules|coverage|android\/app\/src\/main\/assets\/public\/assets|vendor|target)\//i.test(relativePath)
+    || /(^|\/)package-lock\.json$/i.test(relativePath)
+    || /\.(min|bundle)\.[cm]?js$/i.test(relativePath);
+}
+
+function renderDiscoverySummaryLine(config) {
+  const summary = config.discoverySummary;
+  if (!summary) return 'Discovery: no exclusion summary available';
+  const skippedByIgnore = Object.entries(summary.skippedByIgnore || {})
+    .map(([key, count]) => `${key}=${count}`)
+    .join(', ') || 'none';
+  const skippedByDirectory = Object.entries(summary.skippedByDirectory || {})
+    .map(([key, count]) => `${key}=${count}`)
+    .join(', ') || 'none';
+  return `Discovery: indexed ${summary.indexedFiles || 0} of ${summary.candidateFiles || 0} candidate files; skipped by ignore: ${skippedByIgnore}; skipped by directory defaults: ${skippedByDirectory}`;
 }
 
 function buildClaudeContextGraphPayload(rootPath, documents, graph, analysis, contextChunks, options = {}, routeValidation = null) {
@@ -588,6 +1301,8 @@ function buildClaudeContextGraphPayload(rootPath, documents, graph, analysis, co
       words: node.words,
       summary: node.summary || '',
       topics: node.topics || [],
+      modified: node.modified,
+      trust: node.trust || null,
       headings: node.headings.map((heading) => heading.text),
       tags: node.tags,
       aliases: node.aliases,
@@ -596,7 +1311,8 @@ function buildClaudeContextGraphPayload(rootPath, documents, graph, analysis, co
         specifier: item.specifier,
         line: item.line,
         imported: item.imported
-      }))
+      })),
+      calls: (node.calls || []).slice(0, 80)
     })),
     edges: graph.edges.map((edge) => ({
       id: buildStableEdgeId(edge),
@@ -605,7 +1321,8 @@ function buildClaudeContextGraphPayload(rootPath, documents, graph, analysis, co
       kind: edge.kind,
       text: edge.text,
       line: edge.line,
-      specifier: edge.specifier
+      specifier: edge.specifier,
+      targetSymbol: edge.targetSymbol || null
     })),
     unresolvedLinks: graph.unresolvedLinks.map((link) => ({
       source: link.source.relativePath,
@@ -621,7 +1338,16 @@ function buildClaudeContextGraphPayload(rootPath, documents, graph, analysis, co
       targetTokens: Number(options.chunkTokens) || DEFAULT_CHUNK_TOKENS
     },
     routeValidation,
-    navigation: serializeContextAnalysis(analysis)
+    navigation: serializeContextAnalysis(analysis),
+    intelligence: {
+      health: analysis.health,
+      contradictions: analysis.contradictions,
+      semanticWarnings: analysis.semanticWarnings,
+      authority: analysis.authority,
+      nearDuplicates: analysis.nearDuplicates,
+      secretFindings: analysis.secretFindings,
+      staleness: analysis.staleness
+    }
   };
 }
 
@@ -667,6 +1393,7 @@ function buildScenePayload(rootPath, documents, graph, analysis, graphPayload, o
       symbols: node.symbols.slice(0, 12),
       summary: doc.summary || '',
       topics: doc.topics || [],
+      trust: doc.trust || null,
       routeScore: routeScoreByPath.get(node.path) || 0,
       active: node.path === activePath,
       hasMedia: hasMediaReferences(doc),
@@ -1206,6 +1933,9 @@ function buildContextIntegrityPayload(rootPath, options, documents, graph, analy
   if (!routeValidation?.ok) warnings.push('Navigation routes reference files that were not emitted.');
   if (documents.length >= Number(options.maxFiles || 0)) warnings.push('File discovery reached the selected max-files limit.');
   if (graph.unresolvedLinks.length) warnings.push(`${graph.unresolvedLinks.length} unresolved links were found.`);
+  if (analysis.contradictions?.length) warnings.push(`${analysis.contradictions.length} possible contradictions were found.`);
+  if (analysis.secretFindings?.length) warnings.push(`${analysis.secretFindings.length} possible secrets/PII findings were found.`);
+  if (analysis.nearDuplicates?.length) warnings.push(`${analysis.nearDuplicates.length} near-duplicate file pairs were found.`);
 
   return {
     schemaVersion: CONTEXT_SCHEMA_VERSION,
@@ -1234,6 +1964,15 @@ function buildContextIntegrityPayload(rootPath, options, documents, graph, analy
       includeCode: Boolean(options.includeCode)
     },
     routeValidation,
+    discovery: options.discoverySummary || null,
+    health: analysis.health || null,
+    intelligence: {
+      contradictions: analysis.contradictions?.length || 0,
+      semanticWarnings: analysis.semanticWarnings?.length || 0,
+      nearDuplicates: analysis.nearDuplicates?.length || 0,
+      possibleSecretsOrPii: analysis.secretFindings?.length || 0,
+      lowTrustFiles: analysis.health?.lowTrustFiles || 0
+    },
     artifacts: artifactRecords,
     warnings
   };
@@ -1558,6 +2297,17 @@ function serializeContextAnalysis(analysis) {
       count: item.count,
       targets: item.targets
     })),
+    trust: (analysis.staleness || []).slice(0, 120).map((item) => ({
+      path: item.path,
+      score: item.score,
+      lastVerified: item.lastVerified,
+      supersededBy: item.supersededBy || null,
+      signals: item.signals
+    })),
+    health: analysis.health,
+    contradictions: (analysis.contradictions || []).slice(0, 80),
+    nearDuplicates: (analysis.nearDuplicates || []).slice(0, 80),
+    secretFindings: (analysis.secretFindings || []).slice(0, 80),
     routes: analysis.routes.map((route) => ({
       name: route.name,
       goal: route.goal,
@@ -1584,7 +2334,9 @@ function renderClaudeContextMap(root, documents, graph, config, analysis) {
     `Code/config files: ${codeDocs.length}`,
     `Resolved links: ${graph.edges.length}`,
     `Unresolved links: ${graph.unresolvedLinks.length}`,
+    `Repo health score: ${analysis.health?.score ?? 'n/a'}/100`,
     `Limits: max ${config.maxFiles} files, max ${config.maxBytes} bytes per file, max depth ${config.maxDepth}`,
+    renderDiscoverySummaryLine(config),
     '',
     '## Use With Claude',
     '',
@@ -1617,6 +2369,16 @@ function renderClaudeContextMap(root, documents, graph, config, analysis) {
     for (const item of analysis.edgeKinds) {
       lines.push(`- ${item.kind}: ${item.count}`);
     }
+  }
+
+  if (analysis.health) {
+    lines.push('', '## Intelligence Layer', '');
+    lines.push(`- Repo health: ${analysis.health.score}/100`);
+    lines.push(`- Contradictions: ${(analysis.contradictions || []).length}`);
+    lines.push(`- Near duplicates: ${(analysis.nearDuplicates || []).length}`);
+    lines.push(`- Possible secrets/PII: ${(analysis.secretFindings || []).length}`);
+    lines.push(`- Low-trust files: ${analysis.health.lowTrustFiles}`);
+    lines.push('- Reports: `contradictions.md`, `staleness-report.md`, `semantic-warnings.md`, `authority-graph.md`, `repo-health.md`, `duplicates.md`');
   }
 
   lines.push('', '## Topic Clusters', '');
@@ -1722,6 +2484,7 @@ function renderClaudeContextMap(root, documents, graph, config, analysis) {
     lines.push(`- Aliases: ${doc.aliases.length ? doc.aliases.join(', ') : 'None'}`);
     lines.push(`- Symbols: ${doc.symbols.length ? doc.symbols.slice(0, 12).map((symbol) => `${symbol.kind}:${symbol.name}@${symbol.line}`).join(', ') : 'None'}`);
     lines.push(`- Imports: ${doc.imports.length ? doc.imports.slice(0, 12).map((item) => `${item.specifier}@${item.line}`).join(', ') : 'None'}`);
+    lines.push(`- Trust: ${doc.trust ? `${doc.trust.score}/100${doc.trust.supersededBy ? `, superseded by ${doc.trust.supersededBy}` : ''}` : 'Not scored'}`);
     lines.push(`- Excerpt: ${createPlainTextExcerpt(doc.content, 420) || 'No readable text.'}`);
     lines.push('');
   }
@@ -1747,7 +2510,9 @@ function renderClaudeMindMap(root, documents, graph, config, analysis) {
     `Files indexed: ${documents.length}`,
     `Resolved links: ${graph.edges.length}`,
     `Unresolved links: ${graph.unresolvedLinks.length}`,
+    `Repo health score: ${analysis.health?.score ?? 'n/a'}/100`,
     `Limits: max ${config.maxFiles} files, max ${config.maxBytes} bytes per file, max depth ${config.maxDepth}`,
+    renderDiscoverySummaryLine(config),
     '',
     '## Mermaid Mind Map',
     '',
@@ -1856,6 +2621,7 @@ function renderClaudeNavigationGuide(root, documents, graph, config, analysis) {
     `Resolved links: ${graph.edges.length}`,
     `Unresolved links: ${graph.unresolvedLinks.length}`,
     `Limits: max ${config.maxFiles} files, max ${config.maxBytes} bytes per file, max depth ${config.maxDepth}`,
+    renderDiscoverySummaryLine(config),
     '',
     '## How Claude Or ChatGPT Should Use This',
     '',
@@ -1874,7 +2640,8 @@ function renderClaudeNavigationGuide(root, documents, graph, config, analysis) {
     lines.push(route.goal);
     lines.push('');
     for (const doc of route.documents) {
-      lines.push(`- ${doc.relativePath} — ${doc.words} words, ${doc.headings.length} headings`);
+      const trust = doc.trust ? `, trust ${doc.trust.score}/100` : '';
+      lines.push(`- ${doc.relativePath} — ${doc.words} words, ${doc.headings.length} headings${trust}`);
     }
     lines.push('');
   }
@@ -1924,6 +2691,35 @@ function renderClaudeNavigationGuide(root, documents, graph, config, analysis) {
   }
 
   lines.push('## Risk And Cleanup Signals', '');
+  if (analysis.health) {
+    lines.push(`Repo health: ${analysis.health.score}/100`);
+    if (analysis.health.topActions?.length) {
+      lines.push('');
+      lines.push('Top actions:');
+      for (const action of analysis.health.topActions.slice(0, 8)) {
+        const citations = action.citations?.length ? ` (${action.citations.slice(0, 3).join(', ')})` : '';
+        lines.push(`- ${action.priority}: ${action.action}${citations}`);
+      }
+    }
+  }
+  if (analysis.contradictions?.length) {
+    lines.push('', 'Contradictions:');
+    for (const item of analysis.contradictions.slice(0, 12)) {
+      lines.push(`- ${item.key} — ${item.values.join(' vs ')} (${item.examples.map((example) => example.source).join(', ')})`);
+    }
+  }
+  if (analysis.nearDuplicates?.length) {
+    lines.push('', 'Near-duplicate candidates:');
+    for (const item of analysis.nearDuplicates.slice(0, 12)) {
+      lines.push(`- ${item.left} ≈ ${item.right} (${Math.round(item.similarity * 100)}%); canonical: ${item.canonical}`);
+    }
+  }
+  if (analysis.secretFindings?.length) {
+    lines.push('', 'Possible secrets/PII:');
+    for (const finding of analysis.secretFindings.slice(0, 12)) {
+      lines.push(`- ${finding.type} at ${finding.source} (fingerprint ${finding.fingerprint})`);
+    }
+  }
   if (analysis.bridges.length) {
     lines.push('Bridge files that connect distant clusters:');
     for (const bridge of analysis.bridges.slice(0, 30)) {
@@ -1950,6 +2746,167 @@ function renderClaudeNavigationGuide(root, documents, graph, config, analysis) {
   lines.push('- Use Copy for AI after changing notes to create a fresh model-readable map.');
   lines.push('- Use `athena context <folder> --out <folder>` to regenerate this guide offline.');
 
+  return `${lines.join('\n').trimEnd()}\n`;
+}
+
+function renderContradictionsReport(root, documents, graph, config, analysis) {
+  const lines = [
+    '# Contradictions Report',
+    '',
+    `Generated: ${config.generatedAt || new Date().toISOString()}`,
+    `Root: ${root}`,
+    '',
+    'Every item below is heuristic and must be resolved against the cited source lines.',
+    ''
+  ];
+  if (!analysis.contradictions?.length) {
+    lines.push('No numeric contradictions detected.');
+  } else {
+    for (const item of analysis.contradictions) {
+      lines.push(`## ${item.key}`);
+      lines.push(`Confidence: ${Math.round(item.confidence * 100)}%`);
+      lines.push(`Values: ${item.values.join(' vs ')}`);
+      lines.push('');
+      for (const example of item.examples) {
+        lines.push(`- ${example.value} at ${example.source} — ${example.excerpt}`);
+      }
+      lines.push('');
+    }
+  }
+  return `${lines.join('\n').trimEnd()}\n`;
+}
+
+function renderStalenessReport(root, documents, graph, config, analysis) {
+  const lines = [
+    '# Staleness And Trust Report',
+    '',
+    `Generated: ${config.generatedAt || new Date().toISOString()}`,
+    `Root: ${root}`,
+    '',
+    'Trust combines graph references, recency, contradictions, near-duplicates, generated-path risk, and secret/PII findings.',
+    '',
+    '## Lowest Trust Files',
+    ''
+  ];
+  for (const item of (analysis.staleness || []).slice(0, 80)) {
+    const superseded = item.supersededBy ? `; superseded by ${item.supersededBy}` : '';
+    const signals = item.signals?.length ? `; ${item.signals.join('; ')}` : '';
+    lines.push(`- ${item.path} — ${item.score}/100; last verified ${item.lastVerified || 'unknown'}${superseded}${signals}`);
+  }
+  if (!analysis.staleness?.length) lines.push('No staleness data available.');
+  return `${lines.join('\n').trimEnd()}\n`;
+}
+
+function renderSemanticWarningsReport(root, documents, graph, config, analysis) {
+  const lines = [
+    '# Semantic Warnings',
+    '',
+    `Generated: ${config.generatedAt || new Date().toISOString()}`,
+    `Root: ${root}`,
+    '',
+    'Warnings are generated locally from indexed content and graph structure.',
+    ''
+  ];
+  if (!analysis.semanticWarnings?.length) {
+    lines.push('No semantic warnings detected.');
+  } else {
+    for (const warning of analysis.semanticWarnings) {
+      lines.push(`## ${warning.type}`);
+      lines.push(`Severity: ${warning.severity}`);
+      lines.push(`Confidence: ${Math.round(warning.confidence * 100)}%`);
+      lines.push(warning.message);
+      if (warning.citations?.length) {
+        lines.push('');
+        for (const citation of warning.citations) lines.push(`- ${citation}`);
+      }
+      lines.push('');
+    }
+  }
+  return `${lines.join('\n').trimEnd()}\n`;
+}
+
+function renderAuthorityGraphReport(root, documents, graph, config, analysis) {
+  const lines = [
+    '# Authority Graph',
+    '',
+    `Generated: ${config.generatedAt || new Date().toISOString()}`,
+    `Root: ${root}`,
+    '',
+    'Canonical sources are inferred from graph degree, file naming, path, recency, and topic coverage.',
+    ''
+  ];
+  if (!analysis.authority?.length) {
+    lines.push('No multi-source authority topics detected.');
+  } else {
+    for (const item of analysis.authority.slice(0, 120)) {
+      lines.push(`## ${item.topic}`);
+      lines.push(`Canonical: ${item.canonical}`);
+      lines.push(`Confidence: ${Math.round(item.confidence * 100)}%`);
+      lines.push('');
+      for (const source of item.sources) {
+        lines.push(`- ${source.path} — authority score ${source.score}; citation ${source.citation}`);
+      }
+      lines.push('');
+    }
+  }
+  return `${lines.join('\n').trimEnd()}\n`;
+}
+
+function renderRepoHealthReport(root, documents, graph, config, analysis) {
+  const health = analysis.health || {};
+  const lines = [
+    '# Repo Health',
+    '',
+    `Generated: ${config.generatedAt || new Date().toISOString()}`,
+    `Root: ${root}`,
+    '',
+    `Score: ${health.score ?? 'n/a'}/100`,
+    '',
+    '## Counts',
+    '',
+    `- Files: ${health.files ?? documents.length}`,
+    `- Edges: ${health.edges ?? graph.edges.length}`,
+    `- Unresolved links/imports: ${health.unresolvedLinks ?? graph.unresolvedLinks.length}`,
+    `- Orphans: ${health.orphans ?? analysis.orphans.length}`,
+    `- Near duplicates: ${health.nearDuplicates ?? 0}`,
+    `- Contradictions: ${health.contradictions ?? 0}`,
+    `- Possible secrets/PII: ${health.possibleSecretsOrPii ?? 0}`,
+    `- Low-trust files: ${health.lowTrustFiles ?? 0}`,
+    '',
+    '## Action List',
+    ''
+  ];
+  if (!health.topActions?.length) {
+    lines.push('No high-priority health actions detected.');
+  } else {
+    for (const action of health.topActions) {
+      lines.push(`### ${action.priority}`);
+      lines.push(action.action);
+      if (action.citations?.length) {
+        lines.push('');
+        for (const citation of action.citations.slice(0, 12)) lines.push(`- ${citation}`);
+      }
+      lines.push('');
+    }
+  }
+  return `${lines.join('\n').trimEnd()}\n`;
+}
+
+function renderDuplicateReport(root, documents, graph, config, analysis) {
+  const lines = [
+    '# Near-Duplicate Files',
+    '',
+    `Generated: ${config.generatedAt || new Date().toISOString()}`,
+    `Root: ${root}`,
+    ''
+  ];
+  if (!analysis.nearDuplicates?.length) {
+    lines.push('No near-duplicate files detected.');
+  } else {
+    for (const item of analysis.nearDuplicates) {
+      lines.push(`- ${item.left} is ${Math.round(item.similarity * 100)}% similar to ${item.right}; canonical: ${item.canonical}; archive candidate: ${item.candidateToArchive}. ${item.reason}`);
+    }
+  }
   return `${lines.join('\n').trimEnd()}\n`;
 }
 
@@ -2360,6 +3317,29 @@ function extractDocumentSymbols(content, extension, type) {
   }
 
   return dedupeBy(symbols, (item) => `${item.kind}:${item.name}:${item.line}`).slice(0, 80);
+}
+
+function extractCodeCalls(content, extension) {
+  const supported = ['.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.py'];
+  if (!supported.includes(extension)) return [];
+  const calls = [];
+  const lines = String(content || '').split(/\r?\n/);
+  const ignored = new Set([
+    'if', 'for', 'while', 'switch', 'catch', 'function', 'return', 'typeof', 'new',
+    'class', 'import', 'export', 'await', 'yield', 'console', 'Math', 'Date',
+    'len', 'print', 'range', 'super'
+  ].map((item) => item.toLowerCase()));
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index].replace(/\/\/.*$/, '').replace(/#.*$/, '');
+    for (const match of line.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)) {
+      const name = match[1];
+      if (ignored.has(name.toLowerCase())) continue;
+      calls.push({ name, line: index + 1 });
+    }
+  }
+
+  return dedupeBy(calls, (item) => `${item.name}:${item.line}`).slice(0, 240);
 }
 
 function resolveImportDocument(specifier, source, keyToDocument) {

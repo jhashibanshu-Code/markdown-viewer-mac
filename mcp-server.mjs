@@ -12,7 +12,9 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   CallToolRequestSchema,
-  ListToolsRequestSchema
+  ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema
 } from '@modelcontextprotocol/sdk/types.js';
 import fsp from 'node:fs/promises';
 import { readdir, readFile, stat, mkdir, rename, unlink } from 'node:fs/promises';
@@ -33,6 +35,16 @@ const MAX_VAULT_FILES = 20000;
 const MAX_VAULT_DEPTH = 32;
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 const MAX_SEARCH_RESULTS = 50;
+const DEFAULT_RESPONSE_TOKEN_BUDGET = 25000;
+const MAX_RESPONSE_TOKEN_BUDGET = 50000;
+const DEFAULT_QUERY_TOKEN_BUDGET = 2000;
+const STOP_WORDS = new Set([
+  'a','an','the','is','are','was','were','be','been','being','have','has','had',
+  'do','does','did','will','would','should','can','could','and','but','or','not',
+  'this','that','these','those','it','its','in','on','at','to','for','of','with',
+  'by','from','about','into','through','what','where','when','which','who','how',
+  'why','use','using','used','file','files','repo','repository','code','context'
+]);
 
 // ─── Tool definitions ────────────────────────────────────────────────
 
@@ -115,6 +127,21 @@ const TOOLS = [
     }
   },
   {
+    name: 'query_context',
+    description: 'Ask a question against the generated context chunks. Returns a budget-capped, cited, ranked answer without reading monolithic map files.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Absolute path to the vault/repo that was analyzed' },
+        question: { type: 'string', description: 'Question to answer from indexed chunks' },
+        token_budget: { type: 'number', description: 'Maximum response budget in approximate tokens (default 2000)' },
+        output_dir: { type: 'string', description: 'Output directory if non-default was used' },
+        refresh_if_missing: { type: 'boolean', description: 'Generate the map if chunks are missing (default true)' }
+      },
+      required: ['path', 'question']
+    }
+  },
+  {
     name: 'read_context_map',
     description: 'Read a previously generated context map file. Use after generate_context_map. For large maps, use section to read a specific part, or offset/limit to paginate.',
     inputSchema: {
@@ -124,7 +151,7 @@ const TOOLS = [
         file: {
           type: 'string',
           description: 'Which context file to read',
-          enum: ['navigation', 'map', 'mind-map', 'graph', 'scene', 'chunks', 'integrity']
+          enum: ['navigation', 'map', 'mind-map', 'graph', 'scene', 'chunks', 'integrity', 'contradictions', 'staleness', 'warnings', 'authority', 'health', 'duplicates']
         },
         section: {
           type: 'string',
@@ -132,9 +159,39 @@ const TOOLS = [
         },
         offset: { type: 'number', description: 'Character offset to start reading from (default 0). Use with limit to paginate large files.' },
         limit: { type: 'number', description: 'Max characters to return (default 100000). Use with offset to paginate.' },
+        token_budget: { type: 'number', description: 'Approximate max tokens to return (default 25000). This caps limit even when a larger limit is requested.' },
         output_dir: { type: 'string', description: 'Output directory if non-default was used' }
       },
       required: ['path', 'file']
+    }
+  },
+  {
+    name: 'repo_health',
+    description: 'Return actionable repo-health diagnostics from the context graph: orphans, broken links, duplicates, contradictions, trust, generated files, and possible secrets/PII.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Absolute path to the repo/vault' },
+        output_dir: { type: 'string', description: 'Output directory if non-default was used' },
+        refresh: { type: 'boolean', description: 'Regenerate context before reading health (default false)' },
+        token_budget: { type: 'number', description: 'Approximate max tokens to return (default 8000)' }
+      },
+      required: ['path']
+    }
+  },
+  {
+    name: 'blast_radius',
+    description: 'Analyze a git diff or dirty working tree and report docs, tests, imports, calls, and downstream files affected by changed files.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Absolute path to the git repo' },
+        git_range: { type: 'string', description: 'Git diff range, e.g. HEAD~1..HEAD. Omit to use dirty working tree.' },
+        output_dir: { type: 'string', description: 'Output directory if non-default was used' },
+        refresh: { type: 'boolean', description: 'Regenerate context before analysis (default false)' },
+        token_budget: { type: 'number', description: 'Approximate max tokens to return (default 8000)' }
+      },
+      required: ['path']
     }
   },
   {
@@ -248,19 +305,19 @@ const TOOLS = [
   },
   {
     name: 'enable_auto_mapping',
-    description: 'Install a git post-commit hook that auto-regenerates the context map after every commit. The map stays fresh without manual re-runs. Also checks if map is stale (older than latest commit) and regenerates if needed.',
+    description: 'Install git hooks that regenerate the context map before and after commits. Also checks dirty working-tree freshness and regenerates if needed.',
     inputSchema: {
       type: 'object',
       properties: {
         path: { type: 'string', description: 'Absolute path to the git repo' },
-        refresh_now: { type: 'boolean', description: 'Also regenerate the map right now if stale (default true)' }
+        refresh_now: { type: 'boolean', description: 'Also regenerate the map right now if stale or dirty (default true)' }
       },
       required: ['path']
     }
   },
   {
     name: 'check_map_freshness',
-    description: 'Check if a context map is up-to-date with the repo. Compares map generation time against latest git commit. Returns stale/fresh status and optionally regenerates if stale.',
+    description: 'Check if a context map is up-to-date with HEAD and dirty working-tree changes. Reports uncommitted files not reflected by the map and optionally regenerates.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -272,11 +329,12 @@ const TOOLS = [
   },
   {
     name: 'setup_repo',
-    description: 'One-command full setup for a repo: generates context map, installs git hook for auto-updates, adds CLAUDE.md instructions so Claude automatically reads the map at every session start. Run this ONCE per repo — everything is automatic after that.',
+    description: 'Diff-first setup for a repo: previews context map, hook, CLAUDE.md, and .gitignore changes. Pass apply:true to write. Idempotent on repeated runs.',
     inputSchema: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: 'Absolute path to the git repo to set up' }
+        path: { type: 'string', description: 'Absolute path to the git repo to set up' },
+        apply: { type: 'boolean', description: 'Actually apply the shown changes. Default false returns a diff/plan only.' }
       },
       required: ['path']
     }
@@ -462,6 +520,20 @@ function parsePositiveInteger(value, fallback, max = Number.MAX_SAFE_INTEGER) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
   return Math.min(Math.floor(parsed), max);
+}
+
+function parseTokenBudget(value, fallback = DEFAULT_RESPONSE_TOKEN_BUDGET) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.min(Math.floor(parsed), MAX_RESPONSE_TOKEN_BUDGET);
+}
+
+function tokenBudgetToChars(tokenBudget) {
+  return Math.max(1000, parseTokenBudget(tokenBudget) * 4);
+}
+
+function estimateTokens(value) {
+  return Math.max(1, Math.ceil(String(value || '').length / 4));
 }
 
 async function assertDirectoryPath(rawPath, label = 'Vault path') {
@@ -746,7 +818,13 @@ async function handleGenerateContextMap({ path: rootPath, output_dir, max_files,
       'claude-context-graph.json',
       'claude-context-scene.json',
       'llm-context-chunks.jsonl',
-      'context-integrity.json'
+      'context-integrity.json',
+      'contradictions.md',
+      'staleness-report.md',
+      'semantic-warnings.md',
+      'authority-graph.md',
+      'repo-health.md',
+      'duplicates.md'
     ],
     stdout: stdout.trim(),
     stderr: stderr.trim(),
@@ -754,7 +832,120 @@ async function handleGenerateContextMap({ path: rootPath, output_dir, max_files,
   };
 }
 
-async function handleReadContextMap({ path: rootPath, file, section, offset, limit, output_dir }) {
+async function handleQueryContext({ path: rootPath, question, token_budget, output_dir, refresh_if_missing }) {
+  const sourceRoot = await assertDirectoryPath(rootPath, 'Source path');
+  const outDir = output_dir ? normalizeAbsolutePath(output_dir, 'Output directory') : path.join(sourceRoot, '.athena');
+  const chunksPath = path.join(outDir, 'llm-context-chunks.jsonl');
+  const budget = parseTokenBudget(token_budget, DEFAULT_QUERY_TOKEN_BUDGET);
+  const query = String(question || '').trim();
+  if (!query) throw new Error('Question is required.');
+
+  let chunks = [];
+  try {
+    chunks = await readContextChunks(chunksPath);
+  } catch (error) {
+    if (refresh_if_missing === false) throw error;
+    await regenerateMap(sourceRoot, outDir);
+    chunks = await readContextChunks(chunksPath);
+  }
+
+  const ranked = rankChunksForQuery(chunks, query).slice(0, 30);
+  const hits = [];
+  let spent = 180;
+  for (const item of ranked) {
+    const snippet = buildChunkSnippet(item.chunk, query);
+    const estimate = estimateTokens(JSON.stringify(snippet)) + 80;
+    if (hits.length && spent + estimate > budget) break;
+    hits.push({
+      rank: hits.length + 1,
+      score: Math.round(item.score * 100) / 100,
+      relevance: Math.min(1, Math.round(item.score * 100) / 1000),
+      path: item.chunk.path,
+      citation: `${item.chunk.path}:${snippet.startLine}`,
+      lines: `${snippet.startLine}-${snippet.endLine}`,
+      excerpt: snippet.text
+    });
+    spent += estimate;
+  }
+
+  return {
+    question: query,
+    token_budget: budget,
+    answer: hits.length
+      ? `Top context for "${query}" is in ${hits.slice(0, 3).map((hit) => hit.citation).join(', ')}. Use the ranked hits below as cited retrieval context; no monolithic map read is required.`
+      : `No strong indexed matches found for "${query}". Try a narrower term or regenerate the context map.`,
+    hits,
+    searched_chunks: chunks.length,
+    generated_from: chunksPath
+  };
+}
+
+async function handleRepoHealth({ path: rootPath, output_dir, refresh, token_budget }) {
+  const graphPayload = await loadGraphPayload(rootPath, output_dir, { refresh: Boolean(refresh) });
+  const intelligence = graphPayload.intelligence || {};
+  const health = intelligence.health || {};
+  return {
+    token_budget: parseTokenBudget(token_budget, 8000),
+    generated_at: graphPayload.generatedAt,
+    root: graphPayload.root,
+    health,
+    contradictions: (intelligence.contradictions || []).slice(0, 20),
+    near_duplicates: (intelligence.nearDuplicates || []).slice(0, 20),
+    possible_secrets_or_pii: (intelligence.secretFindings || []).slice(0, 20),
+    semantic_warnings: (intelligence.semanticWarnings || []).slice(0, 20),
+    staleness: (intelligence.staleness || []).slice(0, 40)
+  };
+}
+
+async function handleBlastRadius({ path: repoPath, git_range, output_dir, refresh, token_budget }) {
+  const root = await assertDirectoryPath(repoPath, 'Repo path');
+  const changed = await getChangedFiles(root, git_range);
+  const graphPayload = await loadGraphPayload(root, output_dir, { refresh: Boolean(refresh) });
+  const nodePaths = new Set((graphPayload.nodes || []).map((node) => node.path));
+  const changedIndexed = changed.filter((file) => nodePaths.has(file));
+  const changedSet = new Set(changedIndexed);
+  const affected = new Map();
+
+  for (const edge of graphPayload.edges || []) {
+    const sourceChanged = changedSet.has(edge.source);
+    const targetChanged = changedSet.has(edge.target);
+    if (!sourceChanged && !targetChanged) continue;
+    const affectedPath = sourceChanged ? edge.target : edge.source;
+    if (!affected.has(affectedPath)) {
+      affected.set(affectedPath, {
+        path: affectedPath,
+        reasons: [],
+        citations: []
+      });
+    }
+    const entry = affected.get(affectedPath);
+    entry.reasons.push(`${edge.kind} ${sourceChanged ? 'from changed file' : 'to changed file'} ${sourceChanged ? edge.source : edge.target}`);
+    entry.citations.push(`${sourceChanged ? edge.source : edge.target}:${edge.line || 1}`);
+  }
+
+  const affectedList = [...affected.values()]
+    .map((item) => ({
+      ...item,
+      reasons: [...new Set(item.reasons)].slice(0, 8),
+      citations: [...new Set(item.citations)].slice(0, 8),
+      kind: classifyAffectedPath(item.path)
+    }))
+    .sort((left, right) => blastKindRank(left.kind) - blastKindRank(right.kind) || left.path.localeCompare(right.path));
+
+  return {
+    token_budget: parseTokenBudget(token_budget, 8000),
+    git_range: git_range || 'dirty working tree',
+    changed_files: changed,
+    changed_indexed_files: changedIndexed,
+    affected_count: affectedList.length,
+    affected: affectedList.slice(0, 120),
+    docs: affectedList.filter((item) => item.kind === 'doc').slice(0, 40),
+    tests: affectedList.filter((item) => item.kind === 'test').slice(0, 40),
+    downstream_code: affectedList.filter((item) => item.kind === 'code').slice(0, 60)
+  };
+}
+
+async function handleReadContextMap({ path: rootPath, file, section, offset, limit, token_budget, output_dir }) {
   const sourceRoot = await assertDirectoryPath(rootPath, 'Source path');
   const outDir = output_dir ? normalizeAbsolutePath(output_dir, 'Output directory') : path.join(sourceRoot, '.athena');
   const fileMap = {
@@ -764,7 +955,13 @@ async function handleReadContextMap({ path: rootPath, file, section, offset, lim
     graph: 'claude-context-graph.json',
     scene: 'claude-context-scene.json',
     chunks: 'llm-context-chunks.jsonl',
-    integrity: 'context-integrity.json'
+    integrity: 'context-integrity.json',
+    contradictions: 'contradictions.md',
+    staleness: 'staleness-report.md',
+    warnings: 'semantic-warnings.md',
+    authority: 'authority-graph.md',
+    health: 'repo-health.md',
+    duplicates: 'duplicates.md'
   };
 
   const fileName = fileMap[file];
@@ -795,7 +992,9 @@ async function handleReadContextMap({ path: rootPath, file, section, offset, lim
 
   // Pagination via offset/limit
   const charOffset = Math.max(0, Math.floor(offset || 0));
-  const charLimit = Math.min(500000, Math.max(1000, Math.floor(limit || 100000)));
+  const budgetChars = tokenBudgetToChars(parseTokenBudget(token_budget, DEFAULT_RESPONSE_TOKEN_BUDGET));
+  const requestedLimit = Math.floor(limit || budgetChars);
+  const charLimit = Math.min(budgetChars, Math.max(1000, requestedLimit));
   const contentSize = content.length;
 
   if (charOffset >= contentSize) {
@@ -816,6 +1015,122 @@ async function handleReadContextMap({ path: rootPath, file, section, offset, lim
     ...(section ? { section } : {}),
     content: slice
   };
+}
+
+async function readContextChunks(chunksPath) {
+  const content = await readFile(chunksPath, 'utf8');
+  return content
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
+
+function tokenizeQuery(value) {
+  return String(value || '')
+    .toLowerCase()
+    .split(/[^a-z0-9_.$/-]+/g)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2 && !STOP_WORDS.has(token));
+}
+
+function rankChunksForQuery(chunks, query) {
+  const terms = tokenizeQuery(query);
+  const phrase = query.toLowerCase();
+  return chunks
+    .map((chunk) => {
+      const text = String(chunk.text || '').toLowerCase();
+      const pathScore = String(chunk.path || '').toLowerCase();
+      let score = 0;
+      for (const term of terms) {
+        const termPattern = new RegExp(escapeRegExp(term), 'g');
+        const count = (text.match(termPattern) || []).length;
+        if (count) score += 1 + Math.log(1 + count) * 3;
+        if (pathScore.includes(term)) score += 6;
+        if ((chunk.symbols || []).some((symbol) => String(symbol.name || '').toLowerCase().includes(term))) score += 5;
+        if ((chunk.headings || []).some((heading) => String(heading.text || '').toLowerCase().includes(term))) score += 4;
+      }
+      if (phrase.length > 6 && text.includes(phrase)) score += 20;
+      return { chunk, score };
+    })
+    .filter((item) => item.score > 0)
+    .sort((left, right) => right.score - left.score || left.chunk.path.localeCompare(right.chunk.path));
+}
+
+function buildChunkSnippet(chunk, query) {
+  const terms = tokenizeQuery(query);
+  const lines = String(chunk.text || '').split(/\r?\n/);
+  let bestIndex = 0;
+  let bestScore = -1;
+  for (let index = 0; index < lines.length; index += 1) {
+    const lower = lines[index].toLowerCase();
+    let score = 0;
+    for (const term of terms) {
+      if (lower.includes(term)) score += term.length;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestIndex = index;
+    }
+  }
+  const startIndex = Math.max(0, bestIndex - 2);
+  const endIndex = Math.min(lines.length - 1, bestIndex + 3);
+  return {
+    startLine: (chunk.startLine || 1) + startIndex,
+    endLine: (chunk.startLine || 1) + endIndex,
+    text: lines.slice(startIndex, endIndex + 1).join('\n').trim().slice(0, 1200)
+  };
+}
+
+async function loadGraphPayload(rootPath, outputDir, options = {}) {
+  const sourceRoot = await assertDirectoryPath(rootPath, 'Source path');
+  const outDir = outputDir ? normalizeAbsolutePath(outputDir, 'Output directory') : path.join(sourceRoot, '.athena');
+  const graphPath = path.join(outDir, 'claude-context-graph.json');
+  if (options.refresh) await regenerateMap(sourceRoot, outDir);
+  try {
+    return JSON.parse(await readFile(graphPath, 'utf8'));
+  } catch (error) {
+    await regenerateMap(sourceRoot, outDir);
+    return JSON.parse(await readFile(graphPath, 'utf8'));
+  }
+}
+
+async function getChangedFiles(repoPath, gitRange) {
+  const args = gitRange
+    ? ['-C', repoPath, 'diff', '--name-only', gitRange]
+    : ['-C', repoPath, 'diff', '--name-only'];
+  const changed = new Set();
+  try {
+    const { stdout } = await execFileAsync('git', args, { timeout: 10000 });
+    stdout.split('\n').map((line) => line.trim()).filter(Boolean).forEach((line) => changed.add(line));
+  } catch (_error) {
+    // Fall through to staged/status paths.
+  }
+  if (!gitRange) {
+    try {
+      const { stdout } = await execFileAsync('git', ['-C', repoPath, 'diff', '--cached', '--name-only'], { timeout: 10000 });
+      stdout.split('\n').map((line) => line.trim()).filter(Boolean).forEach((line) => changed.add(line));
+    } catch (_error) {}
+    try {
+      const status = await getGitWorkingTreeStatus(repoPath);
+      for (const item of status.files) changed.add(item.path);
+    } catch (_error) {}
+  }
+  return [...changed].sort((left, right) => left.localeCompare(right));
+}
+
+function classifyAffectedPath(filePath) {
+  if (/\.(md|markdown|mdown|mkd|txt|canvas)$/i.test(filePath) || /(^|\/)docs\//i.test(filePath)) return 'doc';
+  if (/(^|\/)(__tests__|tests?|specs?)\/|[.-](test|spec)\.[cm]?[jt]sx?$/i.test(filePath)) return 'test';
+  if (/\.(js|jsx|mjs|cjs|ts|tsx|py|rb|rs|swift|sql|css|html|json|ya?ml)$/i.test(filePath)) return 'code';
+  return 'other';
+}
+
+function blastKindRank(kind) {
+  return { test: 0, code: 1, doc: 2, other: 3 }[kind] ?? 4;
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 async function handleGenerateGraphJson({ path: vaultPath, max_files }) {
@@ -1121,45 +1436,123 @@ async function getMapGenerationTime(repoPath) {
   }
 }
 
-async function regenerateMap(repoPath) {
-  const args = [EXPORT_SCRIPT, repoPath, '--out', path.join(repoPath, '.athena')];
+async function regenerateMap(repoPath, outputDir = null) {
+  const outDir = outputDir || path.join(repoPath, '.athena');
+  const args = [EXPORT_SCRIPT, repoPath, '--out', outDir];
   const { stdout } = await execFileAsync('node', args, { maxBuffer: 50 * 1024 * 1024, timeout: 120000 });
   return stdout.trim();
+}
+
+async function getGitWorkingTreeStatus(repoPath) {
+  try {
+    const { stdout } = await execFileAsync('git', ['-C', repoPath, 'status', '--porcelain=v1', '--untracked-files=normal'], { timeout: 10000 });
+    const files = [];
+    for (const rawLine of stdout.split('\n')) {
+      if (!rawLine.trim()) continue;
+      const status = rawLine.slice(0, 2);
+      let filePath = rawLine.slice(3).trim();
+      if (filePath.includes(' -> ')) filePath = filePath.split(' -> ').pop().trim();
+      files.push({ status, path: filePath });
+    }
+    return {
+      dirty: files.length > 0,
+      count: files.length,
+      files
+    };
+  } catch {
+    return { dirty: false, count: 0, files: [] };
+  }
+}
+
+async function getNewestWorkingTreeMtime(repoPath, files) {
+  let newest = null;
+  const staleFiles = [];
+  for (const file of files) {
+    const filePath = path.join(repoPath, file.path);
+    try {
+      const s = await stat(filePath);
+      if (!newest || s.mtime > newest) newest = s.mtime;
+      staleFiles.push({ ...file, modified: s.mtime.toISOString() });
+    } catch {
+      staleFiles.push({ ...file, modified: null });
+    }
+  }
+  return { newest, files: staleFiles };
 }
 
 async function handleCheckMapFreshness({ path: repoPath, auto_refresh }) {
   const root = path.resolve(repoPath);
   const commitTime = await getLatestGitCommitTime(root);
   const mapTime = await getMapGenerationTime(root);
+  const workingTree = await getGitWorkingTreeStatus(root);
+  const workingTreeTimes = await getNewestWorkingTreeMtime(root, workingTree.files);
 
   if (!mapTime) {
     if (auto_refresh) {
       const output = await regenerateMap(root);
-      return { status: 'generated', reason: 'No map existed', output };
+      return { status: 'generated', reason: 'No map existed', dirty_files: workingTree.count, output };
     }
-    return { status: 'missing', reason: 'No context map found. Run generate_context_map first.' };
+    return { status: 'missing', reason: 'No context map found. Run generate_context_map first.', dirty_files: workingTree.count };
   }
 
   if (!commitTime) {
-    return { status: 'unknown', reason: 'Not a git repo or no commits. Map exists but freshness cannot be determined.', map_time: mapTime.toISOString() };
+    const staleFromDirty = Boolean(workingTreeTimes.newest && workingTreeTimes.newest > mapTime);
+    if (staleFromDirty && auto_refresh) {
+      const output = await regenerateMap(root);
+      return {
+        status: 'refreshed',
+        reason: `Map did not reflect ${workingTree.count} working-tree file(s). Regenerated from the current working tree.`,
+        dirty_files: workingTree.count,
+        working_tree_files: workingTreeTimes.files.slice(0, 80),
+        output
+      };
+    }
+    return {
+      status: staleFromDirty ? 'stale_dirty' : (workingTree.dirty ? 'fresh_with_dirty_overlay' : 'unknown'),
+      reason: staleFromDirty
+        ? `Map is stale — ${workingTree.count} working-tree file(s) changed after the map was generated.`
+        : 'Not a git repo or no commits. Map exists but commit freshness cannot be determined.',
+      map_time: mapTime.toISOString(),
+      dirty_files: workingTree.count,
+      working_tree_files: workingTreeTimes.files.slice(0, 80),
+      stale_from_dirty: staleFromDirty
+    };
   }
 
-  const isStale = commitTime > mapTime;
+  const staleFromCommit = commitTime > mapTime;
+  const staleFromDirty = Boolean(workingTreeTimes.newest && workingTreeTimes.newest > mapTime);
+  const isStale = staleFromCommit || staleFromDirty;
   const ageMinutes = Math.round((Date.now() - mapTime.getTime()) / 60000);
 
   if (isStale && auto_refresh) {
     const output = await regenerateMap(root);
-    return { status: 'refreshed', reason: `Map was ${ageMinutes} min old, latest commit was newer. Regenerated.`, output };
+    return {
+      status: 'refreshed',
+      reason: staleFromDirty
+        ? `Map did not reflect ${workingTree.count} working-tree file(s). Regenerated from the current working tree.`
+        : `Map was ${ageMinutes} min old, latest commit was newer. Regenerated.`,
+      dirty_files: workingTree.count,
+      working_tree_files: workingTreeTimes.files.slice(0, 80),
+      output
+    };
   }
 
   return {
-    status: isStale ? 'stale' : 'fresh',
+    status: isStale ? (staleFromDirty ? 'stale_dirty' : 'stale') : (workingTree.dirty ? 'fresh_with_dirty_overlay' : 'fresh'),
     map_generated: mapTime.toISOString(),
     latest_commit: commitTime.toISOString(),
     age_minutes: ageMinutes,
+    dirty_files: workingTree.count,
+    working_tree_files: workingTreeTimes.files.slice(0, 80),
+    stale_from_commit: staleFromCommit,
+    stale_from_dirty: staleFromDirty,
     reason: isStale
-      ? `Map is stale — generated ${ageMinutes} min ago but latest commit is newer. Use auto_refresh:true or run generate_context_map.`
-      : `Map is fresh — generated ${ageMinutes} min ago, after the latest commit.`
+      ? (staleFromDirty
+          ? `Map is stale — ${workingTree.count} working-tree file(s) changed after the map was generated. Use auto_refresh:true or run generate_context_map.`
+          : `Map is stale — generated ${ageMinutes} min ago but latest commit is newer. Use auto_refresh:true or run generate_context_map.`)
+      : (workingTree.dirty
+          ? `Map reflects current working-tree file mtimes, but ${workingTree.count} file(s) are still uncommitted.`
+          : `Map is fresh — generated ${ageMinutes} min ago, after the latest commit.`)
   };
 }
 
@@ -1173,34 +1566,15 @@ async function handleEnableAutoMapping({ path: repoPath, refresh_now }) {
     throw new Error('Not a git repository. The auto-mapping hook requires git.');
   }
 
-  // Install post-commit hook
   const hooksDir = path.join(root, '.git', 'hooks');
-  const hookPath = path.join(hooksDir, 'post-commit');
-  const marker = '# athena-mcp auto-mapping';
-
-  const hookScript = `#!/bin/sh
-${marker}
-node "${EXPORT_SCRIPT}" "${root}" --out "${path.join(root, '.athena')}" > /dev/null 2>&1 &
-echo "[athena] Context map updated."
-`;
-
+  const marker = '# ATHENA-MCP:BEGIN';
   await mkdir(hooksDir, { recursive: true });
-
-  let installed = false;
-  try {
-    const existing = await readFile(hookPath, 'utf8');
-    if (existing.includes(marker)) {
-      installed = false; // Already installed
-    } else {
-      await fsp.writeFile(hookPath, existing + '\n' + hookScript, 'utf8');
-      installed = true;
-    }
-  } catch {
-    await fsp.writeFile(hookPath, hookScript, 'utf8');
-    installed = true;
-  }
-
-  await fsp.chmod(hookPath, 0o755);
+  const preCommitPath = path.join(hooksDir, 'pre-commit');
+  const postCommitPath = path.join(hooksDir, 'post-commit');
+  const preCommitScript = buildHookScript(root, false);
+  const postCommitScript = buildHookScript(root, true);
+  const preCommit = await installHookBlock(preCommitPath, marker, preCommitScript);
+  const postCommit = await installHookBlock(postCommitPath, marker, postCommitScript);
 
   // Optionally refresh now
   let refreshResult = null;
@@ -1210,14 +1584,55 @@ echo "[athena] Context map updated."
   }
 
   return {
-    hook_installed: installed ? 'installed' : 'already_installed',
-    hook_path: hookPath,
+    hooks: {
+      pre_commit: preCommit,
+      post_commit: postCommit
+    },
     auto_refresh_result: refreshResult,
-    hint: 'Context map will now auto-update after every git commit. The map stays fresh automatically.'
+    hint: 'Context map will now update before commit for dirty-tree accuracy and after commit for HEAD freshness.'
   };
 }
 
-async function handleSetupRepo({ path: repoPath }) {
+function buildHookScript(root, background) {
+  const command = `node "${EXPORT_SCRIPT}" "${root}" --out "${path.join(root, '.athena')}"`;
+  return `# ATHENA-MCP:BEGIN
+${background ? `${command} > /dev/null 2>&1 &` : `${command} > /dev/null 2>&1`}
+echo "[athena] Context map updated."
+# ATHENA-MCP:END
+`;
+}
+
+async function installHookBlock(hookPath, marker, hookScript) {
+  let existing = '';
+  let existed = true;
+  try {
+    existing = await readFile(hookPath, 'utf8');
+  } catch {
+    existed = false;
+  }
+  const updated = upsertMarkedShellBlock(existing, marker, hookScript);
+  if (existing !== updated) {
+    await fsp.writeFile(hookPath, updated, 'utf8');
+    await fsp.chmod(hookPath, 0o755);
+    return { path: hookPath, status: existed ? 'updated' : 'installed' };
+  }
+  await fsp.chmod(hookPath, 0o755).catch(() => {});
+  return { path: hookPath, status: 'already_installed' };
+}
+
+function upsertMarkedShellBlock(existing, marker, block) {
+  const begin = marker;
+  const end = '# ATHENA-MCP:END';
+  const trimmedBlock = block.trimEnd();
+  const body = existing.startsWith('#!') ? existing : (existing ? `#!/bin/sh\n${existing}` : '#!/bin/sh\n');
+  const pattern = new RegExp(`${escapeRegExp(begin)}[\\s\\S]*?${escapeRegExp(end)}`, 'm');
+  if (pattern.test(body)) {
+    return body.replace(pattern, trimmedBlock).trimEnd() + '\n';
+  }
+  return `${body.trimEnd()}\n\n${trimmedBlock}\n`;
+}
+
+async function handleSetupRepo({ path: repoPath, apply }) {
   const root = path.resolve(repoPath);
 
   // Verify git repo
@@ -1225,93 +1640,194 @@ async function handleSetupRepo({ path: repoPath }) {
     throw new Error('Not a git repository. Run this inside a git repo.');
   }
 
-  const results = { steps: [] };
-
-  // Step 1: Generate context map
-  try {
-    const mapOutput = await regenerateMap(root);
-    results.steps.push({ step: 'context_map', status: 'ok', detail: mapOutput.split('\n').pop() });
-  } catch (e) {
-    results.steps.push({ step: 'context_map', status: 'error', detail: e.message });
-  }
-
-  // Step 2: Install git hook
-  try {
-    const hookResult = await handleEnableAutoMapping({ path: root, refresh_now: false });
-    results.steps.push({ step: 'git_hook', status: 'ok', detail: hookResult.hook_installed });
-  } catch (e) {
-    results.steps.push({ step: 'git_hook', status: 'error', detail: e.message });
-  }
-
-  // Step 3: Add instructions to CLAUDE.md
   const claudeMdPath = path.join(root, 'CLAUDE.md');
-  const marker = '<!-- shibanshu-context-map -->';
-  const instruction = `
-${marker}
-## Context Map (auto-generated)
-
-This repo has an auto-updating context map at \`.athena/\`.
-
-**At the start of every session**, use the \`check_map_freshness\` tool to verify the map is current, then use \`read_context_map\` with \`file: "navigation"\` to understand the repo structure before making changes.
-
-The map provides:
-- **Navigation routes** — prioritized reading order for this codebase
-- **Hub files** — the most connected, critical files
-- **Bridge files** — files connecting different parts of the system
-- **Orphan files** — potentially dead code
-- **Dependency graph** — what imports what
-
-Use \`generate_mind_map\` on any file to see its structure visually.
-Use \`vault_search\` to find content across the repo.
-Use \`vault_backlinks\` to see what depends on a file before changing it.
-${marker}
-`;
-
-  try {
-    let existing = '';
-    try { existing = await readFile(claudeMdPath, 'utf8'); } catch { /* file doesn't exist yet */ }
-
-    if (existing.includes(marker)) {
-      // Already has our section — replace it
-      const regex = new RegExp(`${marker}[\\s\\S]*?${marker}`, 'g');
-      const updated = existing.replace(regex, instruction.trim());
-      await fsp.writeFile(claudeMdPath, updated, 'utf8');
-      results.steps.push({ step: 'claude_md', status: 'ok', detail: 'Updated existing section' });
-    } else {
-      // Append
-      const newContent = existing ? existing.trimEnd() + '\n\n' + instruction : instruction;
-      await fsp.writeFile(claudeMdPath, newContent, 'utf8');
-      results.steps.push({ step: 'claude_md', status: 'ok', detail: existing ? 'Appended to CLAUDE.md' : 'Created CLAUDE.md' });
-    }
-  } catch (e) {
-    results.steps.push({ step: 'claude_md', status: 'error', detail: e.message });
-  }
-
-  // Step 4: Add .athena to .gitignore
   const gitignorePath = path.join(root, '.gitignore');
-  try {
-    let gitignore = '';
-    try { gitignore = await readFile(gitignorePath, 'utf8'); } catch { /* no gitignore */ }
-    if (!gitignore.includes('.athena')) {
-      const updated = gitignore.trimEnd() + '\n\n# Context map (auto-generated)\n.athena/\n';
-      await fsp.writeFile(gitignorePath, updated, 'utf8');
-      results.steps.push({ step: 'gitignore', status: 'ok', detail: 'Added .athena/ to .gitignore' });
-    } else {
-      results.steps.push({ step: 'gitignore', status: 'ok', detail: 'Already in .gitignore' });
-    }
-  } catch (e) {
-    results.steps.push({ step: 'gitignore', status: 'error', detail: e.message });
+  const hooksDir = path.join(root, '.git', 'hooks');
+  const preCommitPath = path.join(hooksDir, 'pre-commit');
+  const postCommitPath = path.join(hooksDir, 'post-commit');
+
+  const existingClaude = await readOptionalFile(claudeMdPath);
+  const existingGitignore = await readOptionalFile(gitignorePath);
+  const existingPreCommit = await readOptionalFile(preCommitPath);
+  const existingPostCommit = await readOptionalFile(postCommitPath);
+
+  const nextClaude = upsertAthenaInstructionBlock(existingClaude);
+  const nextGitignore = ensureGitignoreLine(existingGitignore, '.athena/');
+  const nextPreCommit = upsertMarkedShellBlock(existingPreCommit, '# ATHENA-MCP:BEGIN', buildHookScript(root, false));
+  const nextPostCommit = upsertMarkedShellBlock(existingPostCommit, '# ATHENA-MCP:BEGIN', buildHookScript(root, true));
+
+  const planned = [
+    { file: claudeMdPath, before: existingClaude, after: nextClaude },
+    { file: gitignorePath, before: existingGitignore, after: nextGitignore },
+    { file: preCommitPath, before: existingPreCommit, after: nextPreCommit },
+    { file: postCommitPath, before: existingPostCommit, after: nextPostCommit }
+  ];
+  const diffs = planned
+    .filter((item) => item.before !== item.after)
+    .map((item) => ({
+      file: item.file,
+      diff: createUnifiedDiff(item.file, item.before, item.after)
+    }));
+
+  if (!apply) {
+    return {
+      status: 'needs_confirmation',
+      apply_required: true,
+      would_write: diffs.map((item) => item.file),
+      diffs,
+      hint: 'Review these diffs. Re-run setup_repo with apply:true to write files and generate the map.'
+    };
   }
 
-  const allOk = results.steps.every(s => s.status === 'ok');
+  const steps = [];
+  for (const item of planned) {
+    if (item.before === item.after) {
+      steps.push({ step: path.basename(item.file), status: 'unchanged', path: item.file });
+      continue;
+    }
+    await mkdir(path.dirname(item.file), { recursive: true });
+    await fsp.writeFile(item.file, item.after, 'utf8');
+    if (item.file.includes(`${path.sep}.git${path.sep}hooks${path.sep}`)) await fsp.chmod(item.file, 0o755);
+    steps.push({ step: path.basename(item.file), status: 'written', path: item.file });
+  }
+
+  let mapOutput = '';
+  try {
+    mapOutput = await regenerateMap(root);
+    steps.push({ step: 'context_map', status: 'written', path: path.join(root, '.athena') });
+  } catch (error) {
+    steps.push({ step: 'context_map', status: 'error', detail: error.message });
+  }
 
   return {
-    ...results,
-    status: allOk ? 'ready' : 'partial',
-    hint: allOk
-      ? 'Setup complete. Context map will auto-update on every commit. Claude will automatically read the map at session start via CLAUDE.md instructions. Zero effort from now on.'
-      : 'Setup partially complete. Check individual step errors above.'
+    status: steps.some((step) => step.status === 'error') ? 'partial' : 'ready',
+    steps,
+    diffs,
+    map_output: mapOutput.split('\n').slice(-3).join('\n'),
+    hint: 'Setup applied. Re-running setup_repo with apply:true will be byte-stable unless the generated block changes.'
   };
+}
+
+async function readOptionalFile(filePath) {
+  try {
+    return await readFile(filePath, 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+function upsertAthenaInstructionBlock(existing) {
+  const begin = '<!-- ATHENA-CONTEXT-MAP:BEGIN -->';
+  const end = '<!-- ATHENA-CONTEXT-MAP:END -->';
+  const legacy = '<!-- shibanshu-context-map -->';
+  const block = `${begin}
+## Context Map
+
+This repo has an auto-updating, queryable context map at \`.athena/\`.
+
+At the start of a session, use \`check_map_freshness\`. If the map is stale or dirty, refresh it. Prefer \`query_context\`, \`repo_health\`, and \`blast_radius\` for targeted context before reading large files.
+
+Generated intelligence reports:
+- \`contradictions.md\`
+- \`staleness-report.md\`
+- \`semantic-warnings.md\`
+- \`authority-graph.md\`
+- \`repo-health.md\`
+- \`duplicates.md\`
+
+Use \`read_context_map file:"navigation"\` only for orientation, and never read \`llm-context-chunks.jsonl\` directly.
+${end}`;
+
+  if (existing.includes(begin) && existing.includes(end)) {
+    const regex = new RegExp(`${escapeRegExp(begin)}[\\s\\S]*?${escapeRegExp(end)}`, 'g');
+    return existing.replace(regex, block).trimEnd() + '\n';
+  }
+  if (existing.includes(legacy)) {
+    const regex = new RegExp(`${escapeRegExp(legacy)}[\\s\\S]*?${escapeRegExp(legacy)}`, 'g');
+    return existing.replace(regex, block).trimEnd() + '\n';
+  }
+  return existing ? `${existing.trimEnd()}\n\n${block}\n` : `${block}\n`;
+}
+
+function ensureGitignoreLine(existing, line) {
+  const lines = existing.split(/\r?\n/);
+  if (lines.some((item) => item.trim() === line)) return existing.endsWith('\n') ? existing : `${existing}\n`;
+  const prefix = existing.trimEnd();
+  const addition = `# Context map (auto-generated)\n${line}\n`;
+  return prefix ? `${prefix}\n\n${addition}` : addition;
+}
+
+function createUnifiedDiff(filePath, before, after) {
+  if (before === after) return '';
+  const beforeLines = before.split('\n');
+  const afterLines = after.split('\n');
+  const lines = [`--- ${filePath}`, `+++ ${filePath}`];
+  const maxLines = Math.max(beforeLines.length, afterLines.length);
+  lines.push(`@@ -1,${beforeLines.length} +1,${afterLines.length} @@`);
+  for (let index = 0; index < maxLines; index += 1) {
+    const left = beforeLines[index];
+    const right = afterLines[index];
+    if (left === right) {
+      if (left !== undefined) lines.push(` ${left}`);
+      continue;
+    }
+    if (left !== undefined) lines.push(`-${left}`);
+    if (right !== undefined) lines.push(`+${right}`);
+    if (lines.length > 220) {
+      lines.push('...diff truncated...');
+      break;
+    }
+  }
+  return lines.join('\n');
+}
+
+function serializeToolResult(result, args = {}) {
+  const budget = parseTokenBudget(args?.token_budget || args?.max_tokens, DEFAULT_RESPONSE_TOKEN_BUDGET);
+  const maxChars = tokenBudgetToChars(budget);
+  const text = JSON.stringify(result, null, 2);
+  if (text.length <= maxChars) return text;
+  return JSON.stringify(summarizeOversizedResult(result, maxChars, budget), null, 2);
+}
+
+function summarizeOversizedResult(result, maxChars, budget) {
+  const summary = {
+    response_truncated: true,
+    token_budget: budget,
+    reason: `Raw tool result exceeded ${budget} approximate tokens.`,
+    hint: 'Use query_context, a narrower section, lower max_results, or read_context_map pagination.'
+  };
+  for (const [key, value] of Object.entries(result || {})) {
+    if (typeof value === 'string') {
+      summary[key] = value.length > Math.min(4000, maxChars / 4)
+        ? `${value.slice(0, Math.min(4000, Math.floor(maxChars / 4)))}\n[truncated ${value.length} chars]`
+        : value;
+    } else if (Array.isArray(value)) {
+      summary[key] = value.slice(0, 40);
+      if (value.length > 40) summary[`${key}_omitted`] = value.length - 40;
+    } else if (value && typeof value === 'object') {
+      summary[key] = shrinkObject(value, 2, 20);
+    } else {
+      summary[key] = value;
+    }
+    if (JSON.stringify(summary).length > maxChars * 0.8) break;
+  }
+  return summary;
+}
+
+function shrinkObject(value, depth, maxKeys) {
+  if (!value || typeof value !== 'object' || depth <= 0) return value;
+  if (Array.isArray(value)) return value.slice(0, maxKeys).map((item) => shrinkObject(item, depth - 1, maxKeys));
+  const out = {};
+  for (const [key, child] of Object.entries(value).slice(0, maxKeys)) {
+    if (typeof child === 'string' && child.length > 1000) {
+      out[key] = `${child.slice(0, 1000)} [truncated ${child.length} chars]`;
+    } else {
+      out[key] = shrinkObject(child, depth - 1, maxKeys);
+    }
+  }
+  const omitted = Object.keys(value).length - Object.keys(out).length;
+  if (omitted > 0) out._omitted_keys = omitted;
+  return out;
 }
 
 // ─── MCP Server setup ───────────────────────────────────────────────
@@ -1323,7 +1839,10 @@ const HANDLER_MAP = {
   vault_create_note: handleVaultCreateNote,
   vault_search: handleVaultSearch,
   generate_context_map: handleGenerateContextMap,
+  query_context: handleQueryContext,
   read_context_map: handleReadContextMap,
+  repo_health: handleRepoHealth,
+  blast_radius: handleBlastRadius,
   generate_graph_json: handleGenerateGraphJson,
   generate_mind_map: handleGenerateMindMap,
   extract_links: handleExtractLinks,
@@ -1340,10 +1859,72 @@ const HANDLER_MAP = {
 
 const server = new Server(
   { name: 'athena', version: '0.1.0' },
-  { capabilities: { tools: {} } }
+  { capabilities: { tools: {}, resources: {} } }
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
+
+server.setRequestHandler(ListResourcesRequestSchema, async () => {
+  const root = process.cwd();
+  const outDir = path.join(root, '.athena');
+  const resources = [
+    ['navigation', 'claude-context-navigation.md', 'text/markdown'],
+    ['health', 'repo-health.md', 'text/markdown'],
+    ['contradictions', 'contradictions.md', 'text/markdown'],
+    ['staleness', 'staleness-report.md', 'text/markdown'],
+    ['warnings', 'semantic-warnings.md', 'text/markdown'],
+    ['authority', 'authority-graph.md', 'text/markdown'],
+    ['duplicates', 'duplicates.md', 'text/markdown'],
+    ['graph', 'claude-context-graph.json', 'application/json'],
+    ['integrity', 'context-integrity.json', 'application/json']
+  ];
+  const available = [];
+  for (const [name, fileName, mimeType] of resources) {
+    const filePath = path.join(outDir, fileName);
+    try {
+      await stat(filePath);
+      available.push({
+        uri: `athena://context/${name}?root=${encodeURIComponent(root)}`,
+        name: `Athena ${name}`,
+        description: `${fileName} for ${root}`,
+        mimeType
+      });
+    } catch {}
+  }
+  return { resources: available };
+});
+
+server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+  const uri = new URL(request.params.uri);
+  if (uri.protocol !== 'athena:' || uri.hostname !== 'context') {
+    throw new Error(`Unsupported resource URI: ${request.params.uri}`);
+  }
+  const root = uri.searchParams.get('root') || process.cwd();
+  const name = uri.pathname.replace(/^\//, '');
+  const fileMap = {
+    navigation: 'claude-context-navigation.md',
+    health: 'repo-health.md',
+    contradictions: 'contradictions.md',
+    staleness: 'staleness-report.md',
+    warnings: 'semantic-warnings.md',
+    authority: 'authority-graph.md',
+    duplicates: 'duplicates.md',
+    graph: 'claude-context-graph.json',
+    integrity: 'context-integrity.json'
+  };
+  const fileName = fileMap[name];
+  if (!fileName) throw new Error(`Unknown Athena resource: ${name}`);
+  const filePath = path.join(normalizeAbsolutePath(root, 'Resource root'), '.athena', fileName);
+  const text = await readFile(filePath, 'utf8');
+  const budget = tokenBudgetToChars(DEFAULT_RESPONSE_TOKEN_BUDGET);
+  return {
+    contents: [{
+      uri: request.params.uri,
+      mimeType: fileName.endsWith('.json') ? 'application/json' : 'text/markdown',
+      text: text.length > budget ? `${text.slice(0, budget)}\n\n[truncated: use query_context or read_context_map pagination for more]` : text
+    }]
+  };
+});
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
@@ -1353,7 +1934,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
   try {
     const result = await handler(args);
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text', text: serializeToolResult(result, args) }] };
   } catch (error) {
     return { content: [{ type: 'text', text: `Error: ${error.message}` }], isError: true };
   }

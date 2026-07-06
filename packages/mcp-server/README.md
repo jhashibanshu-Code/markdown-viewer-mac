@@ -1,6 +1,6 @@
 # athena-code-mcp
 
-MCP server that gives Claude Code a structural map of your codebase — so it reads 3 files instead of 300.
+MCP server that gives Claude Code a fresh, queryable structural map of your codebase — so it asks for the right cited context instead of reading 300 files.
 
 ## The problem
 
@@ -8,7 +8,7 @@ Claude Code reads files one-by-one to understand your repo. A 200-file repo need
 
 ## The solution
 
-One setup. Zero effort. Claude automatically understands your architecture.
+One setup. Athena keeps a budgeted repo index fresh, queryable, and backed by health signals such as stale files, near-duplicates, contradictions, and possible secrets.
 
 ```bash
 claude mcp add -s user athena npx athena-code-mcp
@@ -20,20 +20,21 @@ Then in any repo:
 You: "Set up this repo for context mapping"
 ```
 
-That's it. From now on, every Claude session automatically:
-1. Checks if the map is fresh
-2. Reads the structural navigation guide
-3. Knows your architecture before you ask anything
+After you review and apply the setup diff, every Claude session can:
+1. Check if the map is fresh
+2. Query the index for cited answers
+3. Read repo-health and blast-radius diagnostics before changing code
 
 ## What it does
 
-**`setup_repo`** — one command, four things:
-- Generates context map (`.shibanshu/`)
-- Installs git hook (map auto-updates on every commit)
-- Adds CLAUDE.md instructions (Claude reads the map automatically)
-- Updates .gitignore
+**`setup_repo`** — diff-first setup:
+- Previews exact changes before writing
+- Generates context map (`.athena/`) after confirmation
+- Installs pre-commit and post-commit hooks for dirty-tree and commit freshness
+- Adds idempotent CLAUDE.md instructions with marker blocks
+- Updates `.gitignore`
 
-**After setup, you never think about it again.** Claude just understands your codebase.
+**After setup, agents should use `query_context`, `repo_health`, and `blast_radius` first.** The large map and chunks stay as backing stores.
 
 ## Real benchmarks (tested on production repos)
 
@@ -45,15 +46,18 @@ That's it. From now on, every Claude session automatically:
 
 The 924-file benchmark is from a real production repo (resourceai-in), not a synthetic test.
 
-## 19 tools
+## 22 tools
 
 | Tool | What it does |
 |------|-------------|
-| `setup_repo` | One-command full setup (map + hook + CLAUDE.md) |
-| `check_map_freshness` | Is the map current? Auto-refresh if stale |
-| `enable_auto_mapping` | Install git hook for auto-updates |
-| `generate_context_map` | Full context map (nav, graph, mind-map, chunks) |
-| `read_context_map` | Read generated map files |
+| `setup_repo` | Diff-first, idempotent setup (map + hooks + CLAUDE.md + .gitignore) |
+| `check_map_freshness` | Reports HEAD and dirty working-tree freshness; can auto-refresh |
+| `enable_auto_mapping` | Install pre-commit and post-commit hooks for auto-updates |
+| `generate_context_map` | Full context map plus health, contradiction, staleness, authority, and duplicate reports |
+| `query_context` | Ask a repo question and get ranked, cited, budget-capped context |
+| `repo_health` | Actionable diagnostics: orphans, broken links, duplicates, contradictions, trust, possible secrets |
+| `blast_radius` | Analyze a git range or dirty tree for affected docs, tests, imports, and downstream files |
+| `read_context_map` | Read generated map/report files with hard token budgets and pagination |
 | `generate_graph_json` | Knowledge graph with hubs, bridges, orphans |
 | `generate_mind_map` | Mermaid mind-map from any file |
 | `generate_3d_graph_viewer` | Interactive 3D HTML visualization |
@@ -74,19 +78,20 @@ The 924-file benchmark is from a real production repo (resourceai-in), not a syn
 ```
 Your 924-file repo (2.3M tokens — 12x context window)
                     ↓
-        generate_context_map (0.6 seconds)
+        generate_context_map
                     ↓
-    Navigation guide (10,812 tokens — 5% of window)
+    Queryable index + navigation guide
     ├── 5 prioritized reading routes
     ├── Hub files (most connected, critical)
     ├── Bridge files (connect subsystems)
     ├── Orphan files (dead code)
     ├── Dependency graph
-    └── Cluster analysis
+    ├── Contradictions / duplicates / staleness
+    └── Repo-health actions
                     ↓
-    Claude reads 3 targeted files instead of 300
+    Claude asks targeted questions with file:line citations
                     ↓
-    Right answer. First try. 95% context free for coding.
+    Less context waste and fewer stale-map mistakes.
 ```
 
 ## Install
