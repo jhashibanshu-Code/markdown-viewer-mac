@@ -13,7 +13,7 @@
 5. Product C: Markdown Viewer Mobile App (Android)
 6. Architecture Overview
 7. How the Context Map Engine Works
-8. The 19 MCP Tools — What Each Does
+8. The 22 MCP Tools — What Each Does
 9. The 3D Graph Viewer
 10. How Auto-Mapping Works
 11. How CLAUDE.md Integration Works
@@ -43,7 +43,7 @@ It also ships as a standalone markdown editor for Mac and Android, but the core 
 
 | Product | What it is | Who it's for | Distribution |
 |---------|-----------|-------------|-------------|
-| **Athena MCP Server** | 19-tool MCP server for Claude Code | Developers using AI coding tools | npm: `athena-code-mcp` |
+| **Athena MCP Server** | 22-tool MCP server for Claude Code | Developers using AI coding tools | npm: `athena-code-mcp` |
 | **Markdown Viewer (Mac)** | Electron desktop app with editor, graph, mind maps | Note-takers, knowledge workers | `.app` bundle (153 MB) |
 | **Markdown Viewer (Android)** | Capacitor-wrapped mobile app | Mobile note-takers | `.apk` (6.9 MB) |
 
@@ -55,14 +55,17 @@ The MCP server is the core product. The apps are secondary.
 
 ### What it does
 
-When a developer installs Athena, their AI coding tool gains 19 new capabilities:
+When a developer installs Athena, their AI coding tool gains 22 capabilities:
 
 **Context Management (the core)**
-- `generate_context_map` — Analyzes an entire codebase and generates 7 output files: navigation guide, full map, mind map, graph JSON, 3D scene, token-budgeted chunks, and integrity fingerprint
-- `read_context_map` — Reads any of the generated files
-- `check_map_freshness` — Compares map age against latest git commit
-- `enable_auto_mapping` — Installs a git post-commit hook for auto-updates
-- `setup_repo` — One command that does everything: generates map, installs hook, updates CLAUDE.md, updates .gitignore
+- `generate_context_map` — Analyzes an entire codebase and generates navigation, graph, chunks, integrity, health, contradiction, staleness, authority, warning, and duplicate reports
+- `query_context` — Answers repo questions from indexed chunks with ranked file:line citations
+- `repo_health` — Returns actionable diagnostics for orphans, broken links, duplicates, contradictions, trust, and possible secrets/PII
+- `blast_radius` — Analyzes a git range or dirty working tree for affected docs, tests, imports, calls, and downstream files
+- `read_context_map` — Reads generated files with hard token budgets and pagination
+- `check_map_freshness` — Compares map age against HEAD and dirty working-tree changes
+- `enable_auto_mapping` — Installs pre-commit and post-commit hooks for auto-updates
+- `setup_repo` — Diff-first, idempotent setup for map generation, hooks, CLAUDE.md, and .gitignore
 
 **Vault Operations**
 - `vault_list_files` — Lists all markdown files with sizes, word counts, modification dates
@@ -99,17 +102,17 @@ One command. Works forever.
 After `setup_repo` is called on a repository:
 
 1. A `.athena/` folder is created with the context map
-2. A git post-commit hook auto-regenerates the map after every commit
-3. CLAUDE.md is updated with instructions telling Claude to read the map at every session start
+2. Git hooks can refresh the map before and after commits
+3. CLAUDE.md is updated with marker-block instructions telling agents to check freshness and prefer targeted query/health tools
 4. `.gitignore` is updated to exclude `.athena/`
 
 From that point on, every new Claude Code session automatically:
 - Reads CLAUDE.md (Claude always does this)
 - Sees the instruction to check map freshness
 - Calls `check_map_freshness`
-- If fresh: reads the navigation guide
-- If stale: regenerates, then reads
-- Claude now understands the architecture before the user asks anything
+- If fresh: uses `query_context`, `repo_health`, or the navigation guide depending on the task
+- If stale or dirty: regenerates, then queries targeted context
+- Claude starts from cited, current context instead of raw monolithic files
 
 **Zero ongoing user effort.**
 
@@ -346,7 +349,7 @@ Requires Android Studio with SDK and Java (bundled JBR).
 ┌─────────────────────────────────────────────────────────┐
 │                    MCP SERVER                            │
 │                                                          │
-│  mcp-server.mjs (19 tools)                               │
+│  mcp-server.mjs (22 tools)                               │
 │       │                                                  │
 │       ├── Context map generation                         │
 │       │   └── scripts/export-claude-map.mjs (1,607 lines)│
@@ -430,17 +433,20 @@ Generates 5 prioritized reading paths (up to 24 documents each):
 
 ---
 
-## 8. The 19 MCP Tools — What Each Does
+## 8. The 22 MCP Tools — What Each Does
 
 ### Context Management
 
 | Tool | Input | Output | When to use |
 |------|-------|--------|-------------|
-| `setup_repo` | repo path | 4-step result | First time setup — does everything |
-| `generate_context_map` | repo path, options | 7 output files | Manual regeneration |
-| `read_context_map` | repo path, file type | file content | Read navigation/map/graph/mind-map |
-| `check_map_freshness` | repo path | fresh/stale/missing | Before using stale data |
-| `enable_auto_mapping` | repo path | hook installed | Add git hook for auto-updates |
+| `setup_repo` | repo path, apply flag | diff or applied result | First time setup with idempotent marker blocks |
+| `generate_context_map` | repo path, options | map plus intelligence reports | Manual regeneration |
+| `query_context` | repo path, question | ranked cited hits | Ask targeted repo questions |
+| `repo_health` | repo path | action list and diagnostics | Cleanup and trust triage |
+| `blast_radius` | repo path, git range | affected files | Before committing or reviewing a diff |
+| `read_context_map` | repo path, file type, budget | capped file content | Read navigation/reports when needed |
+| `check_map_freshness` | repo path | fresh/stale/dirty/missing | Before using stale data |
+| `enable_auto_mapping` | repo path | hooks installed | Add pre/post commit hooks for auto-updates |
 
 ### Vault Operations
 
@@ -511,7 +517,7 @@ After `setup_repo` or `enable_auto_mapping`:
 ```
 Developer commits code
     ↓
-Git post-commit hook fires (background, <1 second)
+Git pre-commit/post-commit hooks refresh the map around commits
     ↓
 export-claude-map.mjs regenerates .athena/ files
     ↓
@@ -519,12 +525,12 @@ Next Claude Code session:
     ↓
 CLAUDE.md says "check freshness"
     ↓
-check_map_freshness compares map mtime vs git log -1 time
+check_map_freshness compares map mtime vs HEAD and dirty working-tree mtimes
     ↓
-Fresh? → Read navigation guide
-Stale? → Regenerate → Read navigation guide
+Fresh? → Query targeted context
+Stale/dirty? → Regenerate → Query targeted context
     ↓
-Claude understands architecture. Zero user effort.
+Claude starts from current, cited context instead of an unreadable blob.
 ```
 
 ---
@@ -538,9 +544,9 @@ Claude understands architecture. Zero user effort.
 
 This repo has an auto-updating context map at `.athena/`.
 
-**At the start of every session**, use the `check_map_freshness` tool
-to verify the map is current, then use `read_context_map` with
-`file: "navigation"` to understand the repo structure before making changes.
+At the start of a session, use `check_map_freshness`. If the map is stale or dirty, refresh it. Prefer `query_context`, `repo_health`, and `blast_radius` for targeted context before reading large files.
+
+Use `read_context_map file:"navigation"` only for orientation, and never read `llm-context-chunks.jsonl` directly.
 ```
 
 Claude Code reads CLAUDE.md at every session start. This instruction causes Claude to automatically use the Athena MCP tools without the user asking.
@@ -653,7 +659,7 @@ Package: `athena-code-mcp` (38.9 KB tarball, 157.7 KB unpacked). Contains: `mcp-
 
 ### MCP Tool Functional Tests
 
-All 19 tools pass. Tested via MCP SDK client with real repos.
+All 22 tools pass. Tested via MCP SDK client with real repos.
 
 ### Context Map Generation Time
 
@@ -717,4 +723,4 @@ All 19 tools pass. Tested via MCP SDK client with real repos.
 
 ---
 
-*This document covers the complete Athena system: 179 files, 9 clusters, 19 MCP tools, 3 product surfaces, tested on repos up to 924 files with 218:1 proven compression.*
+*This document covers the complete Athena system: 179 files, 9 clusters, 22 MCP tools, 3 product surfaces, tested on repos up to 924 files with 218:1 proven compression.*
