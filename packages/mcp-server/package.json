@@ -1,6 +1,6 @@
 {
   "name": "athena-code-mcp",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "MCP server for Claude Code — 218x context compression for codebases. Knowledge graphs, navigation routes, auto-updating maps, 3D visualizer. 19 tools. One setup command.",
   "author": "Shibanshu Jha",
   "license": "MIT",

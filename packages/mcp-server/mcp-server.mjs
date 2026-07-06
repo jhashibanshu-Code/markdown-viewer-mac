@@ -979,7 +979,9 @@ async function handlePublishStaticSite({ path: vaultPath, output_dir, title, the
 
 async function handleCreateDailyNote({ vault_path, date, subfolder }) {
   const now = new Date();
-  const rootPath = await assertDirectoryPath(vault_path);
+  const vaultDir = path.resolve(String(vault_path || '').trim());
+  await mkdir(vaultDir, { recursive: true });
+  const rootPath = await assertDirectoryPath(vaultDir);
   const { dateStr, dateObj } = normalizeDateString(date);
   const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
   const monthDay = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });

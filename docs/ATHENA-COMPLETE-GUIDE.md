@@ -375,7 +375,7 @@ The engine (`scripts/export-claude-map.mjs`, 1,607 lines) processes a codebase i
 - Walks directory tree recursively
 - Skips: `.git`, `node_modules`, `dist`, `build`, `vendor`, `.next`, `.cache`, `.venv`, `target`, `coverage`
 - Keeps: `.md`, `.js`, `.ts`, `.py`, `.css`, `.json`, `.yaml` and 15 other extensions
-- Limits: 5,000 files max, 768 KB per file max, 24 depth max
+- Limits: 20,000 files max, 768 KB per file max, 32 depth max
 
 ### Phase 2: Metadata Extraction (per file)
 - **Frontmatter**: YAML metadata parsing for tags, aliases
@@ -385,6 +385,12 @@ The engine (`scripts/export-claude-map.mjs`, 1,607 lines) processes a codebase i
 - **Code imports**: JS/TS `import/export/require`, Python `from/import`, CSS `@import`
 - **Symbols**: JS functions/classes/variables/types, Python defs/classes (up to 80 per file)
 - **Statistics**: Word count, line count, byte size
+- **Heuristic Summary** (NEW): Auto-generated 1-2 line description per file:
+  - Code files: module docstring (JSDoc `/** */` or Python `"""`) + first 5-6 exported function/class names
+  - Markdown files: first paragraph after first heading (capped at 250 chars)
+  - Config files (JSON/YAML): `name` + `description` fields
+  - CSS files: first block comment
+- **TF-IDF Topics** (NEW): 5-10 keywords unique to each file vs the entire corpus. Computed using term frequency × inverse document frequency. Zero cost, offline, no API calls. 100% of files get topics, 86%+ get summaries.
 
 ### Phase 3: Graph Building
 - Resolves all links to actual file paths
@@ -618,7 +624,7 @@ Package: `athena-code-mcp` (38.9 KB tarball, 157.7 KB unpacked). Contains: `mcp-
 
 ---
 
-## 16. File Structure (179 files, 9 clusters)
+## 16. File Structure (187 files, 9 clusters)
 
 | Cluster | Files | Words | Key files |
 |---------|-------|-------|-----------|
@@ -681,10 +687,10 @@ All 19 tools pass. Tested via MCP SDK client with real repos.
 
 - **Simple bug fixes** — For "fix the typo on line 47," Athena adds overhead. Claude's built-in grep is faster.
 - **Small repos (<50 files)** — Claude can read these raw. Athena is overkill.
-- **Content understanding** — The map gives structure, not semantics. Claude still needs to read files for content-level questions.
+- **Deep semantic reasoning** — Summaries and topics give Claude a good idea of what each file does, but for complex logic questions Claude still needs to read the actual code. The map answers "what is this file about?" but not "why does line 247 use a mutex here?"
 - **Real-time collaboration** — No sync between devices. Local-only.
 - **Competing with Obsidian** — The notes app cannot match Obsidian's plugin ecosystem and 5-year head start.
-- **WebGL-quality 3D** — The graph viewer uses Canvas 2D with perspective projection. It's not Three.js.
+- **WebGL-quality 3D** — The graph viewer uses Canvas 2D with perspective projection. Three.js upgrade planned.
 
 ---
 
