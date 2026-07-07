@@ -1,13 +1,13 @@
 # Claude Context Map
 
-Generated: 2026-07-05T16:49:22.064Z
+Generated: 2026-07-06T01:54:09.049Z
 Schema: shibanshu.context.v1
 Profile: analysis (Analysis)
-Fingerprint: 2eb2e578c15b3dd8c9988589
+Fingerprint: df3ef911d3899cdb1042ade8
 Root: /Users/shibanshujha/Documents/markdown-viewer-mac
-Files indexed: 175
-Markdown/text files: 20
-Code/config files: 155
+Files indexed: 184
+Markdown/text files: 21
+Code/config files: 163
 Resolved links: 4
 Unresolved links: 2
 Limits: max 5000 files, max 768000 bytes per file, max depth 24
@@ -26,7 +26,7 @@ Useful prompts:
 
 ## LLM Navigation Model
 
-This map includes 9 folder/topic clusters, 7 ranked hubs, 2 bridge files, and 168 orphan files.
+This map includes 9 folder/topic clusters, 7 ranked hubs, 2 bridge files, and 177 orphan files.
 Use the routes below to traverse the context with less token waste:
 
 - Orientation Route: Start here to understand the repo or vault shape before reading detailed files.
@@ -86,36 +86,36 @@ Use the routes below to traverse the context with less token waste:
   - android/app/src/main/assets/public/assets/cytoscape.esm-B3I8pqwA.js
   - android/app/src/main/assets/public/assets/chunk-KEIR6QF5-BfrZ3jm6.js
   - android/app/src/main/assets/public/assets/swimlanes-5IMT3BWC-cqwfyrHk.js
-- docs — 22 files, 42079 words, 0 internal links, 0 external links
+- docs — 30 files, 53272 words, 0 internal links, 0 external links
   - docs/marketing/ads/explorer-v4.html
   - docs/marketing/ads/explorer-resourceai.html
   - docs/marketing/ads/explorer-v2.html
   - docs/marketing/ads/explorer-v3.html
-- scripts — 18 files, 27214 words, 0 internal links, 1 external links
+- scripts — 19 files, 27523 words, 0 internal links, 1 external links
   - scripts/stress-check.mjs
   - scripts/export-claude-map.mjs
   - scripts/smoke-check.mjs
   - scripts/publish-static-site.mjs
-- / — 10 files, 30127 words, 0 internal links, 0 external links
+- / — 10 files, 30075 words, 0 internal links, 0 external links
   - package-lock.json
   - mcp-server.mjs
   - index.html
   - README.md
-- packages — 5 files, 14472 words, 0 internal links, 0 external links
+- packages — 5 files, 14399 words, 0 internal links, 0 external links
   - packages/mcp-server/export-context.mjs
   - packages/mcp-server/mcp-server.mjs
   - packages/mcp-server/package-lock.json
   - packages/mcp-server/README.md
-- src — 5 files, 25111 words, 2 internal links, 0 external links
+- src — 5 files, 25908 words, 2 internal links, 0 external links
   - src/renderer.js
   - src/styles.css
   - src/index.html
   - src/capacitor-bridge.js
-- skills — 3 files, 995 words, 1 internal links, 0 external links
+- skills — 3 files, 1001 words, 1 internal links, 0 external links
   - skills/shibanshu-markdown-context/SKILL.md
   - skills/shibanshu-markdown-context/references/workflows.md
   - skills/shibanshu-markdown-context/agents/openai.yaml
-- electron — 2 files, 8051 words, 0 internal links, 0 external links
+- electron — 2 files, 8050 words, 0 internal links, 0 external links
   - electron/main.cjs
   - electron/preload.cjs
 - bin — 1 files, 1192 words, 0 internal links, 0 external links
@@ -145,9 +145,9 @@ Bridges:
 ## Symbol Index
 
 - electron/main.cjs: variable:fs@2, variable:fsp@3, variable:crypto@4, variable:path@5, variable:markdownExtensions@8, variable:ignoredVaultDirectories@9, variable:MAX_MARKDOWN_BYTES@22, variable:MAX_EXPORT_HTML_BYTES@23, variable:MAX_TEXT_EXPORT_BYTES@24, variable:MAX_AUTOSAVE_BYTES@25, variable:MAX_AUTOSAVE_DOCUMENTS@26, variable:MAX_HISTORY_SNAPSHOT_BYTES@27
-- mcp-server.mjs: variable:execFileAsync@25, variable:__dirname@26, variable:CLI_PATH@27, variable:EXPORT_SCRIPT@28, variable:MARKDOWN_EXTENSIONS@30, variable:IGNORED_DIRS@31, variable:MAX_VAULT_FILES@32, variable:MAX_VAULT_DEPTH@33, variable:MAX_FILE_SIZE@34, variable:MAX_SEARCH_RESULTS@35, variable:TOOLS@39, function:isMarkdownFile@282
+- mcp-server.mjs: variable:execFileAsync@25, variable:__dirname@26, variable:CLI_PATH@27, variable:EXPORT_SCRIPT@28, variable:MARKDOWN_EXTENSIONS@30, variable:IGNORED_DIRS@31, variable:MAX_VAULT_FILES@32, variable:MAX_VAULT_DEPTH@33, variable:MAX_FILE_SIZE@34, variable:MAX_SEARCH_RESULTS@35, variable:TOOLS@39, function:isMarkdownFile@288
 - packages/mcp-server/export-context.mjs: variable:MARKDOWN_EXTENSIONS@5, variable:CODE_EXTENSIONS@6, variable:IGNORED_DIRECTORIES@25, variable:DEFAULT_MAX_FILES@43, variable:DEFAULT_MAX_BYTES@44, variable:DEFAULT_MAX_DEPTH@45, variable:DEFAULT_OUTPUT_DIR@46, variable:DEFAULT_CHUNK_TOKENS@47, variable:MAX_CHUNKS@48, variable:DEFAULT_SCENE_NODE_LIMIT@49, variable:DEFAULT_SCENE_EDGE_LIMIT@50, variable:DEFAULT_SCENE_PERSPECTIVE@51
-- packages/mcp-server/mcp-server.mjs: variable:execFileAsync@25, variable:__dirname@26, variable:CLI_PATH@27, variable:EXPORT_SCRIPT@28, variable:MARKDOWN_EXTENSIONS@30, variable:IGNORED_DIRS@31, variable:MAX_VAULT_FILES@32, variable:MAX_VAULT_DEPTH@33, variable:MAX_FILE_SIZE@34, variable:MAX_SEARCH_RESULTS@35, variable:TOOLS@39, function:isMarkdownFile@282
+- packages/mcp-server/mcp-server.mjs: variable:execFileAsync@25, variable:__dirname@26, variable:CLI_PATH@27, variable:EXPORT_SCRIPT@28, variable:MARKDOWN_EXTENSIONS@30, variable:IGNORED_DIRS@31, variable:MAX_VAULT_FILES@32, variable:MAX_VAULT_DEPTH@33, variable:MAX_FILE_SIZE@34, variable:MAX_SEARCH_RESULTS@35, variable:TOOLS@39, function:isMarkdownFile@288
 - scripts/export-claude-map.mjs: variable:MARKDOWN_EXTENSIONS@5, variable:CODE_EXTENSIONS@6, variable:IGNORED_DIRECTORIES@25, variable:DEFAULT_MAX_FILES@43, variable:DEFAULT_MAX_BYTES@44, variable:DEFAULT_MAX_DEPTH@45, variable:DEFAULT_OUTPUT_DIR@46, variable:DEFAULT_CHUNK_TOKENS@47, variable:MAX_CHUNKS@48, variable:DEFAULT_SCENE_NODE_LIMIT@49, variable:DEFAULT_SCENE_EDGE_LIMIT@50, variable:DEFAULT_SCENE_PERSPECTIVE@51
 - scripts/generate-app-icon.mjs: variable:root@5, variable:buildDir@6, variable:iconsetDir@7, variable:baseIconPath@8, variable:iconPath@9, variable:icoPath@10, variable:iconEntries@12, variable:crcTable@25, variable:value@26, variable:sampleOffsets@33, variable:pngBySize@41, function:createIconPng@60
 - scripts/publish-static-site.mjs: variable:MARKDOWN_EXTENSIONS@8, variable:IGNORED_DIRECTORIES@9, variable:DEFAULT_MAX_FILES@22, variable:DEFAULT_MAX_BYTES@23, variable:DEFAULT_MAX_DEPTH@24, variable:MAX_TOTAL_BYTES@25, variable:DEFAULT_PROFILE_PATH@26, function:main@35, variable:inputRoot@42, variable:inputStats@47, variable:profileInfo@52, variable:settings@58
@@ -171,10 +171,12 @@ Bridges:
 - scripts/sign-dev-mac.mjs: variable:root@5, variable:arch@6, variable:appPath@7, variable:infoPlistPath@8, function:getArg@20, variable:index@21, function:resolveAppPath@26, variable:productName@27, variable:releaseDir@28, variable:candidates@29, function:patchInfoPlist@46, function:run@57
 - docs/obsidian-parity-plan.md: heading:Obsidian Feature-Parity Plan@1, heading:Feature Inventory To Match For Free@11, heading:Parity Plan 0: Writing Core@26, heading:Parity Plan 1: Local Vault@53, heading:Parity Plan 2: Graph View@83, heading:Parity Plan 3: Canvas And Mind Map@121, heading:Parity Plan 4: Publish@164, heading:Parity Plan 5: Sync And Collaboration@197, heading:Parity Plan 6: Plugins, Themes, And Developer API@229, heading:Parity Plan 7: Automation, URL Scheme, And Native Identity@249, heading:Parity Plan 8: Claude, OpenAI, And Local AI Maps@277, heading:Build Order@311
 - docs/marketing/ad-creatives.md: heading:Ad Creatives — Shibanshu Markdown MCP@1, heading:Ad 1: "The Blind Spot" (Problem → Solution)@3, heading:Ad 2: "The Map" (Visual metaphor)@17, heading:Ad 3: "The Numbers" (Benchmark-driven)@33, heading:Ad 4: "The Before/After" (Screencast-style)@55, heading:Ad 5: "The Impossible" (Edge case that sells)@94, heading:Ad 6: "The Dev Tool Tax" (Cost angle — for API users)@118, heading:Reddit Post Templates@150, heading:r/ClaudeAI Post:@152, heading:r/programming Post:@183, heading:Hacker News Submission@199
+- scripts/render-repo-brain-video.mjs: variable:root@6, variable:htmlPath@7, variable:outDir@8, variable:targetPath@9, variable:posterPath@10, variable:browser@16, variable:context@17, variable:page@26, variable:video@31, variable:recordedPath@39, variable:info@41
 - scripts/validate-syntax.mjs: variable:root@7, variable:checkedExtensions@8, variable:ignoredDirectories@9, variable:files@21, variable:failures@22, variable:result@25, function:discoverJavaScriptFiles@47, variable:result@48, function:walk@50, variable:entries@51, variable:absolutePath@56
 - docs/premium-roadmap.md: heading:Free Professional Markdown App Roadmap@1, heading:End Goal@5, heading:Plan 1: Data Safety And File Correctness@9, heading:Plan 2: Security And Native Bridge Hardening@41, heading:Plan 3: Professional Editor Core@62, heading:Plan 4: Workspace, Library, And Navigation@90, heading:Plan 5: Preview And Export System@133, heading:Plan 6: UX, Accessibility, And Native Mac Polish@154, heading:Plan 7: Differentiators@186
-- packages/mcp-server/README.md: heading:shibanshu-markdown-mcp@1, heading:The problem@5, heading:The solution@9, heading:What it does@28, heading:Real benchmarks (tested on production repos)@38, heading:19 tools@48, heading:How it works@72, heading:Install@92, heading:License@102
+- packages/mcp-server/README.md: heading:athena-code-mcp@1, heading:The problem@5, heading:The solution@9, heading:What it does@28, heading:Real benchmarks (tested on production repos)@38, heading:19 tools@48, heading:How it works@72, heading:Install@92, heading:License@102
 - skills/shibanshu-markdown-context/SKILL.md: heading:Shibanshu Markdown Context@6, heading:MCP Server (Recommended)@10, heading:Available MCP Tools@25, heading:Scene and 3D Payload@46, heading:MCP Workflow@59, heading:CLI Workflow (Alternative)@70, heading:Navigation Rules@93, heading:Safe Operation@102, heading:Reference@110
+- docs/marketing/repo-brain-one-pager.md: heading:Shibanshu Markdown Viewer: The Repo Brain@1, heading:The Big Idea@3, heading:Why This Is Big@9, heading:Reason To Believe@20, heading:Why It Can Feel Groundbreaking@31, heading:The Market Hook@43, heading:What The Video Should Prove@51, heading:Final Positioning@61
 - docs/mega-stress-test-plan.md: heading:Mega Stress Test And Premium Gap Plan@1, heading:Plan 1: Extreme Test Gates@5, heading:Plan 2: Large Repository Context And Mind Maps@29, heading:Plan 3: Premium Graph And Mind Map Interaction@55, heading:Plan 4: LLM Skill@78, heading:Plan 5: Installable Offline Distribution@98, heading:Plan 6: Security And File Safety@127, heading:Plan 7: Completion Audit@148
 - scripts/install-git-hook.mjs: variable:__dirname@12, variable:exportScript@13, variable:repoPath@15, variable:absRepo@21, variable:hooksDir@22, variable:hookPath@23, variable:hookScript@25, variable:existing@37
 - README.md: heading:Shibanshu Markdown Viewer@1, heading:What It Does@7, heading:Commands@36, heading:URL Scheme@164, heading:CLI@176, heading:Architecture@198, heading:Security@218
@@ -249,13 +251,13 @@ Bridges:
 
 ## High-Signal Files
 
-- src/renderer.js — 2 links, 11688 words, 4 headings
+- src/renderer.js — 2 links, 12313 words, 4 headings
 - scripts/stress-check.mjs — 1 links, 1971 words, 0 headings
 - skills/shibanshu-markdown-context/references/workflows.md — 1 links, 301 words, 6 headings
-- skills/shibanshu-markdown-context/SKILL.md — 1 links, 663 words, 9 headings
+- skills/shibanshu-markdown-context/SKILL.md — 1 links, 669 words, 9 headings
 - src/capacitor-bridge.js — 1 links, 1547 words, 0 headings
-- src/index.html — 1 links, 3290 words, 0 headings
-- src/styles.css — 1 links, 8510 words, 0 headings
+- src/index.html — 1 links, 3291 words, 0 headings
+- src/styles.css — 1 links, 8681 words, 0 headings
 
 ## Folder Map
 
@@ -266,11 +268,11 @@ Bridges:
 - bin — 1 file
 - docs — 9 files
 - docs/download — 1 file
-- docs/marketing — 3 files
-- docs/marketing/ads — 9 files
+- docs/marketing — 4 files
+- docs/marketing/ads — 16 files
 - electron — 2 files
 - packages/mcp-server — 5 files
-- scripts — 18 files
+- scripts — 19 files
 - skills/shibanshu-markdown-context — 1 file
 - skills/shibanshu-markdown-context/agents — 1 file
 - skills/shibanshu-markdown-context/references — 1 file
@@ -1682,6 +1684,54 @@ Bridges:
 - Imports: None
 - Excerpt: <!DOCTYPE html <html <head <meta charset="UTF 8" <style { margin: 0; padding: 0; box sizing: border box; } body { background: 0a0e14; overflow: hidden; font family: apple system, BlinkMacSystemFont, 'Segoe UI', sans serif; } canvas { display: block; } .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer events: none; } .top label { position: absolute; top: 32px; left: 40px; } .top lab...
 
+### docs/marketing/ads/ad-animation.html
+- Type: code
+- Size: 13122 bytes
+- Words: 1312
+- Lines: 384
+- Headings: None
+- Tags: None
+- Aliases: None
+- Symbols: None
+- Imports: None
+- Excerpt: <!DOCTYPE html <html <head <meta charset="UTF 8" <title Ad Animation — 30s Loop</title <style {margin:0;padding:0;box sizing:border box} body{background: 000;overflow:hidden;width:1920px;height:1080px} canvas{display:block} </style </head <body <canvas id="c" width="1920" height="1080" </canvas <script const cv=document.getElementById 'c' ,cx=cv.getContext '2d' ,W=1920,H=1080; const TEAL=' 5eead4',PURPLE=' c4b5fd'...
+
+### docs/marketing/ads/ad-apple-premium.html
+- Type: code
+- Size: 15086 bytes
+- Words: 1628
+- Lines: 392
+- Headings: None
+- Tags: None
+- Aliases: None
+- Symbols: None
+- Imports: None
+- Excerpt: <!DOCTYPE html <html <head <meta charset="UTF 8" <title shibanshu markdown mcp — Premium Ad</title <style {margin:0;padding:0;box sizing:border box} body{background: 000;overflow:hidden;width:100vw;height:100vh} canvas{display:block;position:fixed;top:0;left:0} </style </head <body <canvas id="c" </canvas <script const cv=document.getElementById 'c' ,cx=cv.getContext '2d' ; let W,H; function rs {W=cv.width=innerWi...
+
+### docs/marketing/ads/ad-athena-final.html
+- Type: code
+- Size: 18784 bytes
+- Words: 2003
+- Lines: 463
+- Headings: None
+- Tags: None
+- Aliases: None
+- Symbols: None
+- Imports: None
+- Excerpt: <!DOCTYPE html <html <head <meta charset="UTF 8" <style @import url 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;0,800;1,300&family=Space+Mono:wght@400;700&display=swap' ; {margin:0;padding:0;box sizing:border box} body{background: 000;overflow:hidden} canvas{display:block} </style </head <body <canvas id="c" </canvas <script const cv=document.getElementById 'c' ,cx=cv.getCon...
+
+### docs/marketing/ads/ad-atlas.html
+- Type: code
+- Size: 14532 bytes
+- Words: 1480
+- Lines: 293
+- Headings: None
+- Tags: None
+- Aliases: None
+- Symbols: None
+- Imports: None
+- Excerpt: <!DOCTYPE html <html <head <meta charset="UTF 8" <style @import url 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;0,800;1,300&family=Space+Mono:wght@400;700&display=swap' ; {margin:0;padding:0;box sizing:border box} body{background: 000;overflow:hidden} canvas{display:block} </style </head <body <canvas id="c" </canvas <script const cv=document.getElementById 'c' ,cx=cv.getCon...
+
 ### docs/marketing/ads/ad-before-after.html
 - Type: code
 - Size: 5111 bytes
@@ -1706,6 +1756,18 @@ Bridges:
 - Imports: None
 - Excerpt: <!DOCTYPE html <html <head <meta charset="UTF 8" <style { margin: 0; padding: 0; box sizing: border box; } body { background: 0d1117; color: e6edf3; font family: apple system, BlinkMacSystemFont, 'Segoe UI', sans serif; display: flex; justify content: center; align items: center; min height: 100vh; } .card { width: 1200px; padding: 80px; } .label { font size: 14px; text transform: uppercase; letter spacing: 2px; c...
 
+### docs/marketing/ads/ad-emotion.html
+- Type: code
+- Size: 13162 bytes
+- Words: 1374
+- Lines: 267
+- Headings: None
+- Tags: None
+- Aliases: None
+- Symbols: None
+- Imports: None
+- Excerpt: <!DOCTYPE html <html <head <meta charset="UTF 8" <style @import url 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;0,800;1,300;1,400&family=Space+Mono:wght@400;700&display=swap' ; {margin:0;padding:0;box sizing:border box} body{background: 000;overflow:hidden} canvas{display:block} </style </head <body <canvas id="c" </canvas <script const cv=document.getElementById 'c' ,cx=cv....
+
 ### docs/marketing/ads/ad-impossible.html
 - Type: code
 - Size: 1995 bytes
@@ -1729,6 +1791,18 @@ Bridges:
 - Symbols: None
 - Imports: None
 - Excerpt: <!DOCTYPE html <html <head <meta charset="UTF 8" <title How Context Mapping Works — resourceai in 924 files </title <style { margin: 0; padding: 0; box sizing: border box; } body { background: 0a0e14; color: e6edf3; font family: apple system, BlinkMacSystemFont, 'Segoe UI', sans serif; overflow: hidden; } canvas { position: fixed; top: 0; left: 0; z index: 0; } .ui { position: relative; z index: 1; pointer events:...
+
+### docs/marketing/ads/ad-split.html
+- Type: code
+- Size: 15760 bytes
+- Words: 1748
+- Lines: 282
+- Headings: None
+- Tags: None
+- Aliases: None
+- Symbols: None
+- Imports: None
+- Excerpt: <!DOCTYPE html <html <head <meta charset="UTF 8" <style @import url 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;0,800;1,300&family=Space+Mono:wght@400;700&display=swap' ; {margin:0;padding:0;box sizing:border box} body{background: 000;overflow:hidden} canvas{display:block} </style </head <body <canvas id="c" </canvas <script const cv=document.getElementById 'c' ,cx=cv.getCon...
 
 ### docs/marketing/ads/explorer-resourceai.html
 - Type: code
@@ -1778,6 +1852,18 @@ Bridges:
 - Imports: None
 - Excerpt: <!DOCTYPE html <html <head <meta charset="UTF 8" <title Code Universe — 3D Interactive Graph</title <style {margin:0;padding:0;box sizing:border box} body{background: 000;color: e6edf3;font family: apple system,sans serif;overflow:hidden;user select:none} @import url 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap' ; canvas{display:block;curs...
 
+### docs/marketing/ads/repo-brain-video.html
+- Type: code
+- Size: 9818 bytes
+- Words: 1020
+- Lines: 291
+- Headings: None
+- Tags: None
+- Aliases: None
+- Symbols: None
+- Imports: None
+- Excerpt: <!DOCTYPE html <html lang="en" <head <meta charset="UTF 8" <meta name="viewport" content="width=device width, initial scale=1.0" <title Repo Brain Video</title <style {box sizing:border box} html,body{margin:0;width:100%;height:100%;overflow:hidden;background: 05070a;color: f7f8fb;font family: apple system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans serif} canvas{display:block;wid...
+
 ### docs/marketing/go-to-market.md
 - Type: markdown
 - Size: 11924 bytes
@@ -1789,6 +1875,18 @@ Bridges:
 - Symbols: heading:Go-To-Market Strategy — shibanshu-markdown-mcp@1, heading:Market Fit Analysis@3, heading:The market exists and is growing fast@5, heading:The pain is real and verified@16, heading:Competition: zero@27, heading:Marketing Channels (ranked by ROI)@42, heading:Tier 1: Free, high-impact (do this week)@44, heading:Tier 2: Content marketing (do in week 2-3)@69, heading:Tier 3: Community building (month 2+)@87, heading:Ad Concepts and Communication@96, heading:Core message hierarchy@98, heading:The 5 ad concepts that will work@112
 - Imports: None
 - Excerpt: Go To Market Strategy — shibanshu markdown mcp Market Fit Analysis The market exists and is growing fast Metric Number Source Claude Code users 1M+ Anthropic blog, May 2025 Cursor paid users 500K+ Cursor funding announcement GitHub Copilot subscribers 1.8M+ GitHub blog MCP servers in official directory 80 modelcontextprotocol/servers repo MCP servers that solve context compression 0 You are first Developers who ha...
+
+### docs/marketing/repo-brain-one-pager.md
+- Type: markdown
+- Size: 3798 bytes
+- Words: 628
+- Lines: 64
+- Headings: Shibanshu Markdown Viewer: The Repo Brain | The Big Idea | Why This Is Big | Reason To Believe | Why It Can Feel Groundbreaking | The Market Hook | What The Video Should Prove | Final Positioning
+- Tags: None
+- Aliases: None
+- Symbols: heading:Shibanshu Markdown Viewer: The Repo Brain@1, heading:The Big Idea@3, heading:Why This Is Big@9, heading:Reason To Believe@20, heading:Why It Can Feel Groundbreaking@31, heading:The Market Hook@43, heading:What The Video Should Prove@51, heading:Final Positioning@61
+- Imports: None
+- Excerpt: Shibanshu Markdown Viewer: The Repo Brain The Big Idea AI coding tools are powerful, but they usually enter a large repo blind. They open files one by one, fill the context window with raw text, and then answer from an incomplete mental model. A lot of wrong output does not start with bad reasoning. It starts earlier: the model read the wrong files, missed the bridge file, ignored the hub, or ran out of usable con...
 
 ### docs/marketing/twitter-thread.md
 - Type: markdown
@@ -1900,8 +1998,8 @@ Bridges:
 
 ### electron/main.cjs
 - Type: code
-- Size: 82756 bytes
-- Words: 7712
+- Size: 82734 bytes
+- Words: 7711
 - Lines: 2581
 - Headings: None
 - Tags: None
@@ -1924,8 +2022,8 @@ Bridges:
 
 ### index.html
 - Type: code
-- Size: 36283 bytes
-- Words: 3274
+- Size: 36196 bytes
+- Words: 3297
 - Lines: 666
 - Headings: None
 - Tags: None
@@ -1936,15 +2034,15 @@ Bridges:
 
 ### mcp-server.mjs
 - Type: code
-- Size: 56339 bytes
-- Words: 3767
-- Lines: 1426
+- Size: 65065 bytes
+- Words: 3692
+- Lines: 1364
 - Headings: Context Map (auto-generated)
 - Tags: None
 - Aliases: None
-- Symbols: variable:execFileAsync@25, variable:__dirname@26, variable:CLI_PATH@27, variable:EXPORT_SCRIPT@28, variable:MARKDOWN_EXTENSIONS@30, variable:IGNORED_DIRS@31, variable:MAX_VAULT_FILES@32, variable:MAX_VAULT_DEPTH@33, variable:MAX_FILE_SIZE@34, variable:MAX_SEARCH_RESULTS@35, variable:TOOLS@39, function:isMarkdownFile@282
-- Imports: @modelcontextprotocol/sdk/server/index.js@11, @modelcontextprotocol/sdk/server/stdio.js@12, node:fs/promises@17, node:fs/promises@18, node:child_process@19, node:util@20, node:path@21, node:url@22, node:crypto@23
-- Excerpt: !/usr/bin/env node / Shibanshu Markdown Viewer — MCP Server Exposes the app's markdown vault, graph, mind map, context map, and note creation capabilities as Model Context Protocol tools that Claude Code or any MCP client can call directly. / import { Server } from '@modelcontextprotocol/sdk/server/index.js'; import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'; import { CallToolRequest...
+- Symbols: variable:execFileAsync@25, variable:__dirname@26, variable:CLI_PATH@27, variable:EXPORT_SCRIPT@28, variable:MARKDOWN_EXTENSIONS@30, variable:IGNORED_DIRS@31, variable:MAX_VAULT_FILES@32, variable:MAX_VAULT_DEPTH@33, variable:MAX_FILE_SIZE@34, variable:MAX_SEARCH_RESULTS@35, variable:TOOLS@39, function:isMarkdownFile@288
+- Imports: @modelcontextprotocol/sdk/server/index.js@11, @modelcontextprotocol/sdk/server/stdio.js@12, node:fs/promises@17, node:fs/promises@18, node:child_process@19, node:util@20, node:path@21, node:url@22, node:crypto@23, ) && !trimmed.startsWith(@1030
+- Excerpt: !/usr/bin/env node / Athena Viewer — MCP Server Exposes the app's markdown vault, graph, mind map, context map, and note creation capabilities as Model Context Protocol tools that Claude Code or any MCP client can call directly. / import { Server } from '@modelcontextprotocol/sdk/server/index.js'; import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'; import { CallToolRequestSchema, List...
 
 ### package-lock.json
 - Type: code
@@ -1984,15 +2082,15 @@ Bridges:
 
 ### packages/mcp-server/mcp-server.mjs
 - Type: code
-- Size: 56310 bytes
-- Words: 3764
-- Lines: 1426
+- Size: 64303 bytes
+- Words: 3692
+- Lines: 1354
 - Headings: Context Map (auto-generated)
 - Tags: None
 - Aliases: None
-- Symbols: variable:execFileAsync@25, variable:__dirname@26, variable:CLI_PATH@27, variable:EXPORT_SCRIPT@28, variable:MARKDOWN_EXTENSIONS@30, variable:IGNORED_DIRS@31, variable:MAX_VAULT_FILES@32, variable:MAX_VAULT_DEPTH@33, variable:MAX_FILE_SIZE@34, variable:MAX_SEARCH_RESULTS@35, variable:TOOLS@39, function:isMarkdownFile@282
+- Symbols: variable:execFileAsync@25, variable:__dirname@26, variable:CLI_PATH@27, variable:EXPORT_SCRIPT@28, variable:MARKDOWN_EXTENSIONS@30, variable:IGNORED_DIRS@31, variable:MAX_VAULT_FILES@32, variable:MAX_VAULT_DEPTH@33, variable:MAX_FILE_SIZE@34, variable:MAX_SEARCH_RESULTS@35, variable:TOOLS@39, function:isMarkdownFile@288
 - Imports: @modelcontextprotocol/sdk/server/index.js@11, @modelcontextprotocol/sdk/server/stdio.js@12, node:fs/promises@17, node:fs/promises@18, node:child_process@19, node:util@20, node:path@21, node:url@22, node:crypto@23
-- Excerpt: !/usr/bin/env node / Shibanshu Markdown Viewer — MCP Server Exposes the app's markdown vault, graph, mind map, context map, and note creation capabilities as Model Context Protocol tools that Claude Code or any MCP client can call directly. / import { Server } from '@modelcontextprotocol/sdk/server/index.js'; import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'; import { CallToolRequest...
+- Excerpt: !/usr/bin/env node / Athena Viewer — MCP Server Exposes the app's markdown vault, graph, mind map, context map, and note creation capabilities as Model Context Protocol tools that Claude Code or any MCP client can call directly. / import { Server } from '@modelcontextprotocol/sdk/server/index.js'; import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'; import { CallToolRequestSchema, List...
 
 ### packages/mcp-server/package-lock.json
 - Type: code
@@ -2004,31 +2102,31 @@ Bridges:
 - Aliases: None
 - Symbols: None
 - Imports: None
-- Excerpt: { "name": "shibanshu markdown mcp", "version": "0.1.0", "lockfileVersion": 3, "requires": true, "packages": { "": { "name": "shibanshu markdown mcp", "version": "0.1.0", "license": "MIT", "dependencies": { "@modelcontextprotocol/sdk": "^1.29.0" }, "bin": { "shibanshu markdown mcp": "mcp server.mjs" }, "engines": { "node": " =18" } }, "node modules/@hono/node server": { "version": "1.19.14", "resolved": "https://re...
+- Excerpt: { "name": "shibanshu markdown mcp", "version": "0.3.1", "lockfileVersion": 3, "requires": true, "packages": { "": { "name": "shibanshu markdown mcp", "version": "0.3.1", "license": "MIT", "dependencies": { "@modelcontextprotocol/sdk": "^1.29.0" }, "bin": { "shibanshu markdown mcp": "mcp server.mjs" }, "engines": { "node": " =18" } }, "node modules/@hono/node server": { "version": "1.19.14", "resolved": "https://re...
 
 ### packages/mcp-server/package.json
 - Type: code
-- Size: 942 bytes
-- Words: 100
+- Size: 923 bytes
+- Words: 99
 - Lines: 41
 - Headings: None
 - Tags: None
 - Aliases: None
 - Symbols: None
 - Imports: None
-- Excerpt: { "name": "shibanshu markdown mcp", "version": "0.2.0", "description": "MCP server for Claude Code — 218x context compression for codebases. Knowledge graphs, navigation routes, auto updating maps, 3D visualizer. 19 tools. One setup command.", "author": "Shibanshu Jha", "license": "MIT", "type": "module", "bin": { "shibanshu markdown mcp": "mcp server.mjs" }, "main": "mcp server.mjs", "files": "mcp server.mjs", "e...
+- Excerpt: { "name": "athena code mcp", "version": "0.3.1", "description": "MCP server for Claude Code — 218x context compression for codebases. Knowledge graphs, navigation routes, auto updating maps, 3D visualizer. 19 tools. One setup command.", "author": "Shibanshu Jha", "license": "MIT", "type": "module", "bin": { "athena mcp": "mcp server.mjs" }, "main": "mcp server.mjs", "files": "mcp server.mjs", "export context.mjs",...
 
 ### packages/mcp-server/README.md
 - Type: markdown
-- Size: 3594 bytes
+- Size: 3549 bytes
 - Words: 310
 - Lines: 105
-- Headings: shibanshu-markdown-mcp | The problem | The solution | What it does | Real benchmarks (tested on production repos) | 19 tools | How it works | Install | License
+- Headings: athena-code-mcp | The problem | The solution | What it does | Real benchmarks (tested on production repos) | 19 tools | How it works | Install | License
 - Tags: None
 - Aliases: None
-- Symbols: heading:shibanshu-markdown-mcp@1, heading:The problem@5, heading:The solution@9, heading:What it does@28, heading:Real benchmarks (tested on production repos)@38, heading:19 tools@48, heading:How it works@72, heading:Install@92, heading:License@102
+- Symbols: heading:athena-code-mcp@1, heading:The problem@5, heading:The solution@9, heading:What it does@28, heading:Real benchmarks (tested on production repos)@38, heading:19 tools@48, heading:How it works@72, heading:Install@92, heading:License@102
 - Imports: None
-- Excerpt: shibanshu markdown mcp MCP server that gives Claude Code a structural map of your codebase — so it reads 3 files instead of 300. The problem Claude Code reads files one by one to understand your repo. A 200 file repo needs 1M+ tokens — 12x Claude's context window. It literally can't fit. Claude works blind. The solution One setup. Zero effort. Claude automatically understands your architecture. Then in any repo: T...
+- Excerpt: athena code mcp MCP server that gives Claude Code a structural map of your codebase — so it reads 3 files instead of 300. The problem Claude Code reads files one by one to understand your repo. A 200 file repo needs 1M+ tokens — 12x Claude's context window. It literally can't fit. Claude works blind. The solution One setup. Zero effort. Claude automatically understands your architecture. Then in any repo: That's i...
 
 ### README.md
 - Type: markdown
@@ -2044,9 +2142,9 @@ Bridges:
 
 ### scripts/browser-ui-smoke.mjs
 - Type: code
-- Size: 24571 bytes
-- Words: 2798
-- Lines: 509
+- Size: 25647 bytes
+- Words: 2882
+- Lines: 530
 - Headings: None
 - Tags: None
 - Aliases: None
@@ -2080,7 +2178,7 @@ Bridges:
 
 ### scripts/export-claude-map.mjs
 - Type: code
-- Size: 88942 bytes
+- Size: 88924 bytes
 - Words: 7331
 - Lines: 2476
 - Headings: None
@@ -2116,10 +2214,10 @@ Bridges:
 
 ### scripts/install-git-hook.mjs
 - Type: code
-- Size: 1796 bytes
-- Words: 224
+- Size: 1769 bytes
+- Words: 223
 - Lines: 57
-- Headings: Auto-regenerate context map after each commit | Installed by shibanshu-markdown-mcp
+- Headings: Auto-regenerate context map after each commit | Installed by athena-mcp
 - Tags: None
 - Aliases: None
 - Symbols: variable:__dirname@12, variable:exportScript@13, variable:repoPath@15, variable:absRepo@21, variable:hooksDir@22, variable:hookPath@23, variable:hookScript@25, variable:existing@37
@@ -2197,6 +2295,18 @@ Bridges:
 - Symbols: variable:root@7, variable:releaseDir@8, variable:packageJson@9, variable:productName@10, variable:arch@11, variable:publicMode@12, variable:appPath@13, variable:checks@14, variable:report@23, function:getArg@31, variable:index@32, function:resolveAppPath@37
 - Imports: node:fs/promises@3, node:child_process@4, node:path@5
 - Excerpt: !/usr/bin/env node import { access, mkdir, readFile, writeFile } from 'node:fs/promises'; import { spawnSync } from 'node:child process'; import path from 'node:path'; const root = process.cwd ; const releaseDir = path.join root, 'release' ; const packageJson = JSON.parse await readFile path.join root, 'package.json' , 'utf8' ; const productName = packageJson.build?.productName packageJson.name; const arch = getAr...
+
+### scripts/render-repo-brain-video.mjs
+- Type: code
+- Size: 1623 bytes
+- Words: 226
+- Lines: 45
+- Headings: None
+- Tags: None
+- Aliases: None
+- Symbols: variable:root@6, variable:htmlPath@7, variable:outDir@8, variable:targetPath@9, variable:posterPath@10, variable:browser@16, variable:context@17, variable:page@26, variable:video@31, variable:recordedPath@39, variable:info@41
+- Imports: playwright@1, node:fs/promises@2, node:path@3, node:url@4
+- Excerpt: import { chromium } from 'playwright'; import { mkdir, rename, rm, stat } from 'node:fs/promises'; import path from 'node:path'; import { fileURLToPath, pathToFileURL } from 'node:url'; const root = path.dirname path.dirname fileURLToPath import.meta.url ; const htmlPath = path.join root, 'docs', 'marketing', 'ads', 'repo brain video.html' ; const outDir = path.join root, 'docs', 'marketing', 'ads', 'output' ; con...
 
 ### scripts/sign-dev-mac.mjs
 - Type: code
@@ -2296,15 +2406,15 @@ Bridges:
 
 ### skills/shibanshu-markdown-context/SKILL.md
 - Type: markdown
-- Size: 5709 bytes
-- Words: 663
+- Size: 5763 bytes
+- Words: 669
 - Lines: 113
 - Headings: Shibanshu Markdown Context | MCP Server (Recommended) | Available MCP Tools | Scene and 3D Payload | MCP Workflow | CLI Workflow (Alternative) | Navigation Rules | Safe Operation | Reference
 - Tags: #tags
 - Aliases: None
 - Symbols: heading:Shibanshu Markdown Context@6, heading:MCP Server (Recommended)@10, heading:Available MCP Tools@25, heading:Scene and 3D Payload@46, heading:MCP Workflow@59, heading:CLI Workflow (Alternative)@70, heading:Navigation Rules@93, heading:Safe Operation@102, heading:Reference@110
 - Imports: None
-- Excerpt: name: shibanshu markdown context description: Use Shibanshu Markdown Viewer as a local first Markdown vault, graph, mind map, static publish, and LLM context system. Available as an MCP server with 16 tools. Trigger when an agent needs to inspect or create a local knowledge base, export Claude/OpenAI ready context maps, navigate large repositories, generate mind maps or knowledge graphs, search vaults, find backli...
+- Excerpt: name: shibanshu markdown context description: Use shibanshu markdown context through Shibanshu Markdown Viewer as a local first Markdown vault, graph, mind map, static publish, and LLM context system. Available as an MCP server with 16 tools. Trigger when an agent needs to inspect or create a local knowledge base, export Claude/OpenAI ready context maps, navigate large repositories, generate mind maps or knowledge...
 
 ### src/capacitor-bridge.js
 - Type: code
@@ -2320,8 +2430,8 @@ Bridges:
 
 ### src/index.html
 - Type: code
-- Size: 36096 bytes
-- Words: 3290
+- Size: 36105 bytes
+- Words: 3291
 - Lines: 665
 - Headings: None
 - Tags: None
@@ -2332,9 +2442,9 @@ Bridges:
 
 ### src/renderer.js
 - Type: code
-- Size: 326254 bytes
-- Words: 11688
-- Lines: 9429
+- Size: 332225 bytes
+- Words: 12313
+- Lines: 9546
 - Headings: Tasks | Notes | Goals | Log
 - Tags: None
 - Aliases: None
@@ -2356,9 +2466,9 @@ Bridges:
 
 ### src/styles.css
 - Type: code
-- Size: 54923 bytes
-- Words: 8510
-- Lines: 3163
+- Size: 56011 bytes
+- Words: 8681
+- Lines: 3210
 - Headings: None
 - Tags: None
 - Aliases: None

@@ -1,15 +1,15 @@
 {
   "schemaVersion": "shibanshu.context.v1",
   "exporterVersion": "0.2.0",
-  "generatedAt": "2026-07-05T16:49:22.064Z",
+  "generatedAt": "2026-07-06T01:54:09.049Z",
   "profile": "analysis",
   "profileLabel": "Analysis",
-  "fingerprint": "2eb2e578c15b3dd8c9988589",
+  "fingerprint": "df3ef911d3899cdb1042ade8",
   "root": "/Users/shibanshujha/Documents/markdown-viewer-mac",
   "counts": {
-    "files": 175,
-    "markdown": 20,
-    "code": 155,
+    "files": 184,
+    "markdown": 21,
+    "code": 163,
     "edges": 4,
     "unresolved": 2,
     "clusters": 9,
@@ -35,44 +35,44 @@
     {
       "key": "contextMap",
       "file": "claude-context-map.md",
-      "bytes": 145417,
-      "lines": 2392,
-      "sha256": "48f0f7b012eee85af1af3363cbdd22fd951138844d7cfc28a3e6d33daae4c33e"
+      "bytes": 152243,
+      "lines": 2502,
+      "sha256": "e9719d9dd92f96890cc9b13f5657d23f994758320398f3de08c4a6c9254b3ac9"
     },
     {
       "key": "mindMap",
       "file": "claude-context-mind-map.md",
-      "bytes": 8360,
+      "bytes": 8361,
       "lines": 251,
-      "sha256": "ce19ba6d2b66e12d5758839ba3f8483c18c697b1a81bc7c3d2d6fc6b08344d89"
+      "sha256": "7a585dba7d53e3ddd0676a985897ee36506a28176fd73b7d82f097a412180d06"
     },
     {
       "key": "navigation",
       "file": "claude-context-navigation.md",
-      "bytes": 25870,
-      "lines": 373,
-      "sha256": "d8b8adbcf126b1d76f3b9562b0376500b3ceac832a499acb7a9ce8f63e6f8890"
+      "bytes": 26277,
+      "lines": 374,
+      "sha256": "45348c8e60ec75298b6cb11a5716ef8014e95498a55a0b370846b8a3518f87fd"
     },
     {
       "key": "chunks",
       "file": "llm-context-chunks.jsonl",
-      "bytes": 6223918,
-      "lines": 854,
-      "sha256": "21ad385621fb3efa0f1fbb935e131f0397d46d34e7fe8005eefea70aca909ffa"
+      "bytes": 6369625,
+      "lines": 894,
+      "sha256": "54e76111ff2cf2a86d68f98812090318f662d9fd83b2e63c8b421baee30a51ad"
     },
     {
       "key": "graph",
       "file": "claude-context-graph.json",
-      "bytes": 331484,
-      "lines": 14241,
-      "sha256": "20e7a805f419b85d742ca23bf1ea4d7fee3d2c78e7876443ad035d37bece5544"
+      "bytes": 340224,
+      "lines": 14619,
+      "sha256": "530295fbefdb775e4685686fc99041c91f494ecdba322921f2c3e709d0d96e65"
     },
     {
       "key": "scene",
       "file": "claude-context-scene.json",
-      "bytes": 283223,
-      "lines": 11816,
-      "sha256": "2b929e86bc49e585322bffbc003e278f16775edb2a63ec4172a7924041aec744"
+      "bytes": 293778,
+      "lines": 12288,
+      "sha256": "be644a80682cca6167006e55b209e5be3b703b0bab8feefd690421bf5f1267af"
     }
   ],
   "warnings": [

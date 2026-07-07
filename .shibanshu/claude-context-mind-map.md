@@ -1,11 +1,11 @@
 # Claude Context Mind Map
 
-Generated: 2026-07-05T16:49:22.064Z
+Generated: 2026-07-06T01:54:09.049Z
 Schema: shibanshu.context.v1
 Profile: analysis (Analysis)
-Fingerprint: 2eb2e578c15b3dd8c9988589
+Fingerprint: df3ef911d3899cdb1042ade8
 Root: /Users/shibanshujha/Documents/markdown-viewer-mac
-Files indexed: 175
+Files indexed: 184
 Resolved links: 4
 Unresolved links: 2
 Limits: max 5000 files, max 768000 bytes per file, max depth 24
@@ -171,11 +171,11 @@ mindmap
         android/app/src/main/assets/public/assets/katex-CddkPoXu.js
         android/app/src/main/assets/public/assets/cytoscape.esm-B3I8pqwA.js
         android/app/src/main/assets/public/assets/chunk-KEIR6QF5-BfrZ3jm6.js
-      docs - 22 files
+      docs - 30 files
         docs/marketing/ads/explorer-v4.html
         docs/marketing/ads/explorer-resourceai.html
         docs/marketing/ads/explorer-v2.html
-      scripts - 18 files
+      scripts - 19 files
         scripts/stress-check.mjs
         scripts/export-claude-map.mjs
         scripts/smoke-check.mjs
@@ -208,11 +208,11 @@ mindmap
       bin — 1 file
       docs — 9 files
       docs/download — 1 file
-      docs/marketing — 3 files
-      docs/marketing/ads — 9 files
+      docs/marketing — 4 files
+      docs/marketing/ads — 16 files
       electron — 2 files
       packages/mcp-server — 5 files
-      scripts — 18 files
+      scripts — 19 files
       skills/shibanshu-markdown-context — 1 file
       skills/shibanshu-markdown-context/agents — 1 file
       skills/shibanshu-markdown-context/references — 1 file
@@ -241,10 +241,10 @@ mindmap
 
 ## Source Nodes
 
-- src/renderer.js: 11688 words, 9429 lines, 4 headings
+- src/renderer.js: 12313 words, 9546 lines, 4 headings
 - scripts/stress-check.mjs: 1971 words, 341 lines, 0 headings
 - skills/shibanshu-markdown-context/references/workflows.md: 301 words, 77 lines, 6 headings
-- skills/shibanshu-markdown-context/SKILL.md: 663 words, 113 lines, 9 headings
+- skills/shibanshu-markdown-context/SKILL.md: 669 words, 113 lines, 9 headings
 - src/capacitor-bridge.js: 1547 words, 453 lines, 0 headings
-- src/index.html: 3290 words, 665 lines, 0 headings
-- src/styles.css: 8510 words, 3163 lines, 0 headings
+- src/index.html: 3291 words, 665 lines, 0 headings
+- src/styles.css: 8681 words, 3210 lines, 0 headings

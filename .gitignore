@@ -14,3 +14,10 @@ yarn-error.log*
 android/
 .capacitor/
 .athena/
+.env
+*.env
+node_modules/
+*.db
+*.sqlite
+venv/
+.venv/

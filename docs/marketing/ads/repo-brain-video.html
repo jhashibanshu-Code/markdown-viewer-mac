@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Repo Brain Video</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070a;color:#f7f8fb;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif}
+canvas{display:block;width:100vw;height:100vh}
+</style>
+</head>
+<body>
+<canvas id="scene" aria-label="Animated repo brain advertisement"></canvas>
+<script>
+const canvas=document.getElementById('scene');
+const ctx=canvas.getContext('2d');
+const TAU=Math.PI*2;
+const DURATION=23;
+let width=0,height=0,start=0,last=0,elapsed=0;
+
+function resize(){
+  const dpr=Math.min(devicePixelRatio||1,2);
+  width=Math.floor(innerWidth*dpr);
+  height=Math.floor(innerHeight*dpr);
+  canvas.width=width;
+  canvas.height=height;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  width=innerWidth;
+  height=innerHeight;
+}
+resize();
+addEventListener('resize',resize);
+
+const files=[
+  'CLAUDE.md','AGENTS.md','src/renderer.js','mcp-server.mjs','scripts/export-map.mjs',
+  'docs/architecture.md','src/graph/index.ts','src/context/routes.ts','README.md','package.json',
+  'src/search/vault.ts','src/editor/tabs.ts','src/preview/markdown.ts','docs/release.md',
+  'src/ai/context.ts','src/map/hubs.ts','src/map/bridges.ts','src/map/orphans.ts'
+];
+
+const nodes=[];
+const edges=[];
+const colors=[
+  [117,231,205],[148,197,255],[255,199,111],[255,134,151],[207,186,255],[190,243,128]
+];
+
+for(let i=0;i<120;i++){
+  const cluster=i%6;
+  const ring=90+Math.floor(i/6)*8;
+  const angle=i*2.39996323;
+  nodes.push({
+    id:i,
+    cluster,
+    x:Math.cos(angle)*ring+(cluster-2.5)*42,
+    y:Math.sin(angle)*ring*0.62+Math.sin(cluster)*35,
+    z:Math.sin(angle*0.73)*240+cluster*22,
+    r:cluster===0||i%17===0?5.6:2.6+Math.random()*1.8,
+    color:colors[cluster],
+    hub:i%23===0||cluster===0&&i%9===0
+  });
+}
+
+for(let i=0;i<nodes.length;i++){
+  const a=nodes[i];
+  for(let j=i+1;j<nodes.length;j++){
+    const b=nodes[j];
+    const same=a.cluster===b.cluster;
+    if((same&&Math.random()<0.045)||(!same&&Math.random()<0.006)){
+      edges.push([i,j,Math.random()]);
+    }
+  }
+}
+for(let i=0;i<22;i++) edges.push([i,(i*13+29)%nodes.length,Math.random()]);
+
+function clamp(v){return Math.max(0,Math.min(1,v))}
+function ease(v){v=clamp(v);return v<0.5?4*v*v*v:1-Math.pow(-2*v+2,3)/2}
+function inout(t,s,d){return ease((t-s)/d)}
+function fade(t,s,d){return 1-ease((t-s)/d)}
+function alphaInOut(t,s,life,edge=0.8){return Math.min(inout(t,s,edge),fade(t,s+life-edge,edge))}
+
+function clear(){
+  const g=ctx.createLinearGradient(0,0,width,height);
+  g.addColorStop(0,'#06080d');
+  g.addColorStop(0.48,'#0b1018');
+  g.addColorStop(1,'#040507');
+  ctx.fillStyle=g;
+  ctx.fillRect(0,0,width,height);
+  const radial=ctx.createRadialGradient(width*0.55,height*0.42,0,width*0.55,height*0.42,width*0.72);
+  radial.addColorStop(0,'rgba(67, 232, 198, 0.09)');
+  radial.addColorStop(0.35,'rgba(124, 163, 255, 0.045)');
+  radial.addColorStop(1,'rgba(0, 0, 0, 0)');
+  ctx.fillStyle=radial;
+  ctx.fillRect(0,0,width,height);
+}
+
+function text(str,x,y,size,weight='600',color='#f7f8fb',alpha=1,align='left',lineHeight=1.18){
+  if(alpha<=0.01)return;
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  ctx.fillStyle=color;
+  ctx.font=`${weight} ${size}px -apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif`;
+  ctx.textAlign=align;
+  const lines=String(str).split('\n');
+  for(let i=0;i<lines.length;i++) ctx.fillText(lines[i],x,y+i*size*lineHeight);
+  ctx.restore();
+}
+
+function pill(label,x,y,w,alpha,color='rgba(255,255,255,0.08)'){
+  if(alpha<=0.01)return;
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  ctx.fillStyle=color;
+  ctx.strokeStyle='rgba(255,255,255,0.14)';
+  ctx.lineWidth=1;
+  roundRect(x,y,w,36,18);
+  ctx.fill();
+  ctx.stroke();
+  text(label,x+w/2,y+24,14,'650','#f5f7fb',alpha,'center');
+  ctx.restore();
+}
+
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+function project(n,t,scale=1){
+  const rot=t*0.18;
+  const x=n.x*Math.cos(rot)-n.z*Math.sin(rot);
+  const z=n.x*Math.sin(rot)+n.z*Math.cos(rot);
+  const y=n.y*Math.cos(rot*0.42)-z*Math.sin(rot*0.42)*0.14;
+  const perspective=700/(760+z);
+  return {
+    x:width*0.56+x*perspective*scale,
+    y:height*0.51+y*perspective*scale,
+    s:perspective,
+    z
+  };
+}
+
+function drawGraph(t,alpha,scale=1,pulse=0){
+  if(alpha<=0.01)return;
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  const projected=nodes.map(n=>project(n,t,scale));
+  for(const [ai,bi,phase] of edges){
+    const a=projected[ai],b=projected[bi];
+    const n=nodes[ai];
+    const [r,g,bv]=n.color;
+    const edgePulse=0.18+0.22*Math.max(0,Math.sin(t*2.8+phase*TAU+pulse*TAU));
+    ctx.strokeStyle=`rgba(${r},${g},${bv},${edgePulse*alpha})`;
+    ctx.lineWidth=Math.max(0.4,(a.s+b.s)*0.55);
+    ctx.beginPath();
+    const cx=(a.x+b.x)/2+(b.y-a.y)*0.035;
+    const cy=(a.y+b.y)/2-(b.x-a.x)*0.035;
+    ctx.moveTo(a.x,a.y);
+    ctx.quadraticCurveTo(cx,cy,b.x,b.y);
+    ctx.stroke();
+  }
+  for(let i=0;i<nodes.length;i++){
+    const n=nodes[i],p=projected[i];
+    const [r,g,b]=n.color;
+    const active=n.hub||Math.sin(t*2+i*0.37+pulse*6)>0.72;
+    const radius=(n.r+(active?2.4:0))*p.s*scale;
+    if(n.hub){
+      const glow=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,radius*7);
+      glow.addColorStop(0,`rgba(${r},${g},${b},${0.18*alpha})`);
+      glow.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=glow;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,radius*7,0,TAU);
+      ctx.fill();
+    }
+    ctx.fillStyle=`rgba(${r},${g},${b},${(active?0.96:0.62)*alpha})`;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,Math.max(1.2,radius),0,TAU);
+    ctx.fill();
+    ctx.strokeStyle=`rgba(255,255,255,${0.38*alpha})`;
+    ctx.lineWidth=0.8;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawWrongReads(t){
+  const a=alphaInOut(t,0.2,6.4,0.8);
+  if(a<=0.01)return;
+  const left=Math.max(48,width*0.075);
+  const top=height*0.19;
+  text('The model is smart.',left,top,52,'760','#f8fafc',a);
+  text('The repo is bigger than its working memory.',left,top+64,30,'520','#a8b3c7',a);
+  text('Wrong output usually starts before the answer:\nit read the wrong files.',left,top+142,30,'680','#ffb4bf',a);
+
+  const boxX=left;
+  const boxY=top+244;
+  ctx.save();
+  ctx.globalAlpha=a;
+  ctx.fillStyle='rgba(255,255,255,0.055)';
+  ctx.strokeStyle='rgba(255,255,255,0.12)';
+  ctx.lineWidth=1;
+  roundRect(boxX,boxY,560,250,22);
+  ctx.fill();
+  ctx.stroke();
+  text('AI context run',boxX+28,boxY+42,16,'700','#d8dee9',a);
+  const progress=clamp((t-1.3)/4.8);
+  for(let i=0;i<files.length;i++){
+    const row=boxY+72+i*22;
+    if(row>boxY+220)break;
+    const visible=progress*files.length>i;
+    text((visible?'Reading ':'Waiting  ')+files[i],boxX+28,row,14,'550',visible?'#f0f3f8':'#5a6374',a*(visible?0.9:0.45));
+  }
+  const cost=2.4+progress*4.68;
+  text(`$${cost.toFixed(2)}`,boxX+435,boxY+55,34,'780','#ffc56f',a,'right');
+  text('context tax',boxX+450,boxY+55,14,'650','#8d98aa',a,'left');
+  ctx.restore();
+}
+
+function drawTransformation(t){
+  const a=alphaInOut(t,5.4,9.4,1.2);
+  const p=inout(t,5.5,4.2);
+  drawGraph(t,a,0.82+0.22*p,p);
+  if(a<=0.01)return;
+  const x=Math.max(52,width*0.07);
+  text('Build the map once.',x,height*0.19,50,'780','#f8fafc',a);
+  text('Every AI run starts with the route.',x,height*0.255,30,'540','#aab7ca',a);
+  pill('hubs',x,height*0.34,86,a,'rgba(117,231,205,0.13)');
+  pill('bridges',x+102,height*0.34,112,a,'rgba(255,199,111,0.13)');
+  pill('orphans',x+230,height*0.34,112,a,'rgba(255,134,151,0.13)');
+  pill('reading order',x+358,height*0.34,154,a,'rgba(148,197,255,0.13)');
+
+  const pulseA=alphaInOut(t,8.2,4.4,0.7);
+  text('Open your repo\'s brain.',width*0.5,height*0.86,42,'780','#f7f8fb',pulseA,'center');
+}
+
+function drawProof(t){
+  const a=alphaInOut(t,12.0,6.1,0.75);
+  if(a<=0.01)return;
+  drawGraph(t,a*0.62,0.72,0.8);
+  const x=width*0.1;
+  const y=height*0.2;
+  text('Reason to believe',x,y,23,'720','#75e7cd',a);
+  text('924 files',x,y+72,66,'800','#f8fafc',a);
+  text('2,359,465 raw tokens',x,y+120,26,'600','#aab7ca',a);
+  text('10,812 map tokens',x,y+160,32,'760','#75e7cd',a);
+  text('218:1 compression',x,y+224,54,'820','#ffc76f',a);
+  text('Less rereading. Fewer wrong turns. Lower cost per run.',x,y+282,25,'560','#cad1dd',a);
+
+  const right=width*0.76;
+  text('From',right,height*0.31,18,'700','#8f9bad',a,'center');
+  text('300 files',right,height*0.37,40,'800','#ffb4bf',a,'center');
+  text('to',right,height*0.48,18,'700','#8f9bad',a,'center');
+  text('the 3-10 files\nthat matter',right,height*0.56,42,'820','#f8fafc',a,'center');
+}
+
+function drawFinal(t){
+  const a=inout(t,17.3,1.2);
+  drawGraph(t,a*0.48,0.54,1);
+  text('Shibanshu Markdown Viewer',width/2,height*0.28,42,'760','#ffffff',a,'center');
+  text('Stop paying AI to get lost.',width/2,height*0.43,74,'840','#f8fafc',a,'center');
+  text('Open folder  ->  Map the repo  ->  Copy AI context',width/2,height*0.56,28,'650','#75e7cd',a,'center');
+  text('Markdown viewer · 3D repo graph · Claude.md maps · offline context export',width/2,height*0.66,21,'540','#aeb8c8',a,'center');
+  text('Better answers. Lower context cost. Faster understanding.',width/2,height*0.76,28,'740','#ffc76f',a,'center');
+}
+
+function frame(now){
+  if(!start){start=now;last=now}
+  elapsed=(now-start)/1000;
+  const t=elapsed%DURATION;
+  clear();
+  drawWrongReads(t);
+  drawTransformation(t);
+  drawProof(t);
+  drawFinal(t);
+  if(elapsed>=DURATION){
+    window.__videoDone=true;
+  }else{
+    requestAnimationFrame(frame);
+  }
+  last=now;
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;0,800;1,300&family=Space+Mono:wght@400;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden}
+canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const cv=document.getElementById('c'),cx=cv.getContext('2d');
+let W,H;function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight}rs();addEventListener('resize',rs);
+const TAU=Math.PI*2,DUR=48;
+let t=0,lt=0;
+
+// ═══ RICH AUDIO ENGINE ═══
+const AC=new(window.AudioContext||window.webkitAudioContext)();
+// Reverb via convolver
+let reverb;
+async function mkReverb(){
+  reverb=AC.createConvolver();
+  const len=AC.sampleRate*2.5,buf=AC.createBuffer(2,len,AC.sampleRate);
+  for(let ch=0;ch<2;ch++){const d=buf.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.5)}
+  reverb.buffer=buf;reverb.connect(AC.destination);
+}
+mkReverb();
+
+function pad(f,s,d,v=0.018){
+  const o=AC.createOscillator(),g=AC.createGain(),fl=AC.createBiquadFilter();
+  o.type='sine';o.frequency.value=f;fl.type='lowpass';fl.frequency.value=400;fl.Q.value=2;
+  g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(v,s+3);g.gain.setValueAtTime(v*0.8,s+d-4);g.gain.linearRampToValueAtTime(0,s+d);
+  o.connect(fl);fl.connect(g);g.connect(AC.destination);if(reverb)g.connect(reverb);
+  o.start(s);o.stop(s+d);
+}
+function bell(f,s,d=3,v=0.012){
+  const o=AC.createOscillator(),g=AC.createGain();
+  o.type='triangle';o.frequency.value=f;o.frequency.setValueAtTime(f,s);o.frequency.exponentialRampToValueAtTime(f*1.002,s+d);
+  g.gain.setValueAtTime(v,s);g.gain.exponentialRampToValueAtTime(0.0001,s+d);
+  o.connect(g);g.connect(AC.destination);if(reverb)g.connect(reverb);
+  o.start(s);o.stop(s+d);
+}
+function sub(s,v=0.04){
+  const o=AC.createOscillator(),g=AC.createGain();
+  o.type='sine';o.frequency.setValueAtTime(55,s);o.frequency.exponentialRampToValueAtTime(18,s+1.5);
+  g.gain.setValueAtTime(v,s);g.gain.exponentialRampToValueAtTime(0.0001,s+2);
+  o.connect(g);g.connect(AC.destination);o.start(s);o.stop(s+2.5);
+}
+function shimmer(s,v=0.008){
+  for(const f of[1318,1568,1760,2093]){
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.type='sine';o.frequency.value=f+Math.random()*10;
+    g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(v,s+0.5);g.gain.exponentialRampToValueAtTime(0.0001,s+4);
+    o.connect(g);g.connect(AC.destination);if(reverb)g.connect(reverb);
+    o.start(s);o.stop(s+4.5);
+  }
+}
+
+const now=AC.currentTime;
+// Deep ambient bed
+pad(55,now,50);pad(82,now+0.5,49);pad(110,now+1,48);pad(165,now+2,47);
+// Terminal scene — tension
+pad(73.4,now+3,5,0.01); // low dissonance
+// The turn — boom + bells
+sub(now+10);
+bell(392,now+11,4);bell(523,now+11.3,4);bell(659,now+11.6,4);bell(784,now+11.9,4);
+shimmer(now+11.5);
+// Galaxy stats — accents
+bell(523,now+22,2);bell(659,now+24,2);bell(784,now+26,2);
+// Finale
+sub(now+33);
+shimmer(now+34);
+bell(523,now+35,5,0.02);bell(659,now+35.3,5,0.02);bell(784,now+35.6,5,0.02);bell(987,now+35.9,5,0.02);bell(1174,now+36.2,5,0.015);
+
+// ═══ 3D UNIVERSE DATA ═══
+// Real file names as building blocks
+const fileBlocks=[
+  {name:'login.ts',words:3200,type:'hub',col:[94,234,212]},
+  {name:'session.ts',words:2800,type:'hub',col:[94,234,212]},
+  {name:'middleware.ts',words:2100,type:'bridge',col:[253,211,77]},
+  {name:'types.ts',words:1400,type:'hub',col:[94,234,212]},
+  {name:'billing.ts',words:4100,type:'hub',col:[196,181,253]},
+  {name:'users.ts',words:3400,type:'code',col:[125,211,252]},
+  {name:'payments.ts',words:2900,type:'code',col:[125,211,252]},
+  {name:'crypto.ts',words:1800,type:'orphan',col:[252,165,165]},
+  {name:'config.ts',words:640,type:'code',col:[167,243,208]},
+  {name:'routes.ts',words:1700,type:'code',col:[125,211,252]},
+  {name:'models.ts',words:1200,type:'code',col:[196,181,253]},
+  {name:'helpers.ts',words:890,type:'code',col:[167,243,208]},
+  {name:'dispatch.ts',words:900,type:'bridge',col:[253,211,77]},
+  {name:'pipeline.ts',words:1020,type:'code',col:[125,211,252]},
+  {name:'index.ts',words:440,type:'code',col:[94,234,212]},
+  {name:'worker.ts',words:5900,type:'hub',col:[94,234,212]},
+  {name:'tracker.ts',words:380,type:'code',col:[167,243,208]},
+  {name:'client.ts',words:780,type:'code',col:[125,211,252]},
+  {name:'README.md',words:1300,type:'doc',col:[196,181,253]},
+  {name:'CLAUDE.md',words:2600,type:'doc',col:[196,181,253]},
+];
+
+// Position as 3D building blocks in space
+for(const[i,f]of fileBlocks.entries()){
+  const phi=i/fileBlocks.length*TAU*1.618;
+  const theta=(Math.random()-0.5)*Math.PI*0.7;
+  const dist=120+Math.sqrt(f.words)*2.5;
+  f.x=Math.cos(phi)*Math.cos(theta)*dist;
+  f.y=Math.sin(theta)*dist*0.5;
+  f.z=Math.sin(phi)*Math.cos(theta)*dist;
+  f.w=Math.max(30,Math.min(90,Math.sqrt(f.words)*1.2));
+  f.h=22;
+  f.d=12;
+}
+
+// Connections
+const conns=[[0,1],[0,3],[0,12],[1,3],[2,0],[2,5],[4,6],[4,5],[5,6],[5,9],[7,0],[10,5],[11,0],[12,13],[13,14],[15,12],[15,13],[16,15],[17,15],[0,18],[4,19]];
+
+// Stars
+const stars=[];for(let i=0;i<350;i++)stars.push({x:(Math.random()-0.5)*6000,y:(Math.random()-0.5)*4000,z:(Math.random()-0.5)*5000,b:Math.random(),s:0.2+Math.random()*0.4});
+
+// Terminal files
+const CMD='claude, refactor the auth module';
+const FILES=['Reading src/auth/login.ts','Reading src/auth/session.ts','Reading src/middleware/auth.ts','Reading src/auth/types.ts','Reading src/utils/crypto.ts','Reading src/api/users.ts','Reading src/services/billing.ts','Reading src/models/user.ts','Reading src/config/auth.ts','Reading src/routes/login.ts'];
+
+function ease(x){return x<0.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2}
+function cl(x){return Math.max(0,Math.min(1,x))}
+function fi(s,d){return ease(cl((t-s)/d))}
+function fo(s,d){return 1-ease(cl((t-s)/d))}
+
+// Camera that flies INTO the graph
+function getCam(){
+  if(t<12) return {x:0,y:0,z:600,ry:0,rx:0}; // far away during terminal
+  const gt=t-12;
+  if(gt<4){
+    // Zoom in from far
+    const p=ease(cl(gt/4));
+    return {x:0,y:0,z:600-p*500,ry:gt*0.05,rx:-0.1};
+  }
+  if(gt<20){
+    // Inside the graph, slow orbit
+    const p=gt-4;
+    return {x:Math.sin(p*0.08)*50,y:Math.cos(p*0.06)*30,z:100+Math.sin(p*0.04)*60,ry:p*0.06,rx:-0.1+Math.sin(p*0.03)*0.05};
+  }
+  // Pull back for finale
+  const p=ease(cl((gt-20)/3));
+  return {x:0,y:0,z:100+p*400,ry:(gt-4)*0.06,rx:-0.1};
+}
+
+function proj3d(x,y,z){
+  const cam=getCam();
+  // Translate relative to camera
+  let dx=x-cam.x,dy=y-cam.y,dz=z-cam.z;
+  // Rotate Y
+  const cy=Math.cos(cam.ry),sy=Math.sin(cam.ry);
+  let x1=dx*cy-dz*sy,z1=dx*sy+dz*cy;
+  // Rotate X
+  const crx=Math.cos(cam.rx),srx=Math.sin(cam.rx);
+  let y1=dy*crx-z1*srx,z2=dy*srx+z1*crx;
+  // Perspective
+  const fov=800;
+  if(z2<-fov+10) return null;
+  const s=fov/(fov+z2);
+  return {x:x1*s+W/2,y:y1*s+H/2,z:z2,s};
+}
+
+function txt(text,x,y,font,color,alpha=1,align='center'){
+  if(alpha<0.005)return;cx.globalAlpha=alpha;cx.font=font;cx.fillStyle=color;cx.textAlign=align;cx.fillText(text,x,y);cx.textAlign='left';cx.globalAlpha=1;
+}
+
+function draw(ts){
+  if(!lt)lt=ts;t+=(ts-lt)/1000;lt=ts;if(t>DUR)t=0;
+  cx.fillStyle='#000';cx.fillRect(0,0,W,H);
+  const cw=W/2,ch=H/2;
+
+  // ═══ ALWAYS: Stars background ═══
+  for(const s of stars){
+    const p=proj3d(s.x,s.y,s.z);
+    if(!p||p.x<0||p.x>W)continue;
+    cx.fillStyle=`rgba(255,255,255,${s.b*(0.15+Math.sin(t*0.5+s.b*8)*0.1)*Math.min(1,p.s*2)})`;
+    cx.beginPath();cx.arc(p.x,p.y,Math.max(0.3,s.s*p.s),0,TAU);cx.fill();
+  }
+
+  // Nebulae — always present
+  for(const[ox,oy,r,g,b,a]of[[0.3,0.35,94,234,212,0.02],[0.7,0.6,196,181,253,0.015],[0.5,0.8,253,211,77,0.008]]){
+    const nb=cx.createRadialGradient(W*ox,H*oy,0,W*ox,H*oy,W*0.35);
+    nb.addColorStop(0,`rgba(${r},${g},${b},${a})`);nb.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=nb;cx.fillRect(0,0,W,H);
+  }
+
+  // ═══ ACT 1: TERMINAL (0-10s) ═══
+  if(t<12){
+    const a1=t<10?1:fo(10,2);
+    // Elegant terminal — offset to left, not center
+    const tw=Math.min(1000,W*0.5),th=420;
+    const tx=W*0.08,ty=ch-th/2;
+
+    cx.globalAlpha=a1*0.95;
+    cx.fillStyle='#0a0d12';
+    cx.beginPath();cx.roundRect(tx,ty,tw,th,12);cx.fill();
+    cx.strokeStyle='rgba(94,234,212,0.08)';cx.lineWidth=1;cx.stroke();
+
+    // Dots
+    for(const[i,c]of['#ff5f56','#ffbd2e','#27c93f'].entries()){cx.fillStyle=c;cx.beginPath();cx.arc(tx+18+i*16,ty+16,4.5,0,TAU);cx.fill()}
+
+    // Command
+    cx.font='500 16px "Space Mono"';
+    const chars=Math.min(CMD.length,Math.floor(t*16));
+    cx.fillStyle='#e6edf3';cx.fillText('$ '+CMD.substring(0,chars),tx+16,ty+48);
+    if(Math.sin(t*6)>0&&chars<=CMD.length){cx.fillStyle='#5eead4';cx.fillRect(tx+16+cx.measureText('$ '+CMD.substring(0,chars)).width+2,ty+32,9,18)}
+
+    // Files
+    if(t>2){
+      cx.font='400 13px "Space Mono"';
+      const shown=Math.min(FILES.length,Math.floor((t-2)*2.8));
+      for(let i=0;i<shown;i++){
+        const fy=ty+75+i*24;if(fy>ty+th-55)continue;
+        cx.fillStyle='#4a5568';cx.fillText('  '+FILES[i]+'...',tx+16,fy);
+      }
+    }
+
+    // Context bar
+    if(t>4){
+      const prog=cl((t-4)/4.5);
+      const barY=ty+th-35,barH=16,barW=tw-32;
+      cx.fillStyle='#111418';cx.beginPath();cx.roundRect(tx+16,barY,barW,barH,4);cx.fill();
+      cx.fillStyle=prog>0.7?'#fca5a5':'#d97706';cx.beginPath();cx.roundRect(tx+16,barY,barW*prog,barH,4);cx.fill();
+      cx.fillStyle='#e6edf3';cx.font='700 9px "Space Mono"';cx.textAlign='center';cx.fillText('CONTEXT '+Math.floor(prog*91)+'%',tx+16+barW/2,barY+12);cx.textAlign='left';
+    }
+
+    // RTB on the RIGHT side — not blocking the terminal
+    if(t>3){
+      const rtbX=W*0.65;
+      const r1=fi(3,1.2)*a1;
+      txt('$5,000/mo',rtbX,ch-80,'800 56px "Space Mono"','#fca5a5',r1,'left');
+      txt('per developer',rtbX,ch-35,'300 18px "DM Sans"','#4a5568',r1*0.7,'left');
+    }
+    if(t>5){
+      const r2=fi(5,1)*a1;
+      txt('spent on AI reading',W*0.65,ch+10,'300 16px "DM Sans"','#4a5568',r2,'left');
+      txt('the wrong files.',W*0.65,ch+35,'500 16px "DM Sans"','#fca5a5',r2,'left');
+    }
+    if(t>7.5){
+      const r3=fi(7.5,0.8)*a1;
+      txt('91% blind.',W*0.65,ch+90,'700 32px "DM Sans"','#e6edf3',r3,'left');
+    }
+
+    cx.globalAlpha=1;
+  }
+
+  // ═══ ACT 2: THE TURN (10-13s) ═══
+  if(t>=10&&t<14){
+    // Flash
+    if(t>10&&t<10.2){cx.fillStyle=`rgba(94,234,212,${0.06*(1-(t-10)/0.2)})`;cx.fillRect(0,0,W,H)}
+    const qa=Math.min(fi(10.8,1.2),fo(13,0.8));
+    txt('What if it already knew?',cw,ch,'300 52px "DM Sans"','#f1f5f9',qa);
+  }
+
+  // ═══ ACT 3: FLYING INTO THE UNIVERSE (12-35s) ═══
+  if(t>=12&&t<37){
+    const gt=t-12;
+    const ga=Math.min(fi(12,3),t<35?1:fo(35,2));
+    const buildProg=ease(cl(gt/6));
+    const blocksVis=Math.floor(buildProg*fileBlocks.length);
+
+    cx.globalAlpha=ga;
+
+    // Birth pulse rings
+    if(gt<5){
+      for(let i=0;i<4;i++){
+        const rr=(gt-i*0.4)*180;if(rr<0)continue;
+        const ra=0.12*(1-rr/900);
+        cx.strokeStyle=`rgba(94,234,212,${ra})`;cx.lineWidth=1.5+i*0.3;
+        cx.beginPath();cx.arc(cw,ch,rr,0,TAU);cx.stroke();
+      }
+    }
+
+    // Connections — draw BEFORE blocks for layering
+    if(gt>3){
+      const ea=cl((gt-3)/3);
+      for(const[a,b]of conns){
+        if(a>=blocksVis||b>=blocksVis)continue;
+        const fa=fileBlocks[a],fb=fileBlocks[b];
+        const pa=proj3d(fa.x,fa.y,fa.z),pb=proj3d(fb.x,fb.y,fb.z);
+        if(!pa||!pb)continue;
+        const depth=(pa.s+pb.s)*0.5;
+        const al=Math.max(0.02,Math.min(0.2,depth*0.1))*ea;
+        // Glowing curved connection
+        cx.strokeStyle=`rgba(94,234,212,${al})`;
+        cx.lineWidth=Math.max(0.5,depth*2);
+        cx.shadowColor='rgba(94,234,212,0.3)';cx.shadowBlur=depth*8;
+        const mx=(pa.x+pb.x)/2,my=(pa.y+pb.y)/2,dx=pb.x-pa.x,dy=pb.y-pa.y;
+        cx.beginPath();cx.moveTo(pa.x,pa.y);cx.quadraticCurveTo(mx+dy*0.06,my-dx*0.06,pb.x,pb.y);cx.stroke();
+        cx.shadowBlur=0;
+      }
+      // Energy particles
+      for(let i=0;i<conns.length*3;i++){
+        const ci=i%conns.length;
+        const[a,b]=conns[ci];if(a>=blocksVis||b>=blocksVis)continue;
+        const fa=fileBlocks[a],fb=fileBlocks[b];
+        const pa=proj3d(fa.x,fa.y,fa.z),pb=proj3d(fb.x,fb.y,fb.z);
+        if(!pa||!pb)continue;
+        const ph=(t*0.08+i*0.05)%1;
+        const px=pa.x+(pb.x-pa.x)*ph,py=pa.y+(pb.y-pa.y)*ph;
+        const gl=Math.sin(ph*Math.PI)*0.5*ea;
+        if(gl<0.02)continue;
+        const[cr,cg,cb]=fileBlocks[a].col;
+        for(let tr=0;tr<4;tr++){
+          const tp=Math.max(0,ph-tr*0.035);
+          const tx2=pa.x+(pb.x-pa.x)*tp,ty2=pa.y+(pb.y-pa.y)*tp;
+          cx.fillStyle=`rgba(${cr},${cg},${cb},${gl*(1-tr*0.25)})`;
+          cx.beginPath();cx.arc(tx2,ty2,1.5-tr*0.3,0,TAU);cx.fill();
+        }
+      }
+    }
+
+    // File blocks — 3D building blocks
+    const projected=[];
+    for(let i=0;i<blocksVis;i++){
+      const f=fileBlocks[i];
+      const p=proj3d(f.x,f.y,f.z);
+      if(!p)continue;
+      projected.push({...f,i,px:p.x,py:p.y,pz:p.z,ps:p.s});
+    }
+    projected.sort((a,b)=>a.pz-b.pz);
+
+    for(const f of projected){
+      if(f.px<-100||f.px>W+100)continue;
+      const[cr,cg,cb]=f.col;
+      const s=f.ps;
+      const bw=f.w*s,bh=f.h*s,bd=f.d*s;
+      const al=Math.max(0.1,Math.min(1,s*1.5));
+
+      // Hub glow
+      if(f.type==='hub'){
+        const pulse=1+Math.sin(t*1.2+f.i)*0.1;
+        const g=cx.createRadialGradient(f.px,f.py,bw*0.3,f.px,f.py,bw*2.5*pulse);
+        g.addColorStop(0,`rgba(${cr},${cg},${cb},${al*0.12})`);g.addColorStop(1,'rgba(0,0,0,0)');
+        cx.fillStyle=g;cx.beginPath();cx.arc(f.px,f.py,bw*2.5*pulse,0,TAU);cx.fill();
+      }
+
+      // 3D block — top face
+      cx.fillStyle=`rgba(${Math.min(255,cr+40)},${Math.min(255,cg+40)},${Math.min(255,cb+40)},${al*0.85})`;
+      cx.beginPath();
+      cx.moveTo(f.px-bw/2,f.py-bh/2);cx.lineTo(f.px+bw/2,f.py-bh/2);
+      cx.lineTo(f.px+bw/2+bd*0.4,f.py-bh/2-bd*0.3);cx.lineTo(f.px-bw/2+bd*0.4,f.py-bh/2-bd*0.3);
+      cx.fill();
+
+      // Front face
+      cx.fillStyle=`rgba(${cr},${cg},${cb},${al*0.7})`;
+      cx.fillRect(f.px-bw/2,f.py-bh/2,bw,bh);
+
+      // Right face
+      cx.fillStyle=`rgba(${Math.max(0,cr-30)},${Math.max(0,cg-30)},${Math.max(0,cb-30)},${al*0.5})`;
+      cx.beginPath();
+      cx.moveTo(f.px+bw/2,f.py-bh/2);cx.lineTo(f.px+bw/2+bd*0.4,f.py-bh/2-bd*0.3);
+      cx.lineTo(f.px+bw/2+bd*0.4,f.py+bh/2-bd*0.3);cx.lineTo(f.px+bw/2,f.py+bh/2);
+      cx.fill();
+
+      // Front face border
+      cx.strokeStyle=`rgba(${Math.min(255,cr+60)},${Math.min(255,cg+60)},${Math.min(255,cb+60)},${al*0.3})`;
+      cx.lineWidth=0.5;cx.strokeRect(f.px-bw/2,f.py-bh/2,bw,bh);
+
+      // File name ON the block
+      if(s>0.15){
+        const fs=Math.max(7,Math.min(14,12*s));
+        cx.font=`600 ${fs}px "Space Mono"`;
+        cx.fillStyle=`rgba(255,255,255,${al*0.9})`;cx.textAlign='center';
+        cx.fillText(f.name,f.px,f.py+fs*0.35);
+        // Type badge below
+        if(s>0.3&&(f.type==='hub'||f.type==='bridge'||f.type==='orphan')){
+          cx.font=`700 ${Math.max(6,8*s)}px "Space Mono"`;
+          const tc=f.type==='hub'?'#5eead4':f.type==='bridge'?'#fcd34d':'#fca5a5';
+          cx.fillStyle=tc;
+          cx.fillText(f.type.toUpperCase(),f.px,f.py+fs*0.35+fs);
+        }
+        cx.textAlign='left';
+      }
+
+      // Orbit ring for hubs
+      if(f.type==='hub'&&s>0.2){
+        cx.strokeStyle=`rgba(${cr},${cg},${cb},${al*0.08})`;cx.lineWidth=0.5;
+        cx.setLineDash([3,5]);
+        cx.beginPath();cx.ellipse(f.px,f.py,bw*1.8,bh*1.2,0,0,TAU);cx.stroke();
+        cx.setLineDash([]);
+      }
+    }
+
+    // RTBs on the SIDES — not center, not blocking the graph
+    // Left side RTBs
+    if(gt>8&&gt<14){
+      const ra=Math.min(fi(20,1),fo(25,1))*ga;
+      const lx=50;
+      txt('218:1','lx',ch-60,'800 48px "Space Mono"','#5eead4',ra,'left');
+      cx.globalAlpha=ra;cx.font='300 14px "DM Sans"';cx.fillStyle='#4a5568';cx.textAlign='left';cx.fillText('context compression',50,ch-20);cx.globalAlpha=1;
+    }
+    if(gt>10&&gt<16){
+      const ra=Math.min(fi(22,1),fo(27,1))*ga;
+      txt('0.6s',50,ch+40,'800 48px "Space Mono"','#f1f5f9',ra,'left');
+      cx.globalAlpha=ra;cx.font='300 14px "DM Sans"';cx.fillStyle='#4a5568';cx.textAlign='left';cx.fillText('to map 924 files',50,ch+75);cx.globalAlpha=1;
+    }
+
+    // Right side RTBs
+    if(gt>12&&gt<18){
+      const ra=Math.min(fi(24,1),fo(29,1))*ga;
+      txt('$0.03',W-50,ch-60,'800 48px "Space Mono"','#c4b5fd',ra,'right');
+      cx.globalAlpha=ra;cx.font='300 14px "DM Sans"';cx.fillStyle='#4a5568';cx.textAlign='right';cx.fillText('not $7.08 per exploration',W-50,ch-20);cx.globalAlpha=1;
+    }
+    if(gt>14&&gt<20){
+      const ra=Math.min(fi(26,1),fo(31,1))*ga;
+      txt('1st try',W-50,ch+40,'800 48px "Space Mono"','#fcd34d',ra,'right');
+      cx.globalAlpha=ra;cx.font='300 14px "DM Sans"';cx.fillStyle='#4a5568';cx.textAlign='right';cx.fillText('right answer, every time',W-50,ch+75);cx.globalAlpha=1;
+    }
+
+    // Bottom — the mental model explanation
+    if(gt>16&&gt<22){
+      const ma=Math.min(fi(28,1),fo(33,1))*ga;
+      txt('Hubs. Bridges. Dead code. Reading order.',cw,H-80,'300 20px "DM Sans"','#6b7280',ma);
+      txt('A complete mental model. Not more files.',cw,H-50,'500 20px "DM Sans"','#5eead4',ma);
+    }
+
+    cx.globalAlpha=1;
+  }
+
+  // ═══ ACT 4: THE NAME (35-48s) ═══
+  if(t>=34){
+    const na=fi(35,2);
+    const cmdA=fi(38,1);
+    const tagA=fi(40,0.8);
+    const closeA=fi(42,0.8);
+
+    // Teal glow
+    const ag=cx.createRadialGradient(cw,ch-40,0,cw,ch-40,W*0.28);
+    ag.addColorStop(0,`rgba(94,234,212,${0.02*na})`);ag.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=ag;cx.fillRect(0,0,W,H);
+
+    // Orbital dots
+    for(let i=0;i<24;i++){
+      const ang=i/24*TAU+t*0.12;const d=250+Math.sin(t*0.3+i)*20;
+      cx.fillStyle=`rgba(94,234,212,${0.04*na})`;
+      cx.beginPath();cx.arc(cw+Math.cos(ang)*d,ch-30+Math.sin(ang)*d*0.3,1,0,TAU);cx.fill();
+    }
+
+    txt('Athena',cw,ch-80,'800 86px "DM Sans"','#f1f5f9',na);
+    txt('for codebases',cw,ch-30,'300 26px "DM Sans"','#6b7280',na*0.7);
+
+    const pulse=1+Math.sin(t*2)*0.008;
+    cx.save();cx.translate(cw,ch+30);cx.scale(pulse,pulse);
+    txt('npx athena-code-mcp',0,0,'500 28px "Space Mono"','#5eead4',cmdA);
+    cx.restore();
+
+    txt('19 tools  ·  auto-updates on commit  ·  open source',cw,ch+80,'400 14px "DM Sans"','#374151',tagA);
+    txt('Maximum output. Minimum tokens.',cw,ch+120,'500 18px "DM Sans"','#5eead4',closeA*0.5);
+  }
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+document.addEventListener('click',()=>{if(AC.state==='suspended')AC.resume()},{once:true});
+</script>
+</body>
+</html>

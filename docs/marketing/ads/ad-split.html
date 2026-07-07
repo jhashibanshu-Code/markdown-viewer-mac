@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;0,800;1,300&family=Space+Mono:wght@400;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden}
+canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const cv=document.getElementById('c'),cx=cv.getContext('2d');
+let W,H;function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight}rs();addEventListener('resize',rs);
+const TAU=Math.PI*2,DUR=50;
+let t=0,lt=0;
+
+// Audio
+const AC=new(window.AudioContext||window.webkitAudioContext)();
+let reverb;
+(async()=>{reverb=AC.createConvolver();const len=AC.sampleRate*2,buf=AC.createBuffer(2,len,AC.sampleRate);for(let ch=0;ch<2;ch++){const d=buf.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.8)}reverb.buffer=buf;reverb.connect(AC.destination)})();
+function pad(f,s,d,v=0.015){const o=AC.createOscillator(),g=AC.createGain(),fl=AC.createBiquadFilter();o.type='sine';o.frequency.value=f;fl.type='lowpass';fl.frequency.value=400;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(v,s+3);g.gain.setValueAtTime(v*0.7,s+d-3);g.gain.linearRampToValueAtTime(0,s+d);o.connect(fl);fl.connect(g);g.connect(AC.destination);if(reverb)g.connect(reverb);o.start(s);o.stop(s+d)}
+function bell(f,s,d=3,v=0.01){const o=AC.createOscillator(),g=AC.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(v,s);g.gain.exponentialRampToValueAtTime(0.0001,s+d);o.connect(g);g.connect(AC.destination);if(reverb)g.connect(reverb);o.start(s);o.stop(s+d)}
+function sub(s){const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.setValueAtTime(50,s);o.frequency.exponentialRampToValueAtTime(15,s+1.5);g.gain.setValueAtTime(0.04,s);g.gain.exponentialRampToValueAtTime(0.0001,s+2);o.connect(g);g.connect(AC.destination);o.start(s);o.stop(s+2.5)}
+const now=AC.currentTime;
+pad(55,now,52);pad(82,now+1,51);pad(110,now+2,50);
+sub(now+3);bell(392,now+3.5,4);bell(523,now+3.8,4);
+bell(659,now+15,2);bell(784,now+17,2);
+sub(now+36);bell(523,now+37,5,0.015);bell(659,now+37.3,5,0.015);bell(784,now+37.6,5,0.015);bell(987,now+37.9,5,0.012);
+
+// Galaxy data for right side
+const nodes=[],edges=[],stars=[];
+const CLS=[[94,234,212],[196,181,253],[125,211,252],[253,211,77],[252,165,165],[167,243,208]];
+for(let ci=0;ci<6;ci++){const ang=ci/6*TAU;for(let i=0;i<22;i++){const isH=i<2;nodes.push({x:Math.cos(ang)*160+(Math.random()-0.5)*140,y:Math.sin(ang)*100+(Math.random()-0.5)*140,z:(Math.random()-0.5)*200,r:isH?7+Math.random()*5:2+Math.random()*3,col:CLS[ci],isH,words:isH?3000+Math.random()*3000:200+Math.random()*2000})}}
+for(let i=0;i<180;i++){const a=Math.floor(Math.random()*nodes.length),b=Math.floor(Math.random()*nodes.length);if(a!==b)edges.push([a,b])}
+for(let i=0;i<200;i++)stars.push({x:(Math.random()-0.5)*3000,y:(Math.random()-0.5)*2000,z:(Math.random()-0.5)*2000,b:Math.random(),s:0.2+Math.random()*0.4});
+
+// Force layout
+for(let it=0;it<150;it++){const a=1-it/150;for(let i=0;i<nodes.length;i++){for(let j=i+1;j<nodes.length;j++){let dx=nodes[j].x-nodes[i].x,dy=nodes[j].y-nodes[i].y,dz=nodes[j].z-nodes[i].z,d2=dx*dx+dy*dy+dz*dz;if(d2>500000)continue;let d=Math.sqrt(d2)||1,f=Math.min(3,800*a/(d*d));nodes[i].vx=(nodes[i].vx||0)-dx/d*f;nodes[i].vy=(nodes[i].vy||0)-dy/d*f;nodes[i].vz=(nodes[i].vz||0)-dz/d*f;nodes[j].vx=(nodes[j].vx||0)+dx/d*f;nodes[j].vy=(nodes[j].vy||0)+dy/d*f;nodes[j].vz=(nodes[j].vz||0)+dz/d*f}}for(const[a2,b]of edges){let dx=nodes[b].x-nodes[a2].x,dy=nodes[b].y-nodes[a2].y,dz=nodes[b].z-nodes[a2].z,d=Math.sqrt(dx*dx+dy*dy+dz*dz)||1,f=(d-70)*0.006*a;nodes[a2].vx+=dx/d*f;nodes[a2].vy+=dy/d*f;nodes[a2].vz+=dz/d*f;nodes[b].vx-=dx/d*f;nodes[b].vy-=dy/d*f;nodes[b].vz-=dz/d*f}for(const n of nodes){n.vx=(n.vx||0)-n.x*0.0005;n.vy=(n.vy||0)-n.y*0.0005;n.vz=(n.vz||0)-n.z*0.0005;n.x+=n.vx*0.35;n.y+=n.vy*0.35;n.z+=n.vz*0.35;n.vx*=0.78;n.vy*=0.78;n.vz*=0.78}}
+
+const FILES=['src/auth/login.ts','src/auth/session.ts','src/middleware/auth.ts','src/auth/types.ts','src/utils/crypto.ts','src/api/users.ts','src/services/billing.ts','src/models/user.ts','src/config/auth.ts','src/routes/login.ts','src/routes/register.ts','src/helpers/token.ts','src/helpers/hash.ts','src/workers/audit.ts','src/lib/sources.ts'];
+const CMD='claude, refactor the auth module';
+
+function ease(x){return x<0.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2}
+function cl(x){return Math.max(0,Math.min(1,x))}
+function fi(s,d){return ease(cl((t-s)/d))}
+function fo(s,d){return 1-ease(cl((t-s)/d))}
+function proj(x,y,z,ry,ox=0){const cy=Math.cos(ry),sy=Math.sin(ry),x1=x*cy-z*sy,z1=x*sy+z*cy;const rx=-0.12,crx=Math.cos(rx),srx=Math.sin(rx),y1=y*crx-z1*srx,z2=y*srx+z1*crx;const fov=800,s=fov/(fov+z2+500);if(s<0.01)return null;return{x:x1*s+ox,y:y1*s+H/2,z:z2,s}}
+
+function drawMiniGraph(ox,oy,gt,ga){
+  const bp=ease(cl(gt/4)),nv=Math.floor(bp*nodes.length),ry=gt*0.04;
+  cx.globalAlpha=ga;
+  // Stars in right half
+  for(const s of stars){const p=proj(s.x,s.y,s.z,ry*0.2,ox);if(!p||p.x<ox-W/2||p.x>ox+W/2)continue;cx.fillStyle=`rgba(255,255,255,${s.b*(0.2+Math.sin(t*0.5+s.b*8)*0.1)})`;cx.beginPath();cx.arc(p.x,p.y,s.s*p.s,0,TAU);cx.fill()}
+  // Nebulae
+  const nb=cx.createRadialGradient(ox-W*0.05,H*0.4,0,ox-W*0.05,H*0.4,W*0.22);
+  nb.addColorStop(0,'rgba(94,234,212,0.025)');nb.addColorStop(1,'rgba(0,0,0,0)');
+  cx.fillStyle=nb;cx.fillRect(ox-W/2,0,W/2,H);
+  // Birth pulse
+  if(gt<3){const rr=gt*160;cx.strokeStyle=`rgba(94,234,212,${0.15*(1-gt/3)})`;cx.lineWidth=1.5;cx.beginPath();cx.arc(ox,H/2,rr,0,TAU);cx.stroke()}
+  // Edges
+  if(gt>1.5){const ea=cl((gt-1.5)/2);for(const[a,b]of edges){if(a>=nv||b>=nv)continue;const pa=proj(nodes[a].x,nodes[a].y,nodes[a].z,ry,ox),pb=proj(nodes[b].x,nodes[b].y,nodes[b].z,ry,ox);if(!pa||!pb)continue;const al=Math.max(0.01,Math.min(0.1,(pa.s+pb.s)*0.04))*ea;cx.strokeStyle=`rgba(94,234,212,${al})`;cx.lineWidth=Math.max(0.3,(pa.s+pb.s)*0.8);const mx=(pa.x+pb.x)/2,my=(pa.y+pb.y)/2,dx=pb.x-pa.x,dy=pb.y-pa.y;cx.beginPath();cx.moveTo(pa.x,pa.y);cx.quadraticCurveTo(mx+dy*0.05,my-dx*0.05,pb.x,pb.y);cx.stroke()}
+    // Particles
+    for(let i=0;i<50;i++){const ei=i%edges.length;const[a,b]=edges[ei];if(a>=nv||b>=nv)continue;const ph=(t*0.08+i*0.025)%1;const pa=proj(nodes[a].x,nodes[a].y,nodes[a].z,ry,ox),pb=proj(nodes[b].x,nodes[b].y,nodes[b].z,ry,ox);if(!pa||!pb)continue;const gl=Math.sin(ph*Math.PI)*0.3*ea;if(gl<0.015)continue;const[cr,cg,cb]=nodes[a].col;for(let tr=0;tr<3;tr++){const tp=Math.max(0,ph-tr*0.04);cx.fillStyle=`rgba(${cr},${cg},${cb},${gl*(1-tr*0.3)})`;cx.beginPath();cx.arc(pa.x+(pb.x-pa.x)*tp,pa.y+(pb.y-pa.y)*tp,1.1-tr*0.25,0,TAU);cx.fill()}}
+  }
+  // Nodes
+  const pr=[];for(let i=0;i<nv;i++){const n=nodes[i],p=proj(n.x,n.y,n.z,ry,ox);if(!p)continue;pr.push({...n,i,px:p.x,py:p.y,pz:p.z,ps:p.s})}pr.sort((a,b)=>a.pz-b.pz);
+  for(const n of pr){if(n.px<ox-W/2-30||n.px>ox+W/2+30)continue;const[cr,cg,cb]=n.col;const r=Math.max(1,(n.isH?n.r:2+Math.sqrt(n.words)*0.06)*n.ps*1.4);const al=Math.max(0.12,n.ps*1.3);
+    if(n.isH){const pu=1+Math.sin(t*1.2+n.r)*0.1;const g=cx.createRadialGradient(n.px,n.py,r,n.px,n.py,r*6*pu);g.addColorStop(0,`rgba(${cr},${cg},${cb},${al*0.12})`);g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.beginPath();cx.arc(n.px,n.py,r*6*pu,0,TAU);cx.fill();cx.strokeStyle=`rgba(${cr},${cg},${cb},${al*0.1})`;cx.lineWidth=0.5;cx.setLineDash([3,5]);cx.beginPath();cx.ellipse(n.px,n.py,r*3*pu,r*1.3*pu,t*0.1,0,TAU);cx.stroke();cx.setLineDash([])}
+    const ng=cx.createRadialGradient(n.px-r*0.3,n.py-r*0.3,0,n.px,n.py,r*1.1);ng.addColorStop(0,`rgba(${Math.min(255,cr+80)},${Math.min(255,cg+80)},${Math.min(255,cb+80)},${al})`);ng.addColorStop(0.5,`rgba(${cr},${cg},${cb},${al})`);ng.addColorStop(1,`rgba(${Math.max(0,cr-50)},${Math.max(0,cg-50)},${Math.max(0,cb-50)},${al*0.5})`);cx.fillStyle=ng;cx.beginPath();cx.arc(n.px,n.py,r,0,TAU);cx.fill();
+    if(r>2.5){cx.fillStyle=`rgba(255,255,255,${al*0.3})`;cx.beginPath();cx.arc(n.px-r*0.25,n.py-r*0.3,r*0.3,0,TAU);cx.fill()}
+  }
+  cx.globalAlpha=1;
+}
+
+function txt(text,x,y,font,color,alpha=1,align='center'){if(alpha<0.005)return;cx.globalAlpha=alpha;cx.font=font;cx.fillStyle=color;cx.textAlign=align;cx.fillText(text,x,y);cx.textAlign='left';cx.globalAlpha=1}
+
+function draw(ts){
+  if(!lt)lt=ts;t+=(ts-lt)/1000;lt=ts;if(t>DUR)t=0;
+  cx.fillStyle='#000';cx.fillRect(0,0,W,H);
+  const cw=W/2,ch=H/2;
+  const leftCenter=W*0.27,rightCenter=W*0.73;
+
+  // ═══ HEADER (always visible from 2s) ═══
+  if(t>2&&t<38){
+    const ha=Math.min(fi(2,1.5),fo(36,2));
+    // Left label
+    txt('Without Athena',leftCenter,42,'700 13px "DM Sans"','#fca5a5',ha*0.6);
+    // Right label
+    txt('With Athena',rightCenter,42,'700 13px "DM Sans"','#5eead4',ha*0.6);
+    // Center divider line
+    cx.globalAlpha=ha*0.15;
+    cx.strokeStyle='#fff';cx.lineWidth=1;
+    cx.beginPath();cx.moveTo(cw,60);cx.lineTo(cw,H-60);cx.stroke();
+    cx.globalAlpha=1;
+  }
+
+  // ═══ LEFT SIDE: THE PROBLEM (2-35s) ═══
+  if(t>2&&t<36){
+    const la=Math.min(fi(2,1.5),fo(34,2));
+    cx.save();
+    cx.beginPath();cx.rect(0,0,cw-1,H);cx.clip();
+
+    // Terminal
+    const tw=W*0.42,th=Math.min(320,H*0.35);
+    const tx=leftCenter-tw/2,ty=70;
+
+    cx.globalAlpha=la*0.9;
+    cx.fillStyle='#0a0d12';cx.beginPath();cx.roundRect(tx,ty,tw,th,10);cx.fill();
+    cx.strokeStyle='rgba(252,165,165,0.06)';cx.lineWidth=1;cx.stroke();
+
+    // Dots
+    for(const[i,c]of['#ff5f56','#ffbd2e','#27c93f'].entries()){cx.fillStyle=c;cx.beginPath();cx.arc(tx+16+i*14,ty+14,4,0,TAU);cx.fill()}
+
+    // Command
+    cx.font='500 13px "Space Mono"';
+    const chars=Math.min(CMD.length,Math.floor(Math.max(0,t-2.5)*14));
+    cx.fillStyle='#e6edf3';cx.fillText('$ '+CMD.substring(0,chars),tx+14,ty+40);
+
+    // Files scrolling
+    if(t>4){
+      cx.font='400 11px "Space Mono"';
+      const shown=Math.min(FILES.length,Math.floor((t-4)*1.8));
+      for(let i=0;i<shown;i++){
+        const fy=ty+60+i*18;if(fy>ty+th-40)continue;
+        cx.fillStyle='#4a5568';cx.fillText('  Reading '+FILES[i]+'...',tx+14,fy);
+      }
+    }
+
+    // Context bar
+    if(t>6){
+      const prog=cl((t-6)/12);
+      const barY=ty+th-28,barH=14,barW=tw-28;
+      cx.fillStyle='#111418';cx.beginPath();cx.roundRect(tx+14,barY,barW,barH,4);cx.fill();
+      cx.fillStyle=prog>0.7?'#fca5a5':'#d97706';cx.beginPath();cx.roundRect(tx+14,barY,barW*prog,barH,4);cx.fill();
+      cx.fillStyle='#e6edf3';cx.font='700 8px "Space Mono"';cx.textAlign='center';
+      cx.fillText('CONTEXT '+Math.floor(prog*94)+'%',tx+14+barW/2,barY+10);cx.textAlign='left';
+    }
+
+    // Cost counter below terminal
+    if(t>8){
+      const cost=Math.min(7.08,((t-8)*0.35));
+      const ca=fi(8,1)*la;
+      txt('$'+cost.toFixed(2),leftCenter,ty+th+45,'700 36px "Space Mono"','#fca5a5',ca);
+      txt('burned this exploration',leftCenter,ty+th+70,'300 13px "DM Sans"','#4a5568',ca*0.7);
+    }
+
+    // Time counter
+    if(t>10){
+      const secs=Math.min(45,Math.floor(t-10));
+      const ta=fi(10,1)*la;
+      txt(secs+'s',leftCenter,ty+th+115,'700 28px "Space Mono"','#6b7280',ta);
+      txt('and counting...',leftCenter,ty+th+138,'300i 12px "DM Sans"','#374151',ta*0.6);
+    }
+
+    // Wrong answer appears late
+    if(t>20){
+      const wa=fi(20,1.5)*la;
+      cx.globalAlpha=wa;
+      // Answer box
+      const ay=H-200;
+      cx.fillStyle='rgba(252,165,165,0.03)';cx.beginPath();cx.roundRect(tx,ay,tw,80,8);cx.fill();
+      cx.strokeStyle='rgba(252,165,165,0.1)';cx.stroke();
+      cx.font='italic 300 13px "DM Sans"';cx.fillStyle='#6b7280';
+      cx.fillText('"The auth system appears to',tx+14,ay+25);
+      cx.fillText('use some kind of session-',tx+14,ay+42);
+      cx.fillText('based approach..."',tx+14,ay+59);
+      cx.globalAlpha=1;
+    }
+
+    // Wrong label
+    if(t>24){
+      const wl=fi(24,0.8)*la;
+      txt('✗  Wrong. Retry.',leftCenter,H-90,'600 16px "DM Sans"','#fca5a5',wl);
+      txt('3 retries today = 45 min wasted',leftCenter,H-65,'300 12px "DM Sans"','#374151',wl*0.6);
+    }
+
+    cx.restore();
+  }
+
+  // ═══ RIGHT SIDE: THE SOLUTION (3-35s) ═══
+  if(t>3&&t<36){
+    const ra=Math.min(fi(3,2),fo(34,2));
+    cx.save();
+    cx.beginPath();cx.rect(cw+1,0,cw,H);cx.clip();
+
+    // Galaxy
+    const gt=Math.max(0,t-3);
+    drawMiniGraph(rightCenter,ch,gt,ra);
+
+    // "Done" indicator — appears fast while left side is still grinding
+    if(t>7){
+      const da=fi(7,0.8)*ra;
+      // Status pill at top
+      cx.globalAlpha=da;
+      const pw=180,ph2=28,px=rightCenter-pw/2,py=65;
+      cx.fillStyle='rgba(94,234,212,0.08)';cx.beginPath();cx.roundRect(px,py,pw,ph2,14);cx.fill();
+      cx.strokeStyle='rgba(94,234,212,0.2)';cx.stroke();
+      cx.font='600 11px "DM Sans"';cx.fillStyle='#5eead4';cx.textAlign='center';
+      cx.fillText('✓  Map ready — 0.6s',rightCenter,py+18);cx.textAlign='left';
+      cx.globalAlpha=1;
+    }
+
+    // Cost + context — clean, below graph
+    if(t>9){
+      const sa=fi(9,1)*ra;
+      txt('$0.03',rightCenter,H-200,'700 36px "Space Mono"','#5eead4',sa);
+      txt('this exploration',rightCenter,H-175,'300 13px "DM Sans"','#4a5568',sa*0.7);
+    }
+
+    if(t>11){
+      const sa=fi(11,1)*ra;
+      txt('5.4%',rightCenter,H-135,'700 28px "Space Mono"','#5eead4',sa);
+      txt('context used',rightCenter,H-112,'300 12px "DM Sans"','#4a5568',sa*0.6);
+    }
+
+    // Correct answer — appears way before left side's wrong answer
+    if(t>13){
+      const ca=fi(13,1.5)*ra;
+      cx.globalAlpha=ca;
+      const ay=H-90;
+      cx.fillStyle='rgba(94,234,212,0.03)';cx.beginPath();cx.roundRect(rightCenter-W*0.21,ay-50,W*0.42,70,8);cx.fill();
+      cx.strokeStyle='rgba(94,234,212,0.1)';cx.stroke();
+      cx.font='400 12px "DM Sans"';cx.fillStyle='#9ca3af';
+      cx.textAlign='center';
+      cx.fillText('auth/ = 8 files · login.ts = hub (12 deps) · session.ts = 3 broken imports',rightCenter,ay-25);
+      cx.fillText('middleware.ts = bridge to api/ · legacy-crypto.ts = dead code (orphan)',rightCenter,ay-5);
+      cx.textAlign='left';
+      cx.globalAlpha=1;
+    }
+
+    if(t>16){
+      const cl2=fi(16,0.8)*ra;
+      txt('✓  Correct. First try.',rightCenter,H-20,'600 16px "DM Sans"','#5eead4',cl2);
+    }
+
+    cx.restore();
+  }
+
+  // ═══ FINALE: FULL SCREEN (36-50s) ═══
+  if(t>=35){
+    const fa=fi(36,2);
+
+    // Subtle glow
+    const ag=cx.createRadialGradient(cw,ch-30,0,cw,ch-30,W*0.3);
+    ag.addColorStop(0,`rgba(94,234,212,${0.015*fa})`);ag.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=ag;cx.fillRect(0,0,W,H);
+
+    // Orbital dots
+    for(let i=0;i<20;i++){const ang=i/20*TAU+t*0.1;const d=240+Math.sin(t*0.25+i)*18;cx.fillStyle=`rgba(94,234,212,${0.04*fa})`;cx.beginPath();cx.arc(cw+Math.cos(ang)*d,ch-30+Math.sin(ang)*d*0.3,1,0,TAU);cx.fill()}
+
+    txt('Athena',cw,ch-80,'800 82px "DM Sans"','#f1f5f9',fa);
+    txt('for codebases',cw,ch-30,'300 24px "DM Sans"','#6b7280',fa*0.7);
+
+    const cmdA=fi(39,1);
+    const pulse=1+Math.sin(t*2)*0.008;
+    cx.save();cx.translate(cw,ch+25);cx.scale(pulse,pulse);
+    txt('npx athena-code-mcp',0,0,'500 28px "Space Mono"','#5eead4',cmdA);
+    cx.restore();
+
+    const tagA=fi(41,0.8);
+    txt('19 tools  ·  auto-updates  ·  open source',cw,ch+75,'400 14px "DM Sans"','#374151',tagA);
+
+    const closeA=fi(43,0.8);
+    txt('Maximum output. Minimum tokens.',cw,ch+115,'500 17px "DM Sans"','#5eead4',closeA*0.5);
+
+    if(t>45){
+      const endA=fi(45,1);
+      txt('github.com/jhashibanshu-Code/markdown-viewer-mac',cw,H-30,'400 11px "Space Mono"','#1f2937',endA);
+    }
+  }
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+document.addEventListener('click',()=>{if(AC.state==='suspended')AC.resume()},{once:true});
+</script>
+</body>
+</html>

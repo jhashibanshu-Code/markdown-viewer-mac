@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Athena Code MCP - Premium Short</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif}
+canvas{display:block;width:100vw;height:100vh;background:#000}
+</style>
+</head>
+<body>
+<canvas id="scene" aria-label="Athena Code MCP premium short ad"></canvas>
+<script>
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+const TAU = Math.PI * 2;
+const DURATION = 26;
+let W = 0, H = 0, DPR = 1, start = 0;
+
+const C = {
+  white: '#ffffff',
+  pearl: '#f5f7fb',
+  zinc: '#a1a1aa',
+  dim: '#51525c',
+  teal: '#5eead4',
+  teal2: '#2dd4bf',
+  red: '#f87171',
+  gold: '#fbbf24',
+  sky: '#7dd3fc',
+  violet: '#c4b5fd',
+  green: '#86efac'
+};
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = Math.floor(W * DPR);
+  canvas.height = Math.floor(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+resize();
+addEventListener('resize', resize);
+
+function clamp(v) { return Math.max(0, Math.min(1, v)); }
+function ease(v) { v = clamp(v); return v < 0.5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2; }
+function out(v) { return 1 - Math.pow(1 - clamp(v), 3); }
+function fi(t, s, d) { return ease((t - s) / d); }
+function fo(t, s, d) { return 1 - ease((t - s) / d); }
+function live(t, s, e, edge = 0.55) { return Math.min(fi(t, s, edge), fo(t, e - edge, edge)); }
+function mix(a, b, p) { return a + (b - a) * p; }
+function mono(size, weight = 700) { return `${weight} ${size}px "SF Mono","Menlo","Consolas",monospace`; }
+function sans(size, weight = 600) { return `${weight} ${size}px -apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif`; }
+
+function text(str, x, y, size, weight, color, a = 1, align = 'left', lineHeight = 1.12) {
+  if (a <= 0.01) return;
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.fillStyle = color;
+  ctx.font = sans(size, weight);
+  ctx.textAlign = align;
+  ctx.textBaseline = 'alphabetic';
+  String(str).split('\n').forEach((line, i) => ctx.fillText(line, x, y + i * size * lineHeight));
+  ctx.restore();
+}
+
+function code(str, x, y, size, color, a = 1, align = 'left', weight = 700) {
+  if (a <= 0.01) return;
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.fillStyle = color;
+  ctx.font = mono(size, weight);
+  ctx.textAlign = align;
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(str, x, y);
+  ctx.restore();
+}
+
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function panel(x, y, w, h, a = 1) {
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.fillStyle = 'rgba(255,255,255,0.035)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  rr(x, y, w, h, 18);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+function chip(label, x, y, color, a = 1) {
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.font = mono(15, 650);
+  const w = ctx.measureText(label).width + 28;
+  ctx.fillStyle = 'rgba(255,255,255,0.045)';
+  ctx.strokeStyle = color.replace(')', ',0.28)').replace('rgb', 'rgba');
+  rr(x, y, w, 36, 18);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.fillText(label, x + w / 2, y + 23);
+  ctx.restore();
+}
+
+const seedRand = (() => {
+  let s = 12591;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+})();
+
+const clusterColors = [
+  [94, 234, 212],
+  [125, 211, 252],
+  [251, 191, 36],
+  [134, 239, 172],
+  [196, 181, 253],
+  [248, 113, 113]
+];
+const nodes = [];
+const edges = [];
+for (let i = 0; i < 170; i++) {
+  const c = i % clusterColors.length;
+  const angle = i * 2.399963229728653;
+  const ring = 96 + Math.floor(i / clusterColors.length) * 8.5;
+  const hub = i % 23 === 0 || i % 41 === 0;
+  nodes.push({
+    x: Math.cos(angle) * ring + (c - 2.5) * 42,
+    y: Math.sin(angle) * ring * 0.56 + Math.cos(c) * 28,
+    z: Math.sin(angle * 0.72) * 280 + (c - 2.5) * 34,
+    r: hub ? 6.6 : 2.2 + seedRand() * 2.2,
+    c,
+    hub
+  });
+}
+for (let i = 0; i < nodes.length; i++) {
+  for (let j = i + 1; j < nodes.length; j++) {
+    const same = nodes[i].c === nodes[j].c;
+    if ((same && seedRand() < 0.032) || (!same && seedRand() < 0.004)) edges.push([i, j, seedRand()]);
+  }
+}
+for (let i = 0; i < 36; i++) edges.push([i * 3 % nodes.length, (i * 17 + 29) % nodes.length, seedRand()]);
+
+const stars = Array.from({ length: 260 }, () => ({
+  x: (seedRand() - 0.5) * 3800,
+  y: (seedRand() - 0.5) * 2400,
+  z: (seedRand() - 0.5) * 3200,
+  a: 0.12 + seedRand() * 0.6,
+  s: 0.25 + seedRand() * 0.55,
+  p: seedRand() * TAU
+}));
+
+function project(n, t, scale = 1, ox = 0, oy = 0) {
+  const rot = t * 0.1;
+  const x1 = n.x * Math.cos(rot) - n.z * Math.sin(rot);
+  const z1 = n.x * Math.sin(rot) + n.z * Math.cos(rot);
+  const y1 = n.y * Math.cos(rot * 0.32) - z1 * Math.sin(rot * 0.32) * 0.1;
+  const p = 820 / (900 + z1);
+  return {
+    x: W * 0.54 + ox + x1 * p * scale,
+    y: H * 0.5 + oy + y1 * p * scale,
+    s: p,
+    z: z1
+  };
+}
+
+function bg(t) {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  const g1 = ctx.createRadialGradient(W * 0.58, H * 0.45, 0, W * 0.58, H * 0.45, W * 0.62);
+  g1.addColorStop(0, 'rgba(94,234,212,0.045)');
+  g1.addColorStop(0.42, 'rgba(125,211,252,0.018)');
+  g1.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g1;
+  ctx.fillRect(0, 0, W, H);
+
+  const g2 = ctx.createRadialGradient(W * 0.2, H * 0.78, 0, W * 0.2, H * 0.78, W * 0.5);
+  g2.addColorStop(0, 'rgba(251,191,36,0.018)');
+  g2.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g2;
+  ctx.fillRect(0, 0, W, H);
+
+  for (const s of stars) {
+    const p = project(s, t * 0.28, 1.0);
+    if (p.x < -10 || p.x > W + 10 || p.y < -10 || p.y > H + 10) continue;
+    ctx.fillStyle = `rgba(255,255,255,${s.a * (0.75 + Math.sin(t * 1.2 + s.p) * 0.25)})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, s.s, 0, TAU);
+    ctx.fill();
+  }
+}
+
+function graph(t, a = 1, scale = 1, ox = 0, oy = 0, selected = -1) {
+  if (a <= 0.01) return;
+  const pts = nodes.map(n => project(n, t, scale, ox, oy));
+  ctx.save();
+  ctx.globalAlpha = a;
+
+  for (const [ai, bi, ph] of edges) {
+    const pa = pts[ai], pb = pts[bi];
+    const n = nodes[ai];
+    const active = selected < 0 || selected === ai || selected === bi || (ai % 23 === 0 && selected > -1);
+    const [r, g, b] = clusterColors[n.c];
+    const pulse = 0.08 + Math.max(0, Math.sin(t * 2.1 + ph * TAU)) * 0.12;
+    ctx.strokeStyle = `rgba(${r},${g},${b},${pulse * (active ? 1 : 0.18)})`;
+    ctx.lineWidth = Math.max(0.35, (pa.s + pb.s) * 0.36 * scale);
+    ctx.beginPath();
+    ctx.moveTo(pa.x, pa.y);
+    ctx.quadraticCurveTo((pa.x + pb.x) / 2 + (pb.y - pa.y) * 0.04, (pa.y + pb.y) / 2 - (pb.x - pa.x) * 0.04, pb.x, pb.y);
+    ctx.stroke();
+  }
+
+  const sorted = nodes.map((n, i) => ({ n, i, p: pts[i] })).sort((a, b) => a.p.z - b.p.z);
+  for (const item of sorted) {
+    const { n, i, p } = item;
+    if (p.x < -30 || p.x > W + 30 || p.y < -30 || p.y > H + 30) continue;
+    const active = selected < 0 || selected === i || i % 23 === 0;
+    const [r, g, b] = clusterColors[n.c];
+    const radius = Math.max(1.2, n.r * p.s * scale * (n.hub ? 1.08 : 1));
+    const opacity = active ? 0.9 : 0.15;
+
+    if (n.hub) {
+      const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius * 7);
+      glow.addColorStop(0, `rgba(${r},${g},${b},${0.18 * opacity})`);
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, radius * 7, 0, TAU);
+      ctx.fill();
+    }
+
+    const nodeGrad = ctx.createRadialGradient(p.x - radius * 0.3, p.y - radius * 0.35, 0, p.x, p.y, radius * 1.2);
+    nodeGrad.addColorStop(0, `rgba(255,255,255,${0.95 * opacity})`);
+    nodeGrad.addColorStop(0.34, `rgba(${r},${g},${b},${0.95 * opacity})`);
+    nodeGrad.addColorStop(1, `rgba(${Math.max(0, r - 70)},${Math.max(0, g - 70)},${Math.max(0, b - 70)},${0.55 * opacity})`);
+    ctx.fillStyle = nodeGrad;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, radius, 0, TAU);
+    ctx.fill();
+  }
+
+  if (selected > -1) {
+    const p = pts[selected];
+    ctx.strokeStyle = 'rgba(94,234,212,0.52)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 44 + Math.sin(t * 3) * 3, 0, TAU);
+    ctx.stroke();
+    callout('billing.ts', 'hub: 14 dependents', 'blast radius visible before edit', p.x + 58, p.y - 18, a);
+  }
+
+  ctx.restore();
+}
+
+function callout(title, line1, line2, x, y, a = 1) {
+  ctx.save();
+  ctx.globalAlpha = a;
+  panel(x, y, 280, 96, a);
+  code(title, x + 18, y + 31, 17, C.teal, a, 'left', 750);
+  text(line1, x + 18, y + 58, 15, 500, C.white, a);
+  text(line2, x + 18, y + 80, 13, 450, C.zinc, a);
+  ctx.restore();
+}
+
+function terminal(t, a) {
+  const w = Math.min(680, W * 0.42);
+  const h = 360;
+  const x = W * 0.075;
+  const y = H * 0.46 - h / 2;
+  panel(x, y, w, h, a);
+  ctx.save();
+  ctx.globalAlpha = a;
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = ['#ff5f57', '#ffbd2e', '#28c840'][i];
+    ctx.beginPath();
+    ctx.arc(x + 24 + i * 18, y + 24, 5, 0, TAU);
+    ctx.fill();
+  }
+  code('$ claude "refactor billing"', x + 24, y + 64, 18, C.white, a, 'left', 550);
+  const files = [
+    'Reading src/payments/billing.ts',
+    'Reading src/api/invoices.ts',
+    'Reading src/auth/session.ts',
+    'Reading src/utils/legacy-crypto.ts',
+    'Reading src/workers/dispatch.ts',
+    'Reading tests/payment-flow.spec.ts'
+  ];
+  const shown = Math.min(files.length, Math.floor(out((t - 0.7) / 2.2) * files.length));
+  for (let i = 0; i < shown; i++) {
+    text(files[i], x + 24, y + 102 + i * 30, 15, 450, i === shown - 1 ? C.red : C.dim, a);
+  }
+
+  const prog = out((t - 1.1) / 2.3);
+  const bx = x + 24, by = y + h - 54, bw = w - 48, bh = 20;
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  rr(bx, by, bw, bh, 6);
+  ctx.fill();
+  const fw = bw * Math.min(1, prog * 1.02);
+  const grad = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+  grad.addColorStop(0, '#7f1d1d');
+  grad.addColorStop(1, '#f87171');
+  ctx.fillStyle = grad;
+  rr(bx, by, fw, bh, 6);
+  ctx.fill();
+  code(`context ${Math.round(prog * 91)}%`, bx + bw / 2, by + 15, 10, '#ffffff', a * 0.88, 'center', 700);
+  ctx.restore();
+}
+
+function costCard(t, a) {
+  const x = W * 0.61, y = H * 0.27;
+  text('Cost is the first hook.', x, y - 50, 28, 650, C.white, a, 'left');
+  text('Spend tokens on work, not repo rereads.', x, y - 17, 18, 420, C.zinc, a, 'left');
+  panel(x, y + 18, 420, 210, a);
+  code('$136/mo', x + 28, y + 82, 52, C.red, a);
+  text('raw exploration', x + 275, y + 80, 17, 500, C.zinc, a);
+  code('$9/mo', x + 28, y + 145, 52, C.teal, a);
+  text('with Athena maps', x + 242, y + 143, 17, 500, C.zinc, a);
+  text('Up to $1,521/year saved on a 994-file repo.', x + 28, y + 195, 17, 580, C.gold, a);
+}
+
+function accuracyScene(t, a) {
+  const x = W * 0.075, y = H * 0.2;
+  text('Then sell accuracy.', x, y, 66, 720, C.white, a);
+  text('Athena gives the agent the files that matter before it edits.', x, y + 54, 24, 400, C.zinc, a);
+
+  const by = y + 128;
+  const items = [
+    ['hubs', 'what everything depends on', C.teal],
+    ['bridges', 'where systems connect', C.gold],
+    ['blast radius', 'what can break next', C.red],
+    ['reading order', 'where to start first', C.sky]
+  ];
+  for (let i = 0; i < items.length; i++) {
+    const ix = x + (i % 2) * 365;
+    const iy = by + Math.floor(i / 2) * 102;
+    const ia = a * fi(t, 5.2 + i * 0.28, 0.5);
+    panel(ix, iy, 318, 76, ia);
+    code(items[i][0], ix + 20, iy + 32, 20, items[i][2], ia);
+    text(items[i][1], ix + 20, iy + 57, 15, 430, C.zinc, ia);
+  }
+}
+
+function toolsScene(t, a) {
+  const x = W * 0.065;
+  const top = H * 0.18;
+  text('22 tools. Sold as outcomes.', x, top, 48, 720, C.white, a);
+  text('The names are technical. The value is simple.', x, top + 40, 22, 420, C.zinc, a);
+
+  const rows = [
+    ['query_context', 'Find exact cited context', C.teal],
+    ['repo_health', 'Detect dead code and risk', C.green],
+    ['blast_radius', 'Know what breaks before commit', C.gold],
+    ['check_map_freshness', 'Never use a stale map', C.sky],
+    ['enable_auto_mapping', 'Auto-update on every commit', C.violet]
+  ];
+  for (let i = 0; i < rows.length; i++) {
+    const y = top + 104 + i * 64;
+    const ia = a * fi(t, 11.0 + i * 0.22, 0.45);
+    chip(rows[i][0], x, y, rows[i][2], ia);
+    text(rows[i][1], x + 310, y + 24, 21, 560, C.white, ia);
+  }
+
+  const bx = W - 460, by = H - 270;
+  panel(bx, by, 360, 182, a);
+  text('Best users', bx + 26, by + 42, 22, 700, C.white, a);
+  text('Claude Code power users\nlarge repos and monorepos\nteams paying API bills', bx + 26, by + 83, 19, 430, C.zinc, a, 'left', 1.45);
+}
+
+function proofScene(t, a) {
+  const x = W * 0.08, y = H * 0.18;
+  text('Proof beats feature lists.', x, y, 55, 720, C.white, a);
+  text('994 real source files. Benchmarked locally.', x, y + 46, 23, 430, C.zinc, a);
+
+  const stats = [
+    ['453,522', 'raw tokens', C.red],
+    ['15,541', 'with map', C.teal],
+    ['29:1', 'compression', C.gold],
+    ['0.5s', 'map generation', C.white]
+  ];
+  const sx = x, sy = y + 118;
+  for (let i = 0; i < stats.length; i++) {
+    const ix = sx + i * 300;
+    const ia = a * fi(t, 17.3 + i * 0.18, 0.45);
+    code(stats[i][0], ix, sy, 45, stats[i][2], ia);
+    text(stats[i][1], ix, sy + 33, 16, 480, C.zinc, ia);
+  }
+}
+
+function cta(t, a) {
+  const cx = W / 2, cy = H / 2;
+  const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.38);
+  glow.addColorStop(0, `rgba(94,234,212,${0.045 * a})`);
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  text('Athena Code MCP', cx, cy - 90, 78, 760, C.white, a, 'center');
+  text('Lower cost. Better first tries. Fresh repo intelligence.', cx, cy - 30, 26, 420, C.zinc, a, 'center');
+  code('npx athena-code-mcp', cx, cy + 48, 34, C.teal, a, 'center', 650);
+  text('22 tools. Zero config. Open source.', cx, cy + 100, 20, 520, C.dim, a, 'center');
+}
+
+function render(now) {
+  if (!start) start = now;
+  const t = Math.min((now - start) / 1000, DURATION);
+
+  bg(t);
+
+  const graphIntro = live(t, 7.4, 22.2, 1.0);
+  graph(t, graphIntro, 1.25, t < 15 ? 80 : 0, 0, t > 8.7 && t < 13.2 ? 46 : -1);
+
+  const s1 = live(t, 0, 4.9, 0.65);
+  terminal(t, s1);
+  costCard(t, s1 * fi(t, 1.1, 0.8));
+
+  const s2 = live(t, 4.7, 10.0, 0.7);
+  accuracyScene(t, s2);
+
+  const s3 = live(t, 10.0, 16.8, 0.7);
+  toolsScene(t, s3);
+
+  const s4 = live(t, 16.5, 21.6, 0.7);
+  proofScene(t, s4);
+
+  const s5 = fi(t, 21.2, 1.0);
+  cta(t, s5);
+
+  if (t >= DURATION - 0.1) window.__videoDone = true;
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+</script>
+</body>
+</html>

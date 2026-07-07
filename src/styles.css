@@ -1557,17 +1557,23 @@ button:disabled {
   box-sizing: border-box;
   width: min(760px, calc(100vw - 36px));
   height: min(760px, calc(100vh - 72px));
-  height: min(760px, calc(100dvh - 72px));
   min-height: min(420px, calc(100vh - 72px));
-  min-height: min(420px, calc(100dvh - 72px));
   max-height: calc(100vh - 72px);
-  max-height: calc(100dvh - 72px);
   overflow: hidden;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
   background: var(--panel);
   box-shadow: var(--shadow);
   padding: 12px;
+}
+
+@supports (height: 100dvh) {
+  .command-panel,
+  .search-panel {
+    height: min(760px, calc(100dvh - 72px));
+    min-height: min(420px, calc(100dvh - 72px));
+    max-height: calc(100dvh - 72px);
+  }
 }
 
 .command-panel h2,
@@ -3111,10 +3117,8 @@ button:disabled {
   .history-panel {
     width: calc(100vw - 8px);
     height: calc(100vh - 8px);
-    height: calc(100dvh - 8px);
     min-height: 0;
     max-height: calc(100vh - 8px);
-    max-height: calc(100dvh - 8px);
   }
 
   .graph-panel,
@@ -3160,6 +3164,18 @@ button:disabled {
     .workspace.split .vault-sidebar.mobile-open {
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+}
+
+@supports (height: 100dvh) {
+  @media (max-width: 480px) {
+    .command-panel,
+    .search-panel,
+    .recovery-panel,
+    .history-panel {
+      height: calc(100dvh - 8px);
+      max-height: calc(100dvh - 8px);
     }
   }
 }

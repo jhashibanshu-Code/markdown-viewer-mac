@@ -4,15 +4,15 @@
   "profile": "3d-scene",
   "exportProfile": "analysis",
   "exportProfileLabel": "Analysis",
-  "exportFingerprint": "2eb2e578c15b3dd8c9988589",
+  "exportFingerprint": "df3ef911d3899cdb1042ade8",
   "root": "/Users/shibanshujha/Documents/markdown-viewer-mac",
-  "generatedAt": "2026-07-05T16:49:22.064Z",
+  "generatedAt": "2026-07-06T01:54:09.049Z",
   "activePath": "src/renderer.js",
   "counts": {
-    "nodes": 175,
+    "nodes": 184,
     "edges": 4,
     "unresolved": 2,
-    "sceneNodes": 175,
+    "sceneNodes": 184,
     "sceneEdges": 4
   },
   "limits": {
@@ -30,10 +30,10 @@
     "perspective": 900
   },
   "bounds": {
-    "minX": 189,
+    "minX": 182,
     "minY": -3,
-    "maxX": 1110,
-    "maxY": 851
+    "maxX": 1132,
+    "maxY": 857
   },
   "seeds": [
     "src/renderer.js",
@@ -173,13 +173,21 @@
     "docs/four-track-completion-plan.md",
     "docs/marketing/ad-creatives.md",
     "docs/marketing/ads/ad-3d-graph.html",
+    "docs/marketing/ads/ad-animation.html",
+    "docs/marketing/ads/ad-apple-premium.html",
+    "docs/marketing/ads/ad-athena-final.html",
+    "docs/marketing/ads/ad-atlas.html",
     "docs/marketing/ads/ad-before-after.html",
     "docs/marketing/ads/ad-benchmark.html",
+    "docs/marketing/ads/ad-emotion.html",
     "docs/marketing/ads/ad-impossible.html",
     "docs/marketing/ads/ad-resourceai-live.html",
+    "docs/marketing/ads/ad-split.html",
     "docs/marketing/ads/explorer-v2.html",
     "docs/marketing/ads/explorer-v3.html",
+    "docs/marketing/ads/repo-brain-video.html",
     "docs/marketing/go-to-market.md",
+    "docs/marketing/repo-brain-one-pager.md",
     "docs/marketing/twitter-thread.md",
     "docs/mega-stress-test-plan.md",
     "docs/obsidian-app-audit.md",
@@ -203,6 +211,7 @@
     "scripts/package-mac-zip.mjs",
     "scripts/release-checksums.mjs",
     "scripts/release-readiness.mjs",
+    "scripts/render-repo-brain-video.mjs",
     "scripts/sign-dev-mac.mjs",
     "scripts/validate-syntax.mjs",
     "scripts/verify-mac-app.mjs",
@@ -361,11 +370,19 @@
     "docs/four-track-completion-plan.md",
     "docs/marketing/ad-creatives.md",
     "docs/marketing/ads/ad-3d-graph.html",
+    "docs/marketing/ads/ad-animation.html",
+    "docs/marketing/ads/ad-apple-premium.html",
+    "docs/marketing/ads/ad-athena-final.html",
+    "docs/marketing/ads/ad-atlas.html",
     "docs/marketing/ads/ad-before-after.html",
     "docs/marketing/ads/ad-benchmark.html",
+    "docs/marketing/ads/ad-emotion.html",
     "docs/marketing/ads/ad-impossible.html",
     "docs/marketing/ads/ad-resourceai-live.html",
+    "docs/marketing/ads/ad-split.html",
+    "docs/marketing/ads/repo-brain-video.html",
     "docs/marketing/go-to-market.md",
+    "docs/marketing/repo-brain-one-pager.md",
     "docs/marketing/twitter-thread.md",
     "docs/mega-stress-test-plan.md",
     "docs/obsidian-app-audit.md",
@@ -383,6 +400,7 @@
     "scripts/mcp-safety-check.mjs",
     "scripts/package-mac-zip.mjs",
     "scripts/release-checksums.mjs",
+    "scripts/render-repo-brain-video.mjs",
     "scripts/sign-dev-mac.mjs",
     "scripts/validate-syntax.mjs",
     "SECURITY.md",
@@ -406,7 +424,7 @@
         },
         {
           "path": "src/renderer.js",
-          "words": 11688
+          "words": 12313
         },
         {
           "path": "scripts/stress-check.mjs",
@@ -418,7 +436,7 @@
         },
         {
           "path": "skills/shibanshu-markdown-context/SKILL.md",
-          "words": 663
+          "words": 669
         },
         {
           "path": "src/capacitor-bridge.js",
@@ -426,11 +444,11 @@
         },
         {
           "path": "src/index.html",
-          "words": 3290
+          "words": 3291
         },
         {
           "path": "src/styles.css",
-          "words": 8510
+          "words": 8681
         },
         {
           "path": "android/app/src/main/assets/public/assets/katex-CddkPoXu.js",
@@ -458,7 +476,7 @@
         },
         {
           "path": "mcp-server.mjs",
-          "words": 3767
+          "words": 3692
         },
         {
           "path": "packages/mcp-server/export-context.mjs",
@@ -466,11 +484,11 @@
         },
         {
           "path": "packages/mcp-server/mcp-server.mjs",
-          "words": 3764
+          "words": 3692
         },
         {
           "path": "electron/main.cjs",
-          "words": 7712
+          "words": 7711
         },
         {
           "path": "electron/preload.cjs",
@@ -488,7 +506,7 @@
       "documents": [
         {
           "path": "src/renderer.js",
-          "words": 11688
+          "words": 12313
         },
         {
           "path": "scripts/stress-check.mjs",
@@ -500,7 +518,7 @@
         },
         {
           "path": "skills/shibanshu-markdown-context/SKILL.md",
-          "words": 663
+          "words": 669
         },
         {
           "path": "src/capacitor-bridge.js",
@@ -508,11 +526,11 @@
         },
         {
           "path": "src/index.html",
-          "words": 3290
+          "words": 3291
         },
         {
           "path": "src/styles.css",
-          "words": 8510
+          "words": 8681
         }
       ]
     },
@@ -522,19 +540,19 @@
       "documents": [
         {
           "path": "src/renderer.js",
-          "words": 11688
+          "words": 12313
         },
         {
           "path": "electron/main.cjs",
-          "words": 7712
+          "words": 7711
         },
         {
           "path": "mcp-server.mjs",
-          "words": 3767
+          "words": 3692
         },
         {
           "path": "packages/mcp-server/mcp-server.mjs",
-          "words": 3764
+          "words": 3692
         },
         {
           "path": "scripts/stress-check.mjs",
@@ -550,7 +568,11 @@
         },
         {
           "path": "src/index.html",
-          "words": 3290
+          "words": 3291
+        },
+        {
+          "path": "scripts/browser-ui-smoke.mjs",
+          "words": 2882
         },
         {
           "path": "packages/mcp-server/export-context.mjs",
@@ -561,12 +583,8 @@
           "words": 7331
         },
         {
-          "path": "scripts/browser-ui-smoke.mjs",
-          "words": 2798
-        },
-        {
           "path": "index.html",
-          "words": 3274
+          "words": 3297
         },
         {
           "path": "src/capacitor-bridge.js",
@@ -582,7 +600,7 @@
         },
         {
           "path": "src/styles.css",
-          "words": 8510
+          "words": 8681
         },
         {
           "path": "scripts/generate-app-icon.mjs",
@@ -624,11 +642,11 @@
       "documents": [
         {
           "path": "electron/main.cjs",
-          "words": 7712
+          "words": 7711
         },
         {
           "path": "mcp-server.mjs",
-          "words": 3767
+          "words": 3692
         },
         {
           "path": "packages/mcp-server/export-context.mjs",
@@ -636,7 +654,7 @@
         },
         {
           "path": "packages/mcp-server/mcp-server.mjs",
-          "words": 3764
+          "words": 3692
         },
         {
           "path": "scripts/export-claude-map.mjs",
@@ -652,7 +670,7 @@
         },
         {
           "path": "src/renderer.js",
-          "words": 11688
+          "words": 12313
         },
         {
           "path": "scripts/verify-mac-app.mjs",
@@ -660,7 +678,7 @@
         },
         {
           "path": "scripts/browser-ui-smoke.mjs",
-          "words": 2798
+          "words": 2882
         },
         {
           "path": "bin/shibanshu-markdown.mjs",
@@ -706,7 +724,7 @@
         },
         {
           "path": "src/renderer.js",
-          "words": 11688
+          "words": 12313
         },
         {
           "path": "package-lock.json",
@@ -754,7 +772,7 @@
         },
         {
           "path": "electron/main.cjs",
-          "words": 7712
+          "words": 7711
         },
         {
           "path": "packages/mcp-server/export-context.mjs",
@@ -800,7 +818,7 @@
       "outgoing": 2,
       "tags": [],
       "aliases": [],
-      "words": 11688,
+      "words": 12313,
       "symbols": [
         {
           "name": "native",
@@ -956,13 +974,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 319.4,
-        "y": 355.6,
+        "x": 326.2,
+        "y": 340.1,
         "z": 130
       },
       "projection": {
-        "x": 300,
-        "y": 346,
+        "x": 303,
+        "y": 333,
         "depth": 0.4,
         "scale": 1
       },
@@ -1014,14 +1032,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 454.2,
-        "y": 285,
-        "z": -130
+        "x": 350.8,
+        "y": 370.1,
+        "z": 3
       },
       "projection": {
-        "x": 553,
-        "y": 254,
-        "depth": 0,
+        "x": 410,
+        "y": 337,
+        "depth": 0.1,
         "scale": 0.9
       },
       "seed": true
@@ -1036,7 +1054,7 @@
         "#tags"
       ],
       "aliases": [],
-      "words": 663,
+      "words": 669,
       "symbols": [
         {
           "name": "Shibanshu Markdown Context",
@@ -1089,14 +1107,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 397.7,
-        "y": 319.1,
-        "z": -17.4
+        "x": 277.5,
+        "y": 270,
+        "z": 6.2
       },
       "projection": {
-        "x": 452,
-        "y": 295,
-        "depth": 0.1,
+        "x": 356,
+        "y": 243,
+        "depth": 0,
         "scale": 0.9
       },
       "seed": true
@@ -1177,15 +1195,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 578.8,
-        "y": 230.5,
+        "x": 619.7,
+        "y": 253,
         "z": -130
       },
       "projection": {
-        "x": 647,
-        "y": 215,
+        "x": 681,
+        "y": 239,
         "depth": 0.3,
-        "scale": 0.9
+        "scale": 1
       },
       "seed": true
     },
@@ -1197,20 +1215,20 @@
       "outgoing": 0,
       "tags": [],
       "aliases": [],
-      "words": 3290,
+      "words": 3291,
       "symbols": [],
       "routeScore": 272,
       "active": false,
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 312.7,
-        "y": 378.4,
+        "x": 356.9,
+        "y": 352.4,
         "z": -130
       },
       "projection": {
-        "x": 463,
-        "y": 316,
+        "x": 489,
+        "y": 301,
         "depth": 0,
         "scale": 0.8
       },
@@ -1224,20 +1242,20 @@
       "outgoing": 0,
       "tags": [],
       "aliases": [],
-      "words": 8510,
+      "words": 8681,
       "symbols": [],
       "routeScore": 268,
       "active": false,
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 477.6,
-        "y": 435.4,
+        "x": 475,
+        "y": 437.7,
         "z": 130
       },
       "projection": {
-        "x": 417,
-        "y": 451,
+        "x": 415,
+        "y": 452,
         "depth": 0.6,
         "scale": 1
       },
@@ -1258,15 +1276,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 253.6,
-        "y": 696.5,
+        "x": 300.9,
+        "y": 712,
         "z": 130
       },
       "projection": {
-        "x": 291,
-        "y": 614,
+        "x": 319,
+        "y": 638,
         "depth": 0,
-        "scale": 0.8
+        "scale": 0.9
       },
       "seed": true
     },
@@ -1285,14 +1303,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 754.5,
+        "x": 750.5,
         "y": 712,
         "z": 130
       },
       "projection": {
-        "x": 660,
-        "y": 803,
-        "depth": 0.9,
+        "x": 656,
+        "y": 801,
+        "depth": 0.8,
         "scale": 1.1
       },
       "seed": true
@@ -1312,13 +1330,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 613.7,
-        "y": 555.7,
+        "x": 533,
+        "y": 467.8,
         "z": -130
       },
       "projection": {
-        "x": 667,
-        "y": 501,
+        "x": 609,
+        "y": 416,
         "depth": 0,
         "scale": 0.9
       },
@@ -1339,15 +1357,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 754.7,
-        "y": 436.4,
+        "x": 707.7,
+        "y": 499.1,
         "z": -130
       },
       "projection": {
-        "x": 791,
-        "y": 429,
-        "depth": 0.4,
-        "scale": 1
+        "x": 745,
+        "y": 475,
+        "depth": 0.2,
+        "scale": 0.9
       },
       "seed": true
     },
@@ -1366,15 +1384,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 791.3,
-        "y": 521.8,
-        "z": 6.4
+        "x": 798.5,
+        "y": 542.5,
+        "z": 130
       },
       "projection": {
-        "x": 767,
-        "y": 568,
-        "depth": 0.8,
-        "scale": 1.1
+        "x": 713,
+        "y": 658,
+        "depth": 1,
+        "scale": 1.2
       },
       "seed": true
     },
@@ -1393,13 +1411,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 575.4,
-        "y": 226.3,
+        "x": 637.2,
+        "y": 402.9,
         "z": 130
       },
       "projection": {
-        "x": 488,
-        "y": 244,
+        "x": 551,
+        "y": 456,
         "depth": 1,
         "scale": 1.2
       },
@@ -1420,15 +1438,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 396.1,
-        "y": 604.5,
-        "z": 130
+        "x": 332.4,
+        "y": 546.3,
+        "z": 4.5
       },
       "projection": {
-        "x": 370,
-        "y": 581,
-        "depth": 0.3,
-        "scale": 0.9
+        "x": 407,
+        "y": 477,
+        "depth": 0,
+        "scale": 0.8
       },
       "seed": true
     },
@@ -1447,13 +1465,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 872.5,
-        "y": 452.2,
+        "x": 860.5,
+        "y": 410.4,
         "z": -130
       },
       "projection": {
-        "x": 906,
-        "y": 469,
+        "x": 898,
+        "y": 426,
         "depth": 0.6,
         "scale": 1
       },
@@ -1474,15 +1492,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 396.9,
+        "x": 434.5,
         "y": 48,
         "z": 130
       },
       "projection": {
-        "x": 325,
-        "y": 23,
-        "depth": 0.9,
-        "scale": 1.1
+        "x": 355,
+        "y": 22,
+        "depth": 1,
+        "scale": 1.2
       },
       "seed": true
     },
@@ -1501,12 +1519,12 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 819.2,
+        "x": 817.8,
         "y": 48,
         "z": -130
       },
       "projection": {
-        "x": 896,
+        "x": 894,
         "y": 22,
         "depth": 1,
         "scale": 1.2
@@ -1528,13 +1546,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 437.1,
-        "y": 622,
+        "x": 499.2,
+        "y": 624.9,
         "z": -130
       },
       "projection": {
-        "x": 544,
-        "y": 514,
+        "x": 585,
+        "y": 529,
         "depth": 0,
         "scale": 0.8
       },
@@ -1555,15 +1573,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 640.6,
-        "y": 134.8,
+        "x": 734.7,
+        "y": 48,
         "z": -130
       },
       "projection": {
-        "x": 704,
-        "y": 122,
-        "depth": 0.5,
-        "scale": 1
+        "x": 801,
+        "y": 25,
+        "depth": 0.8,
+        "scale": 1.1
       },
       "seed": true
     },
@@ -1582,15 +1600,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 649.3,
-        "y": 279.6,
-        "z": 130
+        "x": 574.4,
+        "y": 314,
+        "z": -130
       },
       "projection": {
-        "x": 561,
-        "y": 318,
-        "depth": 1,
-        "scale": 1.2
+        "x": 642,
+        "y": 291,
+        "depth": 0.2,
+        "scale": 0.9
       },
       "seed": true
     },
@@ -1609,13 +1627,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 504.1,
+        "x": 385.5,
         "y": 712,
-        "z": -48.6
+        "z": -36.3
       },
       "projection": {
-        "x": 550,
-        "y": 622,
+        "x": 468,
+        "y": 596,
         "depth": 0,
         "scale": 0.8
       },
@@ -1636,15 +1654,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 797.7,
-        "y": 368.4,
+        "x": 835.3,
+        "y": 372.8,
         "z": 130
       },
       "projection": {
-        "x": 723,
-        "y": 459,
+        "x": 770,
+        "y": 476,
         "depth": 1,
-        "scale": 1.3
+        "scale": 1.4
       },
       "seed": true
     },
@@ -1663,15 +1681,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 623,
+        "x": 664.5,
         "y": 712,
-        "z": -14.3
+        "z": 130
       },
       "projection": {
-        "x": 620,
-        "y": 670,
-        "depth": 0.1,
-        "scale": 0.9
+        "x": 577,
+        "y": 763,
+        "depth": 0.7,
+        "scale": 1.1
       },
       "seed": true
     },
@@ -1690,15 +1708,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 538.6,
-        "y": 130.9,
+        "x": 587.3,
+        "y": 133.1,
         "z": -130
       },
       "projection": {
-        "x": 616,
-        "y": 117,
-        "depth": 0.3,
-        "scale": 0.9
+        "x": 657,
+        "y": 120,
+        "depth": 0.4,
+        "scale": 1
       },
       "seed": true
     },
@@ -1723,13 +1741,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 143.1,
-        "y": 377.6,
+        "x": 130.1,
+        "y": 433,
         "z": 130
       },
       "projection": {
-        "x": 200,
-        "y": 341,
+        "x": 199,
+        "y": 385,
         "depth": 0,
         "scale": 0.9
       },
@@ -1750,14 +1768,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 315.1,
+        "x": 356.8,
         "y": 48,
         "z": 130
       },
       "projection": {
-        "x": 265,
-        "y": 27,
-        "depth": 0.7,
+        "x": 295,
+        "y": 25,
+        "depth": 0.8,
         "scale": 1.1
       },
       "seed": true
@@ -1777,13 +1795,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 492.9,
-        "y": 207.1,
+        "x": 459.2,
+        "y": 186.5,
         "z": -130
       },
       "projection": {
-        "x": 580,
-        "y": 188,
+        "x": 555,
+        "y": 167,
         "depth": 0.1,
         "scale": 0.9
       },
@@ -1804,15 +1822,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 600,
-        "y": 138.5,
+        "x": 562.1,
+        "y": 126,
         "z": 130
       },
       "projection": {
-        "x": 509,
-        "y": 136,
+        "x": 472,
+        "y": 119,
         "depth": 1,
-        "scale": 1.3
+        "scale": 1.2
       },
       "seed": true
     },
@@ -1837,13 +1855,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 928.3,
-        "y": 667.4,
+        "x": 961.9,
+        "y": 643.9,
         "z": 130
       },
       "projection": {
-        "x": 857,
-        "y": 851,
+        "x": 905,
+        "y": 846,
         "depth": 1,
         "scale": 1.3
       },
@@ -1864,7 +1882,7 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 542,
+        "x": 542.7,
         "y": 712,
         "z": -130
       },
@@ -1891,15 +1909,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 474.2,
+        "x": 579.2,
         "y": 48,
         "z": 130
       },
       "projection": {
-        "x": 388,
-        "y": 20,
+        "x": 485,
+        "y": 14,
         "depth": 1,
-        "scale": 1.2
+        "scale": 1.3
       },
       "seed": true
     },
@@ -1918,13 +1936,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 569.8,
-        "y": 458.2,
+        "x": 589.5,
+        "y": 499.3,
         "z": 130
       },
       "projection": {
-        "x": 492,
-        "y": 495,
+        "x": 510,
+        "y": 541,
         "depth": 0.8,
         "scale": 1.1
       },
@@ -1945,13 +1963,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 326.9,
-        "y": 284.5,
+        "x": 307.3,
+        "y": 271.6,
         "z": -130
       },
       "projection": {
-        "x": 469,
-        "y": 244,
+        "x": 456,
+        "y": 232,
         "depth": 0,
         "scale": 0.8
       },
@@ -1972,14 +1990,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 421.3,
-        "y": 132.2,
+        "x": 372.1,
+        "y": 146.6,
         "z": -130
       },
       "projection": {
-        "x": 528,
-        "y": 116,
-        "depth": 0.1,
+        "x": 494,
+        "y": 128,
+        "depth": 0,
         "scale": 0.9
       },
       "seed": true
@@ -1999,14 +2017,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 360.9,
-        "y": 164.6,
+        "x": 434.1,
+        "y": 129.7,
         "z": 130
       },
       "projection": {
-        "x": 310,
-        "y": 158,
-        "depth": 0.7,
+        "x": 362,
+        "y": 121,
+        "depth": 0.9,
         "scale": 1.1
       },
       "seed": true
@@ -2026,13 +2044,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 1015.1,
-        "y": 424.7,
+        "x": 1042.1,
+        "y": 469.2,
         "z": -130
       },
       "projection": {
-        "x": 1077,
-        "y": 477,
+        "x": 1103,
+        "y": 531,
         "depth": 0.9,
         "scale": 1.1
       },
@@ -2053,14 +2071,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 306.1,
-        "y": 508.1,
+        "x": 278.5,
+        "y": 549.6,
         "z": 130
       },
       "projection": {
-        "x": 305,
-        "y": 479,
-        "depth": 0.2,
+        "x": 293,
+        "y": 507,
+        "depth": 0.1,
         "scale": 0.9
       },
       "seed": true
@@ -2080,15 +2098,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 327.1,
-        "y": 159.2,
-        "z": -35.1
+        "x": 391,
+        "y": 246.7,
+        "z": -130
       },
       "projection": {
-        "x": 408,
-        "y": 142,
-        "depth": 0.1,
-        "scale": 0.9
+        "x": 509,
+        "y": 217,
+        "depth": 0,
+        "scale": 0.8
       },
       "seed": true
     },
@@ -2107,15 +2125,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 1027.3,
-        "y": 373,
+        "x": 1025.7,
+        "y": 314.3,
         "z": 130
       },
       "projection": {
-        "x": 1061,
-        "y": 548,
+        "x": 1075,
+        "y": 460,
         "depth": 1,
-        "scale": 1.6
+        "scale": 1.7
       },
       "seed": true
     },
@@ -2140,13 +2158,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 356.7,
-        "y": 523.6,
+        "x": 320.4,
+        "y": 469.3,
         "z": -130
       },
       "projection": {
-        "x": 493,
-        "y": 430,
+        "x": 470,
+        "y": 385,
         "depth": 0,
         "scale": 0.8
       },
@@ -2167,13 +2185,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 289.2,
-        "y": 183.9,
+        "x": 176.8,
+        "y": 149.3,
         "z": -130
       },
       "projection": {
-        "x": 442,
-        "y": 158,
+        "x": 375,
+        "y": 127,
         "depth": 0,
         "scale": 0.8
       },
@@ -2194,13 +2212,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 453.4,
-        "y": 540.3,
+        "x": 474.2,
+        "y": 530.3,
         "z": -130
       },
       "projection": {
-        "x": 554,
-        "y": 458,
+        "x": 568,
+        "y": 454,
         "depth": 0,
         "scale": 0.8
       },
@@ -2221,14 +2239,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 244.7,
-        "y": 101.7,
+        "x": 186,
+        "y": 114.6,
         "z": 130
       },
       "projection": {
-        "x": 225,
-        "y": 87,
-        "depth": 0.5,
+        "x": 191,
+        "y": 101,
+        "depth": 0.4,
         "scale": 1
       },
       "seed": true
@@ -2248,14 +2266,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 602.7,
-        "y": 712,
+        "x": 611.8,
+        "y": 654.6,
         "z": 130
       },
       "projection": {
-        "x": 525,
-        "y": 738,
-        "depth": 0.5,
+        "x": 532,
+        "y": 692,
+        "depth": 0.6,
         "scale": 1
       },
       "seed": true
@@ -2275,15 +2293,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 371.9,
+        "x": 326.5,
         "y": 712,
-        "z": -39.8
+        "z": -130
       },
       "projection": {
-        "x": 462,
-        "y": 592,
+        "x": 480,
+        "y": 553,
         "depth": 0,
-        "scale": 0.8
+        "scale": 0.7
       },
       "seed": true
     },
@@ -2302,13 +2320,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 136.8,
-        "y": 292.5,
+        "x": 128.2,
+        "y": 269.9,
         "z": -130
       },
       "projection": {
-        "x": 361,
-        "y": 237,
+        "x": 355,
+        "y": 219,
         "depth": 0,
         "scale": 0.7
       },
@@ -2329,13 +2347,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 914.4,
-        "y": 71,
+        "x": 906.1,
+        "y": 48,
         "z": -130
       },
       "projection": {
-        "x": 1012,
-        "y": 47,
+        "x": 1005,
+        "y": 17,
         "depth": 1,
         "scale": 1.2
       },
@@ -2362,15 +2380,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 779.2,
-        "y": 274,
-        "z": 3.4
+        "x": 959.9,
+        "y": 273.1,
+        "z": 0.5
       },
       "projection": {
-        "x": 774,
-        "y": 302,
+        "x": 1006,
+        "y": 331,
         "depth": 1,
-        "scale": 1.2
+        "scale": 1.4
       },
       "seed": true
     },
@@ -2389,13 +2407,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 904.8,
-        "y": 304.6,
+        "x": 935.8,
+        "y": 396.5,
         "z": 130
       },
       "projection": {
-        "x": 874,
-        "y": 407,
+        "x": 906,
+        "y": 542,
         "depth": 1,
         "scale": 1.5
       },
@@ -2416,13 +2434,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 653.5,
-        "y": 469.3,
+        "x": 611.4,
+        "y": 423.3,
         "z": -130
       },
       "projection": {
-        "x": 701,
-        "y": 438,
+        "x": 669,
+        "y": 392,
         "depth": 0.1,
         "scale": 0.9
       },
@@ -2449,13 +2467,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 1021.7,
-        "y": 309.1,
+        "x": 940.4,
+        "y": 244.8,
         "z": -130
       },
       "projection": {
-        "x": 1110,
-        "y": 351,
+        "x": 1015,
+        "y": 263,
         "depth": 1,
         "scale": 1.2
       },
@@ -2476,13 +2494,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 735.3,
-        "y": 298.5,
+        "x": 720.4,
+        "y": 237.1,
         "z": 130
       },
       "projection": {
-        "x": 653,
-        "y": 357,
+        "x": 638,
+        "y": 276,
         "depth": 1,
         "scale": 1.3
       },
@@ -2503,14 +2521,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 475.3,
-        "y": 282,
+        "x": 476.2,
+        "y": 201.6,
         "z": 130
       },
       "projection": {
-        "x": 406,
-        "y": 295,
-        "depth": 0.8,
+        "x": 401,
+        "y": 206,
+        "depth": 0.9,
         "scale": 1.1
       },
       "seed": true
@@ -2530,15 +2548,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 722.8,
-        "y": 48,
+        "x": 465.9,
+        "y": 103.5,
         "z": -130
       },
       "projection": {
-        "x": 789,
-        "y": 26,
-        "depth": 0.8,
-        "scale": 1.1
+        "x": 560,
+        "y": 89,
+        "depth": 0.2,
+        "scale": 0.9
       },
       "seed": true
     },
@@ -2557,13 +2575,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 774.6,
+        "x": 746.7,
         "y": 712,
         "z": -130
       },
       "projection": {
-        "x": 790,
-        "y": 664,
+        "x": 767,
+        "y": 656,
         "depth": 0.1,
         "scale": 0.9
       },
@@ -2584,13 +2602,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 783.9,
-        "y": 204.1,
+        "x": 779.8,
+        "y": 213.4,
         "z": -130
       },
       "projection": {
-        "x": 839,
-        "y": 203,
+        "x": 834,
+        "y": 212,
         "depth": 0.7,
         "scale": 1.1
       },
@@ -2611,14 +2629,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 574.5,
-        "y": 610.1,
+        "x": 521.6,
+        "y": 608.1,
         "z": 130
       },
       "projection": {
-        "x": 500,
-        "y": 639,
-        "depth": 0.6,
+        "x": 459,
+        "y": 620,
+        "depth": 0.5,
         "scale": 1
       },
       "seed": true
@@ -2638,14 +2656,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 237.5,
-        "y": 317.6,
+        "x": 232.8,
+        "y": 363.5,
         "z": 130
       },
       "projection": {
-        "x": 246,
-        "y": 300,
-        "depth": 0.3,
+        "x": 248,
+        "y": 341,
+        "depth": 0.2,
         "scale": 0.9
       },
       "seed": true
@@ -2665,13 +2683,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 163.4,
-        "y": 511.1,
+        "x": 208.2,
+        "y": 447.4,
         "z": -130
       },
       "projection": {
-        "x": 386,
-        "y": 394,
+        "x": 406,
+        "y": 355,
         "depth": 0,
         "scale": 0.7
       },
@@ -2692,14 +2710,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 999.7,
-        "y": 524.2,
+        "x": 977.1,
+        "y": 557.5,
         "z": -130
       },
       "projection": {
-        "x": 1040,
-        "y": 573,
-        "depth": 0.8,
+        "x": 1007,
+        "y": 597,
+        "depth": 0.7,
         "scale": 1.1
       },
       "seed": true
@@ -2719,14 +2737,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 697.5,
-        "y": 290.2,
+        "x": 672.3,
+        "y": 147.1,
         "z": -130
       },
       "projection": {
-        "x": 748,
-        "y": 283,
-        "depth": 0.5,
+        "x": 732,
+        "y": 136,
+        "depth": 0.6,
         "scale": 1
       },
       "seed": true
@@ -2746,15 +2764,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 510.4,
-        "y": 526.5,
+        "x": 553.3,
+        "y": 425.5,
         "z": 130
       },
       "projection": {
-        "x": 447,
-        "y": 544,
-        "depth": 0.6,
-        "scale": 1
+        "x": 477,
+        "y": 458,
+        "depth": 0.8,
+        "scale": 1.1
       },
       "seed": true
     },
@@ -2773,15 +2791,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 991.1,
-        "y": 560.6,
+        "x": 1029.2,
+        "y": 523.8,
         "z": 130
       },
       "projection": {
-        "x": 960,
-        "y": 772,
+        "x": 1027,
+        "y": 750,
         "depth": 1,
-        "scale": 1.4
+        "scale": 1.5
       },
       "seed": true
     },
@@ -2800,15 +2818,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 973,
-        "y": 179.1,
+        "x": 971.7,
+        "y": 117.8,
         "z": 130
       },
       "projection": {
-        "x": 1013,
-        "y": 226,
+        "x": 1026,
+        "y": 117,
         "depth": 1,
-        "scale": 1.7
+        "scale": 1.8
       },
       "seed": true
     },
@@ -2833,15 +2851,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 877.7,
-        "y": 167.3,
+        "x": 774.6,
+        "y": 129.6,
         "z": -130
       },
       "projection": {
-        "x": 949,
-        "y": 167,
-        "depth": 1,
-        "scale": 1.2
+        "x": 836,
+        "y": 119,
+        "depth": 0.8,
+        "scale": 1.1
       },
       "seed": true
     },
@@ -2860,13 +2878,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 824.5,
-        "y": 272.9,
+        "x": 797.7,
+        "y": 291.6,
         "z": 130
       },
       "projection": {
-        "x": 764,
-        "y": 343,
+        "x": 728,
+        "y": 362,
         "depth": 1,
         "scale": 1.4
       },
@@ -2887,15 +2905,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 334.1,
-        "y": 48,
+        "x": 241.5,
+        "y": 56.9,
         "z": -130
       },
       "projection": {
-        "x": 465,
-        "y": 38,
+        "x": 407,
+        "y": 48,
         "depth": 0,
-        "scale": 0.9
+        "scale": 0.8
       },
       "seed": true
     },
@@ -2914,14 +2932,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 483.6,
-        "y": 611.5,
+        "x": 485,
+        "y": 524.2,
         "z": 130
       },
       "projection": {
-        "x": 431,
-        "y": 612,
-        "depth": 0.4,
+        "x": 427,
+        "y": 535,
+        "depth": 0.5,
         "scale": 1
       },
       "seed": true
@@ -2947,15 +2965,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 929.7,
-        "y": 399.2,
-        "z": 4.9
+        "x": 892.2,
+        "y": 438.5,
+        "z": 0
       },
       "projection": {
-        "x": 941,
-        "y": 480,
+        "x": 890,
+        "y": 511,
         "depth": 1,
-        "scale": 1.3
+        "scale": 1.2
       },
       "seed": true
     },
@@ -2974,13 +2992,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 202.8,
-        "y": 581.5,
+        "x": 160.9,
+        "y": 553.4,
         "z": 130
       },
       "projection": {
-        "x": 253,
-        "y": 516,
+        "x": 228,
+        "y": 485,
         "depth": 0,
         "scale": 0.8
       },
@@ -3001,14 +3019,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 836.8,
-        "y": 371.8,
+        "x": 781.1,
+        "y": 409.9,
         "z": -130
       },
       "projection": {
-        "x": 878,
-        "y": 383,
-        "depth": 0.6,
+        "x": 818,
+        "y": 410,
+        "depth": 0.5,
         "scale": 1
       },
       "seed": true
@@ -3028,14 +3046,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 581,
-        "y": 417.1,
+        "x": 628,
+        "y": 515.9,
         "z": -130
       },
       "projection": {
-        "x": 645,
-        "y": 382,
-        "depth": 0.1,
+        "x": 679,
+        "y": 472,
+        "depth": 0,
         "scale": 0.9
       },
       "seed": true
@@ -3061,15 +3079,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 984.3,
-        "y": 187.9,
+        "x": 984.7,
+        "y": 152.9,
         "z": -130
       },
       "projection": {
-        "x": 1084,
-        "y": 199,
+        "x": 1092,
+        "y": 155,
         "depth": 1,
-        "scale": 1.2
+        "scale": 1.3
       },
       "seed": true
     },
@@ -3088,13 +3106,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 814.4,
-        "y": 484,
+        "x": 779.6,
+        "y": 452,
         "z": 130
       },
       "projection": {
-        "x": 735,
-        "y": 600,
+        "x": 697,
+        "y": 552,
         "depth": 1,
         "scale": 1.3
       },
@@ -3115,14 +3133,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 248.3,
-        "y": 432.7,
+        "x": 222.9,
+        "y": 467.7,
         "z": 130
       },
       "projection": {
-        "x": 264,
-        "y": 404,
-        "depth": 0.2,
+        "x": 253,
+        "y": 429,
+        "depth": 0.1,
         "scale": 0.9
       },
       "seed": true
@@ -3142,15 +3160,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 641.2,
-        "y": 183.5,
-        "z": 3.9
+        "x": 526.3,
+        "y": 379.2,
+        "z": -130
       },
       "projection": {
-        "x": 634,
-        "y": 184,
-        "depth": 0.9,
-        "scale": 1.1
+        "x": 605,
+        "y": 342,
+        "depth": 0,
+        "scale": 0.9
       },
       "seed": true
     },
@@ -3175,15 +3193,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 501.2,
+        "x": 507.3,
         "y": 48,
-        "z": -10.2
+        "z": 130
       },
       "projection": {
-        "x": 517,
-        "y": 27,
-        "depth": 0.7,
-        "scale": 1.1
+        "x": 417,
+        "y": 18,
+        "depth": 1,
+        "scale": 1.2
       },
       "seed": true
     },
@@ -3208,14 +3226,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 866.2,
-        "y": 712,
+        "x": 812.7,
+        "y": 693.1,
         "z": -130
       },
       "projection": {
-        "x": 873,
-        "y": 693,
-        "depth": 0.3,
+        "x": 825,
+        "y": 661,
+        "depth": 0.2,
         "scale": 0.9
       },
       "seed": true
@@ -3235,15 +3253,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 499.1,
-        "y": 193.1,
+        "x": 565.7,
+        "y": 206.1,
         "z": 130
       },
       "projection": {
-        "x": 419,
-        "y": 198,
+        "x": 479,
+        "y": 219,
         "depth": 1,
-        "scale": 1.1
+        "scale": 1.2
       },
       "seed": true
     },
@@ -3262,14 +3280,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 384,
-        "y": 266,
+        "x": 390.3,
+        "y": 407.7,
         "z": 130
       },
       "projection": {
-        "x": 336,
-        "y": 267,
-        "depth": 0.6,
+        "x": 352,
+        "y": 407,
+        "depth": 0.5,
         "scale": 1
       },
       "seed": true
@@ -3289,13 +3307,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 214.7,
-        "y": 191.4,
+        "x": 229,
+        "y": 187.7,
         "z": 130
       },
       "projection": {
-        "x": 218,
-        "y": 178,
+        "x": 226,
+        "y": 175,
         "depth": 0.4,
         "scale": 1
       },
@@ -3322,13 +3340,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 149,
-        "y": 263.1,
+        "x": 190.5,
+        "y": 267.6,
         "z": 130
       },
       "projection": {
-        "x": 189,
-        "y": 242,
+        "x": 213,
+        "y": 249,
         "depth": 0.2,
         "scale": 0.9
       },
@@ -3349,15 +3367,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 743.7,
+        "x": 735.8,
         "y": 48,
-        "z": -10.9
+        "z": -15
       },
       "projection": {
-        "x": 758,
+        "x": 750,
         "y": 17,
         "depth": 1,
-        "scale": 1.3
+        "scale": 1.2
       },
       "seed": true
     },
@@ -3376,15 +3394,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 872.2,
-        "y": 88.3,
-        "z": -3
+        "x": 886.5,
+        "y": 48,
+        "z": 49.3
       },
       "projection": {
-        "x": 914,
-        "y": 68,
+        "x": 922,
+        "y": 2,
         "depth": 1,
-        "scale": 1.4
+        "scale": 1.5
       },
       "seed": true
     },
@@ -3403,13 +3421,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 273.6,
+        "x": 242.1,
         "y": 712,
         "z": -130
       },
       "projection": {
-        "x": 451,
-        "y": 543,
+        "x": 435,
+        "y": 537,
         "depth": 0,
         "scale": 0.7
       },
@@ -3430,14 +3448,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 375.3,
-        "y": 48,
-        "z": 18.3
+        "x": 324.8,
+        "y": 141,
+        "z": 130
       },
       "projection": {
-        "x": 398,
-        "y": 30,
-        "depth": 0.5,
+        "x": 282,
+        "y": 131,
+        "depth": 0.7,
         "scale": 1
       },
       "seed": true
@@ -3457,15 +3475,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 648.1,
-        "y": 630.8,
-        "z": -130
+        "x": 411.9,
+        "y": 304.2,
+        "z": 130
       },
       "projection": {
-        "x": 691,
-        "y": 567,
-        "depth": 0,
-        "scale": 0.9
+        "x": 359,
+        "y": 309,
+        "depth": 0.6,
+        "scale": 1
       },
       "seed": true
     },
@@ -3484,13 +3502,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 458.6,
+        "x": 403.9,
         "y": 712,
         "z": -130
       },
       "projection": {
-        "x": 558,
-        "y": 581,
+        "x": 525,
+        "y": 569,
         "depth": 0,
         "scale": 0.8
       },
@@ -3511,15 +3529,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 297.9,
-        "y": 237.2,
+        "x": 386.1,
+        "y": 218.2,
         "z": 130
       },
       "projection": {
-        "x": 275,
-        "y": 229,
-        "depth": 0.5,
-        "scale": 1
+        "x": 333,
+        "y": 217,
+        "depth": 0.7,
+        "scale": 1.1
       },
       "seed": true
     },
@@ -3538,14 +3556,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 946.3,
-        "y": 638.4,
+        "x": 855.2,
+        "y": 601,
         "z": -130
       },
       "projection": {
-        "x": 962,
-        "y": 660,
-        "depth": 0.5,
+        "x": 873,
+        "y": 599,
+        "depth": 0.4,
         "scale": 1
       },
       "seed": true
@@ -3565,13 +3583,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 131.5,
-        "y": 410.6,
+        "x": 119.9,
+        "y": 391.3,
         "z": -130
       },
       "projection": {
-        "x": 365,
-        "y": 321,
+        "x": 358,
+        "y": 307,
         "depth": 0,
         "scale": 0.7
       },
@@ -3592,15 +3610,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 679.6,
-        "y": 48,
+        "x": 637.4,
+        "y": 233.6,
         "z": 130
       },
       "projection": {
-        "x": 594,
-        "y": 8,
+        "x": 549,
+        "y": 260,
         "depth": 1,
-        "scale": 1.4
+        "scale": 1.2
       },
       "seed": true
     },
@@ -3619,15 +3637,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 645.9,
+        "x": 633,
         "y": 48,
-        "z": -130
+        "z": 28.9
       },
       "projection": {
-        "x": 713,
-        "y": 29,
-        "depth": 0.6,
-        "scale": 1
+        "x": 613,
+        "y": 19,
+        "depth": 1,
+        "scale": 1.2
       },
       "seed": true
     },
@@ -3652,15 +3670,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 548,
-        "y": 326.1,
+        "x": 702,
+        "y": 240.9,
         "z": -130
       },
       "projection": {
-        "x": 621,
-        "y": 299,
-        "depth": 0.1,
-        "scale": 0.9
+        "x": 755,
+        "y": 235,
+        "depth": 0.5,
+        "scale": 1
       },
       "seed": true
     },
@@ -3679,15 +3697,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 728.4,
-        "y": 529,
-        "z": 130
+        "x": 740.3,
+        "y": 528.4,
+        "z": -4.2
       },
       "projection": {
-        "x": 639,
-        "y": 616,
-        "depth": 1,
-        "scale": 1.2
+        "x": 721,
+        "y": 555,
+        "depth": 0.6,
+        "scale": 1
       },
       "seed": true
     },
@@ -3706,15 +3724,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 728.5,
-        "y": 130.1,
+        "x": 764.6,
+        "y": 111.9,
         "z": 130
       },
       "projection": {
-        "x": 651,
-        "y": 129,
+        "x": 697,
+        "y": 103,
         "depth": 1,
-        "scale": 1.4
+        "scale": 1.5
       },
       "seed": true
     },
@@ -3733,15 +3751,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 671.3,
-        "y": 618.6,
+        "x": 704.1,
+        "y": 544.1,
         "z": 130
       },
       "projection": {
-        "x": 583,
-        "y": 682,
-        "depth": 0.8,
-        "scale": 1.1
+        "x": 615,
+        "y": 623,
+        "depth": 1,
+        "scale": 1.2
       },
       "seed": true
     },
@@ -3760,14 +3778,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 629.3,
-        "y": 534.7,
+        "x": 615,
+        "y": 572.4,
         "z": 130
       },
       "projection": {
-        "x": 545,
-        "y": 588,
-        "depth": 0.8,
+        "x": 533,
+        "y": 619,
+        "depth": 0.7,
         "scale": 1.1
       },
       "seed": true
@@ -3787,12 +3805,12 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 571.3,
+        "x": 589.5,
         "y": 48,
         "z": -130
       },
       "projection": {
-        "x": 645,
+        "x": 661,
         "y": 31,
         "depth": 0.5,
         "scale": 1
@@ -3814,15 +3832,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 204.2,
-        "y": 558.5,
-        "z": 17.4
+        "x": 255,
+        "y": 536.8,
+        "z": -130
       },
       "projection": {
-        "x": 327,
-        "y": 466,
+        "x": 435,
+        "y": 424,
         "depth": 0,
-        "scale": 0.8
+        "scale": 0.7
       },
       "seed": true
     },
@@ -3847,15 +3865,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 739.7,
-        "y": 430.5,
+        "x": 1029,
+        "y": 416.9,
         "z": 130
       },
       "projection": {
-        "x": 654,
-        "y": 515,
+        "x": 1053,
+        "y": 610,
         "depth": 1,
-        "scale": 1.2
+        "scale": 1.6
       },
       "seed": true
     },
@@ -3874,15 +3892,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 916.3,
-        "y": 65.6,
+        "x": 909.5,
+        "y": 306.3,
         "z": 130
       },
       "projection": {
-        "x": 936,
-        "y": 22,
+        "x": 881,
+        "y": 410,
         "depth": 1,
-        "scale": 1.7
+        "scale": 1.5
       },
       "seed": true
     },
@@ -3901,15 +3919,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 472.7,
-        "y": 194.1,
-        "z": 14.9
+        "x": 547.7,
+        "y": 48,
+        "z": -34.3
       },
       "projection": {
-        "x": 481,
-        "y": 186,
-        "depth": 0.5,
-        "scale": 1
+        "x": 572,
+        "y": 27,
+        "depth": 0.7,
+        "scale": 1.1
       },
       "seed": true
     },
@@ -3928,14 +3946,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 415.8,
+        "x": 331.3,
         "y": 48,
         "z": -130
       },
       "projection": {
-        "x": 522,
-        "y": 36,
-        "depth": 0.2,
+        "x": 464,
+        "y": 38,
+        "depth": 0,
         "scale": 0.9
       },
       "seed": true
@@ -3955,15 +3973,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 606.6,
-        "y": 539.6,
-        "z": 7.2
+        "x": 640.4,
+        "y": 615,
+        "z": -130
       },
       "projection": {
-        "x": 597,
-        "y": 533,
-        "depth": 0.4,
-        "scale": 1
+        "x": 686,
+        "y": 553,
+        "depth": 0,
+        "scale": 0.9
       },
       "seed": true
     },
@@ -3982,15 +4000,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 366,
-        "y": 432.2,
-        "z": 130
+        "x": 438.7,
+        "y": 428.4,
+        "z": -130
       },
       "projection": {
-        "x": 337,
-        "y": 425,
-        "depth": 0.4,
-        "scale": 1
+        "x": 543,
+        "y": 370,
+        "depth": 0,
+        "scale": 0.8
       },
       "seed": true
     },
@@ -4009,15 +4027,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 670.1,
-        "y": 383.7,
+        "x": 663.6,
+        "y": 336.6,
         "z": -130
       },
       "projection": {
-        "x": 719,
-        "y": 367,
+        "x": 715,
+        "y": 323,
         "depth": 0.3,
-        "scale": 0.9
+        "scale": 1
       },
       "seed": true
     },
@@ -4036,15 +4054,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 684.9,
-        "y": 201.7,
+        "x": 789.7,
+        "y": 190.5,
         "z": 130
       },
       "projection": {
-        "x": 599,
-        "y": 225,
+        "x": 725,
+        "y": 221,
         "depth": 1,
-        "scale": 1.3
+        "scale": 1.4
       },
       "seed": true
     },
@@ -4063,15 +4081,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 420.8,
-        "y": 356.7,
+        "x": 483.3,
+        "y": 355.2,
         "z": 130
       },
       "projection": {
-        "x": 369,
-        "y": 363,
-        "depth": 0.6,
-        "scale": 1
+        "x": 416,
+        "y": 373,
+        "depth": 0.7,
+        "scale": 1.1
       },
       "seed": true
     },
@@ -4090,13 +4108,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 932.9,
-        "y": 371.6,
+        "x": 907.1,
+        "y": 337.4,
         "z": -130
       },
       "projection": {
-        "x": 985,
-        "y": 402,
+        "x": 960,
+        "y": 361,
         "depth": 0.8,
         "scale": 1.1
       },
@@ -4117,13 +4135,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 953.2,
-        "y": 568.8,
-        "z": 0.7
+        "x": 860.6,
+        "y": 712,
+        "z": 130
       },
       "projection": {
-        "x": 946,
-        "y": 669,
+        "x": 772,
+        "y": 857,
         "depth": 1,
         "scale": 1.2
       },
@@ -4144,14 +4162,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 493.8,
+        "x": 512.6,
         "y": 48,
         "z": -130
       },
       "projection": {
-        "x": 581,
-        "y": 34,
-        "depth": 0.3,
+        "x": 596,
+        "y": 33,
+        "depth": 0.4,
         "scale": 1
       },
       "seed": true
@@ -4171,15 +4189,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 758.1,
-        "y": 341.1,
+        "x": 699.1,
+        "y": 413.3,
         "z": -130
       },
       "projection": {
-        "x": 801,
-        "y": 340,
-        "depth": 0.5,
-        "scale": 1
+        "x": 743,
+        "y": 398,
+        "depth": 0.3,
+        "scale": 0.9
       },
       "seed": true
     },
@@ -4198,14 +4216,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 414.9,
-        "y": 511.6,
+        "x": 388.3,
+        "y": 512.7,
         "z": 130
       },
       "projection": {
-        "x": 376,
-        "y": 506,
-        "depth": 0.4,
+        "x": 358,
+        "y": 501,
+        "depth": 0.3,
         "scale": 1
       },
       "seed": true
@@ -4225,13 +4243,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 995.9,
-        "y": 279.7,
+        "x": 988.3,
+        "y": 221.2,
         "z": 130
       },
       "projection": {
-        "x": 1029,
-        "y": 396,
+        "x": 1030,
+        "y": 300,
         "depth": 1,
         "scale": 1.7
       },
@@ -4252,15 +4270,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 753.9,
+        "x": 825.6,
         "y": 48,
         "z": 130
       },
       "projection": {
-        "x": 687,
-        "y": 3,
+        "x": 789,
+        "y": -3,
         "depth": 1,
-        "scale": 1.5
+        "scale": 1.6
       },
       "seed": true
     },
@@ -4340,13 +4358,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 768,
-        "y": 614,
+        "x": 803.1,
+        "y": 638.9,
         "z": 130
       },
       "projection": {
-        "x": 677,
-        "y": 717,
+        "x": 713,
+        "y": 757,
         "depth": 1,
         "scale": 1.2
       },
@@ -4367,13 +4385,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 654.6,
-        "y": 448.5,
+        "x": 690.5,
+        "y": 462.7,
         "z": 130
       },
       "projection": {
-        "x": 567,
-        "y": 509,
+        "x": 602,
+        "y": 534,
         "depth": 1,
         "scale": 1.2
       },
@@ -4405,15 +4423,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 360.1,
-        "y": 504.8,
-        "z": 10.1
+        "x": 316.7,
+        "y": 605.2,
+        "z": -130
       },
       "projection": {
-        "x": 419,
-        "y": 452,
+        "x": 472,
+        "y": 481,
         "depth": 0,
-        "scale": 0.9
+        "scale": 0.7
       },
       "seed": true
     },
@@ -4432,15 +4450,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 304,
-        "y": 601.9,
+        "x": 431.1,
+        "y": 607.8,
         "z": 130
       },
       "projection": {
-        "x": 312,
-        "y": 555,
-        "depth": 0.1,
-        "scale": 0.9
+        "x": 394,
+        "y": 593,
+        "depth": 0.3,
+        "scale": 1
       },
       "seed": true
     },
@@ -4520,13 +4538,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 265.5,
-        "y": 465.2,
+        "x": 283,
+        "y": 388.9,
         "z": -130
       },
       "projection": {
-        "x": 439,
-        "y": 375,
+        "x": 446,
+        "y": 321,
         "depth": 0,
         "scale": 0.8
       },
@@ -4603,14 +4621,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 836.8,
-        "y": 614.9,
+        "x": 780.9,
+        "y": 533.5,
         "z": -130
       },
       "projection": {
-        "x": 854,
-        "y": 605,
-        "depth": 0.4,
+        "x": 808,
+        "y": 521,
+        "depth": 0.3,
         "scale": 1
       },
       "seed": true
@@ -4630,15 +4648,123 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 528.9,
+        "x": 562.5,
         "y": 712,
         "z": 130
       },
       "projection": {
-        "x": 468,
-        "y": 710,
-        "depth": 0.4,
+        "x": 494,
+        "y": 722,
+        "depth": 0.5,
         "scale": 1
+      },
+      "seed": true
+    },
+    {
+      "path": "docs/marketing/ads/ad-animation.html",
+      "type": "code",
+      "degree": 0,
+      "incoming": 0,
+      "outgoing": 0,
+      "tags": [],
+      "aliases": [],
+      "words": 1312,
+      "symbols": [],
+      "routeScore": 0,
+      "active": false,
+      "hasMedia": false,
+      "hasCanvas": false,
+      "coordinates": {
+        "x": 300.4,
+        "y": 247.7,
+        "z": 130
+      },
+      "projection": {
+        "x": 277,
+        "y": 240,
+        "depth": 0.5,
+        "scale": 1
+      },
+      "seed": true
+    },
+    {
+      "path": "docs/marketing/ads/ad-apple-premium.html",
+      "type": "code",
+      "degree": 0,
+      "incoming": 0,
+      "outgoing": 0,
+      "tags": [],
+      "aliases": [],
+      "words": 1628,
+      "symbols": [],
+      "routeScore": 0,
+      "active": false,
+      "hasMedia": false,
+      "hasCanvas": false,
+      "coordinates": {
+        "x": 478.2,
+        "y": 197.8,
+        "z": 0.9
+      },
+      "projection": {
+        "x": 495,
+        "y": 189,
+        "depth": 0.5,
+        "scale": 1
+      },
+      "seed": true
+    },
+    {
+      "path": "docs/marketing/ads/ad-athena-final.html",
+      "type": "code",
+      "degree": 0,
+      "incoming": 0,
+      "outgoing": 0,
+      "tags": [],
+      "aliases": [],
+      "words": 2003,
+      "symbols": [],
+      "routeScore": 0,
+      "active": false,
+      "hasMedia": false,
+      "hasCanvas": false,
+      "coordinates": {
+        "x": 879.3,
+        "y": 126.3,
+        "z": 130
+      },
+      "projection": {
+        "x": 862,
+        "y": 129,
+        "depth": 1,
+        "scale": 1.6
+      },
+      "seed": true
+    },
+    {
+      "path": "docs/marketing/ads/ad-atlas.html",
+      "type": "code",
+      "degree": 0,
+      "incoming": 0,
+      "outgoing": 0,
+      "tags": [],
+      "aliases": [],
+      "words": 1480,
+      "symbols": [],
+      "routeScore": 0,
+      "active": false,
+      "hasMedia": false,
+      "hasCanvas": false,
+      "coordinates": {
+        "x": 679.1,
+        "y": 712,
+        "z": -130
+      },
+      "projection": {
+        "x": 712,
+        "y": 636,
+        "depth": 0,
+        "scale": 0.9
       },
       "seed": true
     },
@@ -4657,15 +4783,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 792.1,
-        "y": 190,
+        "x": 312.2,
+        "y": 450.2,
         "z": 130
       },
       "projection": {
-        "x": 728,
-        "y": 221,
-        "depth": 1,
-        "scale": 1.4
+        "x": 304,
+        "y": 430,
+        "depth": 0.3,
+        "scale": 0.9
       },
       "seed": true
     },
@@ -4684,15 +4810,42 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 526.7,
-        "y": 376.5,
+        "x": 674,
+        "y": 317.2,
         "z": 130
       },
       "projection": {
-        "x": 452,
-        "y": 403,
-        "depth": 0.8,
-        "scale": 1.1
+        "x": 586,
+        "y": 367,
+        "depth": 1,
+        "scale": 1.2
+      },
+      "seed": true
+    },
+    {
+      "path": "docs/marketing/ads/ad-emotion.html",
+      "type": "code",
+      "degree": 0,
+      "incoming": 0,
+      "outgoing": 0,
+      "tags": [],
+      "aliases": [],
+      "words": 1374,
+      "symbols": [],
+      "routeScore": 0,
+      "active": false,
+      "hasMedia": false,
+      "hasCanvas": false,
+      "coordinates": {
+        "x": 442.2,
+        "y": 48,
+        "z": 12
+      },
+      "projection": {
+        "x": 454,
+        "y": 28,
+        "depth": 0.6,
+        "scale": 1
       },
       "seed": true
     },
@@ -4711,15 +4864,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 900.8,
-        "y": 509.2,
+        "x": 877.6,
+        "y": 223.3,
         "z": 130
       },
       "projection": {
-        "x": 841,
-        "y": 666,
+        "x": 845,
+        "y": 282,
         "depth": 1,
-        "scale": 1.3
+        "scale": 1.5
       },
       "seed": true
     },
@@ -4738,15 +4891,42 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 339.2,
-        "y": 617.6,
+        "x": 473.9,
+        "y": 712,
         "z": -130
       },
       "projection": {
-        "x": 485,
-        "y": 493,
+        "x": 568,
+        "y": 585,
         "depth": 0,
-        "scale": 0.7
+        "scale": 0.8
+      },
+      "seed": true
+    },
+    {
+      "path": "docs/marketing/ads/ad-split.html",
+      "type": "code",
+      "degree": 0,
+      "incoming": 0,
+      "outgoing": 0,
+      "tags": [],
+      "aliases": [],
+      "words": 1748,
+      "symbols": [],
+      "routeScore": 0,
+      "active": false,
+      "hasMedia": false,
+      "hasCanvas": false,
+      "coordinates": {
+        "x": 436.5,
+        "y": 712,
+        "z": 55
+      },
+      "projection": {
+        "x": 450,
+        "y": 645,
+        "depth": 0,
+        "scale": 0.9
       },
       "seed": true
     },
@@ -4765,15 +4945,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 829.5,
-        "y": 48,
-        "z": 130
+        "x": 899.9,
+        "y": 711.3,
+        "z": 17
       },
       "projection": {
-        "x": 795,
-        "y": -3,
-        "depth": 1,
-        "scale": 1.6
+        "x": 861,
+        "y": 792,
+        "depth": 0.8,
+        "scale": 1.1
       },
       "seed": true
     },
@@ -4792,15 +4972,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 446.4,
-        "y": 712,
+        "x": 584.4,
+        "y": 328,
         "z": 130
       },
       "projection": {
-        "x": 410,
-        "y": 682,
-        "depth": 0.2,
-        "scale": 0.9
+        "x": 500,
+        "y": 362,
+        "depth": 1,
+        "scale": 1.2
       },
       "seed": true
     },
@@ -4819,15 +4999,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 199.6,
-        "y": 367.6,
-        "z": 14.7
+        "x": 662,
+        "y": 48,
+        "z": -130
       },
       "projection": {
-        "x": 312,
-        "y": 319,
-        "depth": 0,
-        "scale": 0.8
+        "x": 728,
+        "y": 28,
+        "depth": 0.7,
+        "scale": 1.1
       },
       "seed": true
     },
@@ -4846,15 +5026,42 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 856.3,
-        "y": 594.5,
+        "x": 341.4,
+        "y": 615.1,
         "z": 130
       },
       "projection": {
-        "x": 776,
-        "y": 738,
-        "depth": 1,
-        "scale": 1.3
+        "x": 336,
+        "y": 575,
+        "depth": 0.1,
+        "scale": 0.9
+      },
+      "seed": true
+    },
+    {
+      "path": "docs/marketing/ads/repo-brain-video.html",
+      "type": "code",
+      "degree": 0,
+      "incoming": 0,
+      "outgoing": 0,
+      "tags": [],
+      "aliases": [],
+      "words": 1020,
+      "symbols": [],
+      "routeScore": 0,
+      "active": false,
+      "hasMedia": false,
+      "hasCanvas": false,
+      "coordinates": {
+        "x": 887.4,
+        "y": 712,
+        "z": -130
+      },
+      "projection": {
+        "x": 893,
+        "y": 701,
+        "depth": 0.3,
+        "scale": 1
       },
       "seed": true
     },
@@ -4934,14 +5141,82 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 387,
-        "y": 213.3,
+        "x": 731.3,
+        "y": 609.8,
         "z": -130
       },
       "projection": {
-        "x": 505,
-        "y": 188,
-        "depth": 0,
+        "x": 760,
+        "y": 572,
+        "depth": 0.1,
+        "scale": 0.9
+      },
+      "seed": true
+    },
+    {
+      "path": "docs/marketing/repo-brain-one-pager.md",
+      "type": "markdown",
+      "degree": 0,
+      "incoming": 0,
+      "outgoing": 0,
+      "tags": [],
+      "aliases": [],
+      "words": 628,
+      "symbols": [
+        {
+          "name": "Shibanshu Markdown Viewer: The Repo Brain",
+          "kind": "heading",
+          "line": 1
+        },
+        {
+          "name": "The Big Idea",
+          "kind": "heading",
+          "line": 3
+        },
+        {
+          "name": "Why This Is Big",
+          "kind": "heading",
+          "line": 9
+        },
+        {
+          "name": "Reason To Believe",
+          "kind": "heading",
+          "line": 20
+        },
+        {
+          "name": "Why It Can Feel Groundbreaking",
+          "kind": "heading",
+          "line": 31
+        },
+        {
+          "name": "The Market Hook",
+          "kind": "heading",
+          "line": 43
+        },
+        {
+          "name": "What The Video Should Prove",
+          "kind": "heading",
+          "line": 51
+        },
+        {
+          "name": "Final Positioning",
+          "kind": "heading",
+          "line": 61
+        }
+      ],
+      "routeScore": 0,
+      "active": false,
+      "hasMedia": false,
+      "hasCanvas": false,
+      "coordinates": {
+        "x": 683.3,
+        "y": 712,
+        "z": -5.2
+      },
+      "projection": {
+        "x": 664,
+        "y": 694,
+        "depth": 0.3,
         "scale": 0.9
       },
       "seed": true
@@ -4967,15 +5242,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 219.8,
-        "y": 115.3,
-        "z": 6.8
+        "x": 315.2,
+        "y": 48,
+        "z": -2.8
       },
       "projection": {
-        "x": 309,
-        "y": 100,
-        "depth": 0.1,
-        "scale": 0.9
+        "x": 371,
+        "y": 33,
+        "depth": 0.3,
+        "scale": 1
       },
       "seed": true
     },
@@ -5035,15 +5310,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 920,
-        "y": 269.7,
+        "x": 995.5,
+        "y": 379.8,
         "z": -130
       },
       "projection": {
-        "x": 985,
-        "y": 289,
-        "depth": 0.9,
-        "scale": 1.1
+        "x": 1060,
+        "y": 424,
+        "depth": 1,
+        "scale": 1.2
       },
       "seed": true
     },
@@ -5083,15 +5358,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 664,
-        "y": 366.3,
+        "x": 738.6,
+        "y": 371,
         "z": 130
       },
       "projection": {
-        "x": 576,
-        "y": 422,
+        "x": 654,
+        "y": 446,
         "depth": 1,
-        "scale": 1.2
+        "scale": 1.3
       },
       "seed": true
     },
@@ -5171,13 +5446,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 199.2,
-        "y": 627.6,
+        "x": 140.7,
+        "y": 521.9,
         "z": -130
       },
       "projection": {
-        "x": 409,
-        "y": 476,
+        "x": 375,
+        "y": 398,
         "depth": 0,
         "scale": 0.7
       },
@@ -5244,15 +5519,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 723.8,
+        "x": 552.5,
         "y": 712,
-        "z": 23.6
+        "z": 51.6
       },
       "projection": {
-        "x": 685,
-        "y": 724,
-        "depth": 0.5,
-        "scale": 1
+        "x": 532,
+        "y": 679,
+        "depth": 0.2,
+        "scale": 0.9
       },
       "seed": true
     },
@@ -5297,13 +5572,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 221,
-        "y": 377.7,
+        "x": 224.1,
+        "y": 232.9,
         "z": -130
       },
       "projection": {
-        "x": 410,
-        "y": 306,
+        "x": 405,
+        "y": 196,
         "depth": 0,
         "scale": 0.8
       },
@@ -5345,15 +5620,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 263.7,
-        "y": 559.3,
+        "x": 209.8,
+        "y": 332.8,
         "z": -130
       },
       "projection": {
-        "x": 441,
-        "y": 441,
+        "x": 402,
+        "y": 272,
         "depth": 0,
-        "scale": 0.7
+        "scale": 0.8
       },
       "seed": true
     },
@@ -5403,13 +5678,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 371.1,
-        "y": 712,
+        "x": 197.9,
+        "y": 617,
         "z": -130
       },
       "projection": {
-        "x": 506,
-        "y": 562,
+        "x": 408,
+        "y": 469,
         "depth": 0,
         "scale": 0.7
       },
@@ -5446,15 +5721,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 839.8,
-        "y": 712,
+        "x": 869.9,
+        "y": 469.2,
         "z": 130
       },
       "projection": {
-        "x": 749,
-        "y": 845,
+        "x": 805,
+        "y": 606,
         "depth": 1,
-        "scale": 1.2
+        "scale": 1.3
       },
       "seed": true
     },
@@ -5466,7 +5741,7 @@
       "outgoing": 0,
       "tags": [],
       "aliases": [],
-      "words": 7712,
+      "words": 7711,
       "symbols": [
         {
           "name": "fs",
@@ -5534,15 +5809,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 366.6,
-        "y": 712,
-        "z": 130
+        "x": 172.3,
+        "y": 438.3,
+        "z": 6.9
       },
       "projection": {
-        "x": 358,
-        "y": 657,
-        "depth": 0.1,
-        "scale": 0.9
+        "x": 308,
+        "y": 369,
+        "depth": 0,
+        "scale": 0.8
       },
       "seed": true
     },
@@ -5587,13 +5862,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 158.3,
-        "y": 484.9,
+        "x": 120.9,
+        "y": 322.8,
         "z": 130
       },
       "projection": {
-        "x": 219,
-        "y": 431,
+        "x": 182,
+        "y": 292,
         "depth": 0,
         "scale": 0.9
       },
@@ -5607,22 +5882,22 @@
       "outgoing": 0,
       "tags": [],
       "aliases": [],
-      "words": 3274,
+      "words": 3297,
       "symbols": [],
       "routeScore": 166,
       "active": false,
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 542.7,
+        "x": 651.8,
         "y": 48,
         "z": 130
       },
       "projection": {
-        "x": 450,
-        "y": 16,
+        "x": 562,
+        "y": 10,
         "depth": 1,
-        "scale": 1.3
+        "scale": 1.4
       },
       "seed": true
     },
@@ -5634,7 +5909,7 @@
       "outgoing": 0,
       "tags": [],
       "aliases": [],
-      "words": 3767,
+      "words": 3692,
       "symbols": [
         {
           "name": "execFileAsync",
@@ -5694,7 +5969,7 @@
         {
           "name": "isMarkdownFile",
           "kind": "function",
-          "line": 282
+          "line": 288
         }
       ],
       "routeScore": 240,
@@ -5702,13 +5977,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 545.7,
-        "y": 508.3,
+        "x": 392.3,
+        "y": 504,
         "z": -130
       },
       "projection": {
-        "x": 618,
-        "y": 450,
+        "x": 515,
+        "y": 421,
         "depth": 0,
         "scale": 0.8
       },
@@ -5729,15 +6004,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 610.9,
+        "x": 726.4,
         "y": 48,
         "z": 130
       },
       "projection": {
-        "x": 518,
-        "y": 12,
+        "x": 651,
+        "y": 5,
         "depth": 1,
-        "scale": 1.3
+        "scale": 1.5
       },
       "seed": true
     },
@@ -5756,13 +6031,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 903,
-        "y": 537,
-        "z": -130
+        "x": 784.6,
+        "y": 712,
+        "z": 22.8
       },
       "projection": {
-        "x": 929,
-        "y": 556,
+        "x": 741,
+        "y": 747,
         "depth": 0.6,
         "scale": 1
       },
@@ -5844,14 +6119,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 829,
-        "y": 275.8,
+        "x": 841.5,
+        "y": 276.3,
         "z": -130
       },
       "projection": {
-        "x": 880,
-        "y": 284,
-        "depth": 0.7,
+        "x": 893,
+        "y": 286,
+        "depth": 0.8,
         "scale": 1.1
       },
       "seed": true
@@ -5864,7 +6139,7 @@
       "outgoing": 0,
       "tags": [],
       "aliases": [],
-      "words": 3764,
+      "words": 3692,
       "symbols": [
         {
           "name": "execFileAsync",
@@ -5924,7 +6199,7 @@
         {
           "name": "isMarkdownFile",
           "kind": "function",
-          "line": 282
+          "line": 288
         }
       ],
       "routeScore": 232,
@@ -5932,13 +6207,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 885.3,
-        "y": 400.8,
+        "x": 942.9,
+        "y": 519.6,
         "z": 130
       },
       "projection": {
-        "x": 833,
-        "y": 528,
+        "x": 897,
+        "y": 698,
         "depth": 1,
         "scale": 1.4
       },
@@ -5959,15 +6234,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 692.8,
-        "y": 202.3,
-        "z": -130
+        "x": 843,
+        "y": 146.2,
+        "z": -19.7
       },
       "projection": {
-        "x": 749,
-        "y": 195,
-        "depth": 0.5,
-        "scale": 1
+        "x": 873,
+        "y": 147,
+        "depth": 1,
+        "scale": 1.3
       },
       "seed": true
     },
@@ -5979,22 +6254,22 @@
       "outgoing": 0,
       "tags": [],
       "aliases": [],
-      "words": 100,
+      "words": 99,
       "symbols": [],
       "routeScore": 0,
       "active": false,
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 960.3,
-        "y": 241.4,
-        "z": 8.7
+        "x": 1034.9,
+        "y": 290,
+        "z": -130
       },
       "projection": {
-        "x": 1011,
-        "y": 291,
+        "x": 1132,
+        "y": 331,
         "depth": 1,
-        "scale": 1.4
+        "scale": 1.2
       },
       "seed": true
     },
@@ -6009,7 +6284,7 @@
       "words": 310,
       "symbols": [
         {
-          "name": "shibanshu-markdown-mcp",
+          "name": "athena-code-mcp",
           "kind": "heading",
           "line": 1
         },
@@ -6059,15 +6334,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 620,
-        "y": 294,
-        "z": -130
+        "x": 668.1,
+        "y": 143.1,
+        "z": 130
       },
       "projection": {
-        "x": 680,
-        "y": 278,
-        "depth": 0.3,
-        "scale": 0.9
+        "x": 580,
+        "y": 145,
+        "depth": 1,
+        "scale": 1.3
       },
       "seed": true
     },
@@ -6122,15 +6397,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 742.9,
-        "y": 617.8,
+        "x": 611.7,
+        "y": 712,
         "z": -130
       },
       "projection": {
-        "x": 769,
-        "y": 581,
-        "depth": 0.2,
-        "scale": 0.9
+        "x": 662,
+        "y": 618,
+        "depth": 0,
+        "scale": 0.8
       },
       "seed": true
     },
@@ -6142,7 +6417,7 @@
       "outgoing": 0,
       "tags": [],
       "aliases": [],
-      "words": 2798,
+      "words": 2882,
       "symbols": [
         {
           "name": "root",
@@ -6205,20 +6480,20 @@
           "line": 168
         }
       ],
-      "routeScore": 170,
+      "routeScore": 178,
       "active": false,
       "hasMedia": true,
       "hasCanvas": false,
       "coordinates": {
-        "x": 572.4,
-        "y": 317.7,
+        "x": 514.7,
+        "y": 278.8,
         "z": 130
       },
       "projection": {
-        "x": 489,
-        "y": 349,
-        "depth": 1,
-        "scale": 1.2
+        "x": 437,
+        "y": 297,
+        "depth": 0.9,
+        "scale": 1.1
       },
       "seed": true
     },
@@ -6298,15 +6573,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 487.4,
-        "y": 378.5,
+        "x": 439.8,
+        "y": 341.8,
         "z": -130
       },
       "projection": {
-        "x": 577,
-        "y": 337,
+        "x": 543,
+        "y": 301,
         "depth": 0,
-        "scale": 0.9
+        "scale": 0.8
       },
       "seed": true
     },
@@ -6386,15 +6661,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 765.4,
-        "y": 120.5,
+        "x": 879.7,
+        "y": 160.7,
         "z": -130
       },
       "projection": {
-        "x": 827,
-        "y": 109,
-        "depth": 0.8,
-        "scale": 1.1
+        "x": 953,
+        "y": 159,
+        "depth": 1,
+        "scale": 1.2
       },
       "seed": true
     },
@@ -6474,13 +6749,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 505.5,
+        "x": 390.2,
         "y": 712,
-        "z": 53.2
+        "z": 130
       },
       "projection": {
-        "x": 498,
-        "y": 665,
+        "x": 373,
+        "y": 664,
         "depth": 0.1,
         "scale": 0.9
       },
@@ -6562,15 +6837,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 695.5,
-        "y": 712,
+        "x": 563.3,
+        "y": 569.6,
         "z": -130
       },
       "projection": {
-        "x": 725,
-        "y": 641,
+        "x": 630,
+        "y": 501,
         "depth": 0,
-        "scale": 0.9
+        "scale": 0.8
       },
       "seed": true
     },
@@ -6650,13 +6925,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 181.2,
-        "y": 181.9,
+        "x": 287.9,
+        "y": 159.6,
         "z": -130
       },
       "projection": {
-        "x": 379,
-        "y": 153,
+        "x": 440,
+        "y": 138,
         "depth": 0,
         "scale": 0.8
       },
@@ -6670,7 +6945,7 @@
       "outgoing": 0,
       "tags": [],
       "aliases": [],
-      "words": 224,
+      "words": 223,
       "symbols": [
         {
           "name": "__dirname",
@@ -6718,13 +6993,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 534.6,
-        "y": 612.5,
+        "x": 406.3,
+        "y": 602.1,
         "z": -130
       },
       "projection": {
-        "x": 609,
-        "y": 527,
+        "x": 525,
+        "y": 494,
         "depth": 0,
         "scale": 0.8
       },
@@ -6806,14 +7081,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 800.5,
-        "y": 519.3,
+        "x": 954.3,
+        "y": 645.5,
         "z": -130
       },
       "projection": {
-        "x": 828,
-        "y": 513,
-        "depth": 0.4,
+        "x": 969,
+        "y": 669,
+        "depth": 0.6,
         "scale": 1
       },
       "seed": true
@@ -6894,15 +7169,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 981.1,
-        "y": 451.7,
+        "x": 882.6,
+        "y": 590.4,
         "z": 130
       },
       "projection": {
-        "x": 966,
-        "y": 634,
+        "x": 809,
+        "y": 746,
         "depth": 1,
-        "scale": 1.5
+        "scale": 1.3
       },
       "seed": true
     },
@@ -6982,15 +7257,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 675.5,
+        "x": 480.1,
         "y": 712,
         "z": 130
       },
       "projection": {
-        "x": 587,
-        "y": 767,
-        "depth": 0.7,
-        "scale": 1.1
+        "x": 433,
+        "y": 693,
+        "depth": 0.3,
+        "scale": 0.9
       },
       "seed": true
     },
@@ -7070,13 +7345,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 326.6,
-        "y": 712,
-        "z": 57.2
+        "x": 219,
+        "y": 641.6,
+        "z": 130
       },
       "projection": {
-        "x": 381,
-        "y": 616,
+        "x": 267,
+        "y": 565,
         "depth": 0,
         "scale": 0.8
       },
@@ -7158,13 +7433,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 710.6,
-        "y": 532.5,
-        "z": -130
+        "x": 529,
+        "y": 533.5,
+        "z": 3
       },
       "projection": {
-        "x": 746,
-        "y": 503,
+        "x": 539,
+        "y": 508,
         "depth": 0.2,
         "scale": 0.9
       },
@@ -7246,15 +7521,98 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 234.2,
-        "y": 277.5,
+        "x": 545.8,
+        "y": 202.4,
         "z": -130
       },
       "projection": {
-        "x": 413,
-        "y": 231,
-        "depth": 0,
-        "scale": 0.8
+        "x": 621,
+        "y": 186,
+        "depth": 0.2,
+        "scale": 0.9
+      },
+      "seed": true
+    },
+    {
+      "path": "scripts/render-repo-brain-video.mjs",
+      "type": "code",
+      "degree": 0,
+      "incoming": 0,
+      "outgoing": 0,
+      "tags": [],
+      "aliases": [],
+      "words": 226,
+      "symbols": [
+        {
+          "name": "root",
+          "kind": "variable",
+          "line": 6
+        },
+        {
+          "name": "htmlPath",
+          "kind": "variable",
+          "line": 7
+        },
+        {
+          "name": "outDir",
+          "kind": "variable",
+          "line": 8
+        },
+        {
+          "name": "targetPath",
+          "kind": "variable",
+          "line": 9
+        },
+        {
+          "name": "posterPath",
+          "kind": "variable",
+          "line": 10
+        },
+        {
+          "name": "browser",
+          "kind": "variable",
+          "line": 16
+        },
+        {
+          "name": "context",
+          "kind": "variable",
+          "line": 17
+        },
+        {
+          "name": "page",
+          "kind": "variable",
+          "line": 26
+        },
+        {
+          "name": "video",
+          "kind": "variable",
+          "line": 31
+        },
+        {
+          "name": "recordedPath",
+          "kind": "variable",
+          "line": 39
+        },
+        {
+          "name": "info",
+          "kind": "variable",
+          "line": 41
+        }
+      ],
+      "routeScore": 0,
+      "active": false,
+      "hasMedia": false,
+      "hasCanvas": false,
+      "coordinates": {
+        "x": 860.6,
+        "y": 508.4,
+        "z": -130
+      },
+      "projection": {
+        "x": 888,
+        "y": 518,
+        "depth": 0.5,
+        "scale": 1
       },
       "seed": true
     },
@@ -7334,15 +7692,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 386,
-        "y": 444.1,
-        "z": -130
+        "x": 726.8,
+        "y": 272.3,
+        "z": -0.5
       },
       "projection": {
-        "x": 510,
-        "y": 375,
-        "depth": 0,
-        "scale": 0.8
+        "x": 719,
+        "y": 292,
+        "depth": 0.9,
+        "scale": 1.1
       },
       "seed": true
     },
@@ -7422,14 +7780,14 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 839,
-        "y": 712,
-        "z": -7.9
+        "x": 269.8,
+        "y": 48,
+        "z": 130
       },
       "projection": {
-        "x": 806,
-        "y": 750,
-        "depth": 0.6,
+        "x": 235,
+        "y": 28,
+        "depth": 0.7,
         "scale": 1
       },
       "seed": true
@@ -7505,15 +7863,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 399.8,
-        "y": 353.5,
+        "x": 761.1,
+        "y": 322.4,
         "z": -130
       },
       "projection": {
-        "x": 517,
-        "y": 306,
-        "depth": 0,
-        "scale": 0.8
+        "x": 806,
+        "y": 322,
+        "depth": 0.5,
+        "scale": 1
       },
       "seed": true
     },
@@ -7593,15 +7951,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 616.5,
-        "y": 712,
+        "x": 412.5,
+        "y": 48,
         "z": -130
       },
       "projection": {
-        "x": 665,
-        "y": 619,
-        "depth": 0,
-        "scale": 0.8
+        "x": 520,
+        "y": 36,
+        "depth": 0.2,
+        "scale": 0.9
       },
       "seed": true
     },
@@ -7646,15 +8004,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 619.4,
-        "y": 48,
-        "z": 3.8
+        "x": 573.8,
+        "y": 712,
+        "z": -43.9
       },
       "projection": {
-        "x": 616,
-        "y": 22,
-        "depth": 1,
-        "scale": 1.2
+        "x": 597,
+        "y": 642,
+        "depth": 0,
+        "scale": 0.9
       },
       "seed": true
     },
@@ -7673,13 +8031,13 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 448.5,
-        "y": 132.4,
+        "x": 707.9,
+        "y": 630.3,
         "z": 130
       },
       "projection": {
-        "x": 373,
-        "y": 124,
+        "x": 617,
+        "y": 707,
         "depth": 0.9,
         "scale": 1.1
       },
@@ -7711,15 +8069,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 249.5,
-        "y": 81.1,
+        "x": 940.8,
+        "y": 467.4,
         "z": -130
       },
       "projection": {
-        "x": 413,
-        "y": 69,
-        "depth": 0,
-        "scale": 0.8
+        "x": 979,
+        "y": 501,
+        "depth": 0.7,
+        "scale": 1.1
       },
       "seed": true
     },
@@ -7744,15 +8102,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 477.6,
-        "y": 458.1,
+        "x": 490.6,
+        "y": 277,
         "z": -130
       },
       "projection": {
-        "x": 570,
-        "y": 399,
+        "x": 579,
+        "y": 250,
         "depth": 0,
-        "scale": 0.8
+        "scale": 0.9
       },
       "seed": true
     },
@@ -7771,15 +8129,15 @@
       "hasMedia": false,
       "hasCanvas": false,
       "coordinates": {
-        "x": 877.1,
-        "y": 166.8,
-        "z": 130
+        "x": 266.1,
+        "y": 712,
+        "z": 34.4
       },
       "projection": {
-        "x": 852,
-        "y": 195,
-        "depth": 1,
-        "scale": 1.6
+        "x": 360,
+        "y": 593,
+        "depth": 0,
+        "scale": 0.8
       },
       "seed": true
     }
@@ -7845,10 +8203,10 @@
       },
       {
         "name": "docs",
-        "files": 22,
-        "words": 42079,
-        "markdownFiles": 12,
-        "codeFiles": 10,
+        "files": 30,
+        "words": 53272,
+        "markdownFiles": 13,
+        "codeFiles": 17,
         "internalEdges": 0,
         "externalEdges": 0,
         "topDocs": [
@@ -7857,21 +8215,21 @@
           "docs/marketing/ads/explorer-v2.html",
           "docs/marketing/ads/explorer-v3.html",
           "docs/obsidian-parity-plan.md",
+          "docs/marketing/ads/ad-athena-final.html",
           "docs/marketing/ads/ad-resourceai-live.html",
           "docs/premium-roadmap.md",
-          "docs/marketing/ads/ad-3d-graph.html",
-          "docs/marketing/go-to-market.md",
-          "docs/mega-stress-test-plan.md",
-          "docs/marketing/ad-creatives.md",
-          "docs/four-track-completion-plan.md"
+          "docs/marketing/ads/ad-split.html",
+          "docs/marketing/ads/ad-apple-premium.html",
+          "docs/marketing/ads/ad-atlas.html",
+          "docs/marketing/ads/ad-emotion.html"
         ]
       },
       {
         "name": "scripts",
-        "files": 18,
-        "words": 27214,
+        "files": 19,
+        "words": 27523,
         "markdownFiles": 0,
-        "codeFiles": 18,
+        "codeFiles": 19,
         "internalEdges": 0,
         "externalEdges": 1,
         "topDocs": [
@@ -7892,7 +8250,7 @@
       {
         "name": "/",
         "files": 10,
-        "words": 30127,
+        "words": 30075,
         "markdownFiles": 4,
         "codeFiles": 6,
         "internalEdges": 0,
@@ -7913,7 +8271,7 @@
       {
         "name": "packages",
         "files": 5,
-        "words": 14472,
+        "words": 14399,
         "markdownFiles": 1,
         "codeFiles": 4,
         "internalEdges": 0,
@@ -7929,7 +8287,7 @@
       {
         "name": "src",
         "files": 5,
-        "words": 25111,
+        "words": 25908,
         "markdownFiles": 1,
         "codeFiles": 4,
         "internalEdges": 2,
@@ -7945,7 +8303,7 @@
       {
         "name": "skills",
         "files": 3,
-        "words": 995,
+        "words": 1001,
         "markdownFiles": 2,
         "codeFiles": 1,
         "internalEdges": 1,
@@ -7959,7 +8317,7 @@
       {
         "name": "electron",
         "files": 2,
-        "words": 8051,
+        "words": 8050,
         "markdownFiles": 0,
         "codeFiles": 2,
         "internalEdges": 0,
@@ -8217,47 +8575,47 @@
           {
             "name": "isMarkdownFile",
             "kind": "function",
-            "line": 282
+            "line": 288
           },
           {
             "name": "ext",
             "kind": "variable",
-            "line": 283
+            "line": 289
           },
           {
             "name": "walkVault",
             "kind": "function",
-            "line": 287
+            "line": 293
           },
           {
             "name": "results",
             "kind": "variable",
-            "line": 288
+            "line": 294
           },
           {
             "name": "walk",
             "kind": "function",
-            "line": 289
+            "line": 295
           },
           {
             "name": "fullPath",
             "kind": "variable",
-            "line": 299
+            "line": 305
           },
           {
             "name": "s",
             "kind": "variable",
-            "line": 304
+            "line": 310
           },
           {
             "name": "extractMarkdownHeadings",
             "kind": "function",
-            "line": 320
+            "line": 326
           },
           {
             "name": "headings",
             "kind": "variable",
-            "line": 321
+            "line": 327
           }
         ]
       },
@@ -8427,47 +8785,47 @@
           {
             "name": "isMarkdownFile",
             "kind": "function",
-            "line": 282
+            "line": 288
           },
           {
             "name": "ext",
             "kind": "variable",
-            "line": 283
+            "line": 289
           },
           {
             "name": "walkVault",
             "kind": "function",
-            "line": 287
+            "line": 293
           },
           {
             "name": "results",
             "kind": "variable",
-            "line": 288
+            "line": 294
           },
           {
             "name": "walk",
             "kind": "function",
-            "line": 289
+            "line": 295
           },
           {
             "name": "fullPath",
             "kind": "variable",
-            "line": 299
+            "line": 305
           },
           {
             "name": "s",
             "kind": "variable",
-            "line": 304
+            "line": 310
           },
           {
             "name": "extractMarkdownHeadings",
             "kind": "function",
-            "line": 320
+            "line": 326
           },
           {
             "name": "headings",
             "kind": "variable",
-            "line": 321
+            "line": 327
           }
         ]
       },
@@ -10747,6 +11105,66 @@
         ]
       },
       {
+        "path": "scripts/render-repo-brain-video.mjs",
+        "symbols": [
+          {
+            "name": "root",
+            "kind": "variable",
+            "line": 6
+          },
+          {
+            "name": "htmlPath",
+            "kind": "variable",
+            "line": 7
+          },
+          {
+            "name": "outDir",
+            "kind": "variable",
+            "line": 8
+          },
+          {
+            "name": "targetPath",
+            "kind": "variable",
+            "line": 9
+          },
+          {
+            "name": "posterPath",
+            "kind": "variable",
+            "line": 10
+          },
+          {
+            "name": "browser",
+            "kind": "variable",
+            "line": 16
+          },
+          {
+            "name": "context",
+            "kind": "variable",
+            "line": 17
+          },
+          {
+            "name": "page",
+            "kind": "variable",
+            "line": 26
+          },
+          {
+            "name": "video",
+            "kind": "variable",
+            "line": 31
+          },
+          {
+            "name": "recordedPath",
+            "kind": "variable",
+            "line": 39
+          },
+          {
+            "name": "info",
+            "kind": "variable",
+            "line": 41
+          }
+        ]
+      },
+      {
         "path": "scripts/validate-syntax.mjs",
         "symbols": [
           {
@@ -10860,7 +11278,7 @@
         "path": "packages/mcp-server/README.md",
         "symbols": [
           {
-            "name": "shibanshu-markdown-mcp",
+            "name": "athena-code-mcp",
             "kind": "heading",
             "line": 1
           },
@@ -10953,6 +11371,51 @@
             "name": "Reference",
             "kind": "heading",
             "line": 110
+          }
+        ]
+      },
+      {
+        "path": "docs/marketing/repo-brain-one-pager.md",
+        "symbols": [
+          {
+            "name": "Shibanshu Markdown Viewer: The Repo Brain",
+            "kind": "heading",
+            "line": 1
+          },
+          {
+            "name": "The Big Idea",
+            "kind": "heading",
+            "line": 3
+          },
+          {
+            "name": "Why This Is Big",
+            "kind": "heading",
+            "line": 9
+          },
+          {
+            "name": "Reason To Believe",
+            "kind": "heading",
+            "line": 20
+          },
+          {
+            "name": "Why It Can Feel Groundbreaking",
+            "kind": "heading",
+            "line": 31
+          },
+          {
+            "name": "The Market Hook",
+            "kind": "heading",
+            "line": 43
+          },
+          {
+            "name": "What The Video Should Prove",
+            "kind": "heading",
+            "line": 51
+          },
+          {
+            "name": "Final Positioning",
+            "kind": "heading",
+            "line": 61
           }
         ]
       },
@@ -11549,15 +12012,21 @@
       "android/app/src/main/assets/public/assets/journeyDiagram-5HDEW3XC-B8jHg_5C.js",
       "android/app/src/main/assets/public/assets/wardleyDiagram-EHGQE667-CrgxZRJQ.js",
       "android/app/src/main/assets/public/assets/gitGraphDiagram-IHSO6WYX-BbdM1sHt.js",
+      "docs/marketing/ads/ad-athena-final.html",
       "android/app/src/main/assets/public/assets/mindmap-definition-LN4V7U3C-bOcZmVQV.js",
       "scripts/generate-app-icon.mjs",
       "docs/marketing/ads/ad-resourceai-live.html",
       "docs/premium-roadmap.md",
+      "docs/marketing/ads/ad-split.html",
       "android/app/src/main/assets/public/assets/kanban-definition-HUTT4EX6-B07a0otC.js",
+      "docs/marketing/ads/ad-apple-premium.html",
       "android/app/src/main/assets/public/assets/ishikawaDiagram-FXEZZL3T-w0bOb-b-.js",
+      "docs/marketing/ads/ad-atlas.html",
       "android/app/src/main/assets/public/assets/diagram-G47NLZAW-CFu0QIkP.js",
       "android/app/src/main/assets/public/assets/mermaid-parser.core-CosqdZY-.js",
       "README.md",
+      "docs/marketing/ads/ad-emotion.html",
+      "docs/marketing/ads/ad-animation.html",
       "android/app/src/main/assets/public/assets/chunk-Q4XR5HBZ-0vSsliLn.js",
       "bin/shibanshu-markdown.mjs",
       "docs/marketing/ads/ad-3d-graph.html",
@@ -11565,6 +12034,7 @@
       "docs/mega-stress-test-plan.md",
       "scripts/verify-mac-app.mjs",
       "android/app/src/main/assets/public/assets/chunk-MOJQB5TN-B0qIm2NO.js",
+      "docs/marketing/ads/repo-brain-video.html",
       "android/app/src/main/assets/public/assets/stateDiagram-2N3HPSRC-x5QxUvlG.js",
       "scripts/release-readiness.mjs",
       "android/app/src/main/assets/public/assets/linear-nw9rU0-a.js",
@@ -11583,6 +12053,7 @@
       "docs/download/index.html",
       "docs/marketing/ads/ad-before-after.html",
       "android/app/src/main/assets/public/assets/defaultLocale-C8Fc0cco.js",
+      "docs/marketing/repo-brain-one-pager.md",
       "scripts/mcp-safety-check.mjs",
       "android/app/src/main/assets/public/assets/pieDiagram-ENE6RG2P-E_E3a9B_.js",
       "android/app/src/main/assets/public/assets/arc-CH6Gzxsm.js",
@@ -11605,6 +12076,7 @@
       "scripts/package-mac-zip.mjs",
       "android/app/src/main/assets/public/assets/path-BWPyau1x.js",
       "scripts/sign-dev-mac.mjs",
+      "scripts/render-repo-brain-video.mjs",
       "scripts/install-git-hook.mjs",
       "android/app/src/main/assets/public/assets/dist-eWuB-svD.js",
       "scripts/validate-syntax.mjs",
@@ -11736,9 +12208,9 @@
           "scripts/publish-static-site.mjs",
           "scripts/smoke-check.mjs",
           "src/index.html",
+          "scripts/browser-ui-smoke.mjs",
           "packages/mcp-server/export-context.mjs",
           "scripts/export-claude-map.mjs",
-          "scripts/browser-ui-smoke.mjs",
           "index.html",
           "src/capacitor-bridge.js",
           "android/app/src/main/assets/public/index.html",
@@ -11808,7 +12280,7 @@
       }
     ]
   },
-  "fingerprint": "cd31d9a0cc182523",
+  "fingerprint": "139de04b544dc827",
   "source": {
     "graphPath": "claude-context-graph.json"
   }

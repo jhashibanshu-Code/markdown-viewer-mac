@@ -3,9 +3,9 @@
   "exporterVersion": "0.2.0",
   "profile": "analysis",
   "profileLabel": "Analysis",
-  "fingerprint": "2eb2e578c15b3dd8c9988589",
+  "fingerprint": "df3ef911d3899cdb1042ade8",
   "root": "/Users/shibanshujha/Documents/markdown-viewer-mac",
-  "generatedAt": "2026-07-05T16:49:22.064Z",
+  "generatedAt": "2026-07-06T01:54:09.049Z",
   "limits": {
     "maxFiles": 5000,
     "maxBytes": 768000,
@@ -2137,6 +2137,58 @@
       "imports": []
     },
     {
+      "id": "node:81d54ba9beb66000",
+      "path": "docs/marketing/ads/ad-animation.html",
+      "type": "code",
+      "startLine": 1,
+      "endLine": 384,
+      "words": 1312,
+      "headings": [],
+      "tags": [],
+      "aliases": [],
+      "symbols": [],
+      "imports": []
+    },
+    {
+      "id": "node:56ce743002ccbe9b",
+      "path": "docs/marketing/ads/ad-apple-premium.html",
+      "type": "code",
+      "startLine": 1,
+      "endLine": 392,
+      "words": 1628,
+      "headings": [],
+      "tags": [],
+      "aliases": [],
+      "symbols": [],
+      "imports": []
+    },
+    {
+      "id": "node:6517596d3105df55",
+      "path": "docs/marketing/ads/ad-athena-final.html",
+      "type": "code",
+      "startLine": 1,
+      "endLine": 463,
+      "words": 2003,
+      "headings": [],
+      "tags": [],
+      "aliases": [],
+      "symbols": [],
+      "imports": []
+    },
+    {
+      "id": "node:be6a509132113e99",
+      "path": "docs/marketing/ads/ad-atlas.html",
+      "type": "code",
+      "startLine": 1,
+      "endLine": 293,
+      "words": 1480,
+      "headings": [],
+      "tags": [],
+      "aliases": [],
+      "symbols": [],
+      "imports": []
+    },
+    {
       "id": "node:4cb1c1a92eb633ac",
       "path": "docs/marketing/ads/ad-before-after.html",
       "type": "code",
@@ -2163,6 +2215,19 @@
       "imports": []
     },
     {
+      "id": "node:8d172e930c7369f4",
+      "path": "docs/marketing/ads/ad-emotion.html",
+      "type": "code",
+      "startLine": 1,
+      "endLine": 267,
+      "words": 1374,
+      "headings": [],
+      "tags": [],
+      "aliases": [],
+      "symbols": [],
+      "imports": []
+    },
+    {
       "id": "node:7fd0671e989bf861",
       "path": "docs/marketing/ads/ad-impossible.html",
       "type": "code",
@@ -2182,6 +2247,19 @@
       "startLine": 1,
       "endLine": 288,
       "words": 1811,
+      "headings": [],
+      "tags": [],
+      "aliases": [],
+      "symbols": [],
+      "imports": []
+    },
+    {
+      "id": "node:ece643a9e3d61936",
+      "path": "docs/marketing/ads/ad-split.html",
+      "type": "code",
+      "startLine": 1,
+      "endLine": 282,
+      "words": 1748,
       "headings": [],
       "tags": [],
       "aliases": [],
@@ -2234,6 +2312,19 @@
       "startLine": 1,
       "endLine": 454,
       "words": 7003,
+      "headings": [],
+      "tags": [],
+      "aliases": [],
+      "symbols": [],
+      "imports": []
+    },
+    {
+      "id": "node:dd2710000a295326",
+      "path": "docs/marketing/ads/repo-brain-video.html",
+      "type": "code",
+      "startLine": 1,
+      "endLine": 291,
+      "words": 1020,
       "headings": [],
       "tags": [],
       "aliases": [],
@@ -2389,6 +2480,69 @@
           "name": "The one sentence:",
           "kind": "heading",
           "line": 368
+        }
+      ],
+      "imports": []
+    },
+    {
+      "id": "node:f8e7898fddc328dd",
+      "path": "docs/marketing/repo-brain-one-pager.md",
+      "type": "markdown",
+      "startLine": 1,
+      "endLine": 64,
+      "words": 628,
+      "headings": [
+        "Shibanshu Markdown Viewer: The Repo Brain",
+        "The Big Idea",
+        "Why This Is Big",
+        "Reason To Believe",
+        "Why It Can Feel Groundbreaking",
+        "The Market Hook",
+        "What The Video Should Prove",
+        "Final Positioning"
+      ],
+      "tags": [],
+      "aliases": [],
+      "symbols": [
+        {
+          "name": "Shibanshu Markdown Viewer: The Repo Brain",
+          "kind": "heading",
+          "line": 1
+        },
+        {
+          "name": "The Big Idea",
+          "kind": "heading",
+          "line": 3
+        },
+        {
+          "name": "Why This Is Big",
+          "kind": "heading",
+          "line": 9
+        },
+        {
+          "name": "Reason To Believe",
+          "kind": "heading",
+          "line": 20
+        },
+        {
+          "name": "Why It Can Feel Groundbreaking",
+          "kind": "heading",
+          "line": 31
+        },
+        {
+          "name": "The Market Hook",
+          "kind": "heading",
+          "line": 43
+        },
+        {
+          "name": "What The Video Should Prove",
+          "kind": "heading",
+          "line": 51
+        },
+        {
+          "name": "Final Positioning",
+          "kind": "heading",
+          "line": 61
         }
       ],
       "imports": []
@@ -2846,7 +3000,7 @@
       "type": "code",
       "startLine": 1,
       "endLine": 2581,
-      "words": 7712,
+      "words": 7711,
       "headings": [],
       "tags": [],
       "aliases": [],
@@ -3336,7 +3490,7 @@
       "type": "code",
       "startLine": 1,
       "endLine": 666,
-      "words": 3274,
+      "words": 3297,
       "headings": [],
       "tags": [],
       "aliases": [],
@@ -3348,8 +3502,8 @@
       "path": "mcp-server.mjs",
       "type": "code",
       "startLine": 1,
-      "endLine": 1426,
-      "words": 3767,
+      "endLine": 1364,
+      "words": 3692,
       "headings": [
         "Context Map (auto-generated)"
       ],
@@ -3414,347 +3568,347 @@
         {
           "name": "isMarkdownFile",
           "kind": "function",
-          "line": 282
+          "line": 288
         },
         {
           "name": "ext",
           "kind": "variable",
-          "line": 283
+          "line": 289
         },
         {
           "name": "walkVault",
           "kind": "function",
-          "line": 287
+          "line": 293
         },
         {
           "name": "results",
           "kind": "variable",
-          "line": 288
+          "line": 294
         },
         {
           "name": "walk",
           "kind": "function",
-          "line": 289
+          "line": 295
         },
         {
           "name": "fullPath",
           "kind": "variable",
-          "line": 299
+          "line": 305
         },
         {
           "name": "s",
           "kind": "variable",
-          "line": 304
+          "line": 310
         },
         {
           "name": "extractMarkdownHeadings",
           "kind": "function",
-          "line": 320
+          "line": 326
         },
         {
           "name": "headings",
           "kind": "variable",
-          "line": 321
+          "line": 327
         },
         {
           "name": "lines",
           "kind": "variable",
-          "line": 322
+          "line": 328
         },
         {
           "name": "match",
           "kind": "variable",
-          "line": 324
+          "line": 330
         },
         {
           "name": "extractMarkdownTags",
           "kind": "function",
-          "line": 332
+          "line": 338
         },
         {
           "name": "tags",
           "kind": "variable",
-          "line": 333
+          "line": 339
         },
         {
           "name": "fmMatch",
           "kind": "variable",
-          "line": 335
+          "line": 341
         },
         {
           "name": "tagLine",
           "kind": "variable",
-          "line": 337
+          "line": 343
         },
         {
           "name": "inlinePattern",
           "kind": "variable",
-          "line": 343
+          "line": 349
         },
         {
           "name": "tag",
           "kind": "variable",
-          "line": 346
+          "line": 352
         },
         {
           "name": "extractMarkdownLinks",
           "kind": "function",
-          "line": 354
-        },
-        {
-          "name": "links",
-          "kind": "variable",
-          "line": 355
-        },
-        {
-          "name": "wikiPattern",
-          "kind": "variable",
-          "line": 357
-        },
-        {
-          "name": "isEmbed",
-          "kind": "variable",
           "line": 360
         },
         {
-          "name": "parts",
+          "name": "links",
           "kind": "variable",
           "line": 361
         },
         {
-          "name": "mdPattern",
+          "name": "wikiPattern",
           "kind": "variable",
-          "line": 365
+          "line": 363
         },
         {
-          "name": "isImage",
+          "name": "isEmbed",
+          "kind": "variable",
+          "line": 366
+        },
+        {
+          "name": "parts",
           "kind": "variable",
           "line": 367
         },
         {
+          "name": "mdPattern",
+          "kind": "variable",
+          "line": 371
+        },
+        {
+          "name": "isImage",
+          "kind": "variable",
+          "line": 373
+        },
+        {
           "name": "href",
           "kind": "variable",
-          "line": 368
+          "line": 374
         },
         {
           "name": "generateMindMap",
           "kind": "function",
-          "line": 376
+          "line": 382
         },
         {
           "name": "headings",
           "kind": "variable",
-          "line": 377
+          "line": 383
         },
         {
           "name": "links",
           "kind": "variable",
-          "line": 378
+          "line": 384
         },
         {
           "name": "tags",
           "kind": "variable",
-          "line": 379
+          "line": 385
         },
         {
           "name": "title",
           "kind": "variable",
-          "line": 380
+          "line": 386
         },
         {
           "name": "mermaid",
           "kind": "variable",
-          "line": 382
+          "line": 388
         },
         {
           "name": "outgoing",
           "kind": "variable",
-          "line": 391
+          "line": 397
         },
         {
           "name": "embeds",
           "kind": "variable",
-          "line": 399
+          "line": 405
         },
         {
           "name": "taskPattern",
           "kind": "variable",
-          "line": 415
+          "line": 421
         },
         {
           "name": "tasks",
           "kind": "variable",
-          "line": 416
+          "line": 422
         },
         {
           "name": "cleanMermaidLabel",
           "kind": "function",
-          "line": 431
+          "line": 437
         },
         {
           "name": "countWords",
           "kind": "function",
-          "line": 440
+          "line": 446
         },
         {
           "name": "normalizeAbsolutePath",
           "kind": "function",
-          "line": 444
+          "line": 450
         },
         {
           "name": "value",
           "kind": "variable",
-          "line": 445
+          "line": 451
         },
         {
           "name": "parsePositiveInteger",
           "kind": "function",
-          "line": 455
+          "line": 461
         },
         {
           "name": "parsed",
           "kind": "variable",
-          "line": 456
+          "line": 462
         },
         {
           "name": "assertDirectoryPath",
           "kind": "function",
-          "line": 461
+          "line": 467
         },
         {
           "name": "directoryPath",
           "kind": "variable",
-          "line": 462
+          "line": 468
         },
         {
           "name": "s",
           "kind": "variable",
-          "line": 463
+          "line": 469
         },
         {
           "name": "assertMarkdownPath",
           "kind": "function",
-          "line": 470
+          "line": 476
         },
         {
           "name": "filePath",
           "kind": "variable",
-          "line": 471
+          "line": 477
         },
         {
           "name": "assertReadableMarkdownFile",
           "kind": "function",
-          "line": 478
+          "line": 484
         },
         {
           "name": "filePath",
           "kind": "variable",
-          "line": 479
+          "line": 485
         },
         {
           "name": "s",
           "kind": "variable",
-          "line": 480
+          "line": 486
         },
         {
           "name": "coerceToolTextContent",
           "kind": "function",
-          "line": 490
+          "line": 496
         },
         {
           "name": "text",
           "kind": "variable",
-          "line": 491
+          "line": 497
         },
         {
           "name": "normalizeVaultRelativePath",
           "kind": "function",
-          "line": 498
+          "line": 504
         },
         {
           "name": "value",
           "kind": "variable",
-          "line": 500
+          "line": 506
         },
         {
           "name": "normalized",
           "kind": "variable",
-          "line": 515
+          "line": 521
         },
         {
           "name": "assertInsideRoot",
           "kind": "function",
-          "line": 530
+          "line": 536
         },
         {
           "name": "relative",
           "kind": "variable",
-          "line": 531
+          "line": 537
         },
         {
           "name": "resolveVaultChildPath",
           "kind": "function",
-          "line": 538
+          "line": 544
         },
         {
           "name": "root",
           "kind": "variable",
-          "line": 539
+          "line": 545
         },
         {
           "name": "normalizedRelative",
           "kind": "variable",
-          "line": 540
+          "line": 546
         },
         {
           "name": "filePath",
           "kind": "variable",
-          "line": 541
+          "line": 547
         },
         {
           "name": "relativeFromRoot",
           "kind": "variable",
-          "line": 542
+          "line": 548
         },
         {
           "name": "normalizeBacklinkTarget",
           "kind": "function",
-          "line": 550
+          "line": 556
         },
         {
           "name": "raw",
           "kind": "variable",
-          "line": 551
+          "line": 557
         },
         {
           "name": "relativeTarget",
           "kind": "variable",
-          "line": 559
+          "line": 565
         },
         {
           "name": "filePath",
           "kind": "variable",
-          "line": 561
+          "line": 567
         },
         {
           "name": "normalizeDateString",
           "kind": "function",
-          "line": 573
+          "line": 579
         },
         {
           "name": "dateStr",
           "kind": "variable",
-          "line": 574
+          "line": 580
         },
         {
           "name": "dateObj",
           "kind": "variable",
-          "line": 579
+          "line": 585
         },
         {
           "name": "atomicWriteUtf8File",
           "kind": "function",
-          "line": 586
+          "line": 592
         }
       ],
       "imports": [
@@ -3802,6 +3956,11 @@
           "specifier": "node:crypto",
           "line": 23,
           "imported": "crypto"
+        },
+        {
+          "specifier": ") && !trimmed.startsWith(",
+          "line": 1030,
+          "imported": ") && !trimmed.startsWith("
         }
       ]
     },
@@ -4266,8 +4425,8 @@
       "path": "packages/mcp-server/mcp-server.mjs",
       "type": "code",
       "startLine": 1,
-      "endLine": 1426,
-      "words": 3764,
+      "endLine": 1354,
+      "words": 3692,
       "headings": [
         "Context Map (auto-generated)"
       ],
@@ -4332,347 +4491,347 @@
         {
           "name": "isMarkdownFile",
           "kind": "function",
-          "line": 282
+          "line": 288
         },
         {
           "name": "ext",
           "kind": "variable",
-          "line": 283
+          "line": 289
         },
         {
           "name": "walkVault",
           "kind": "function",
-          "line": 287
+          "line": 293
         },
         {
           "name": "results",
           "kind": "variable",
-          "line": 288
+          "line": 294
         },
         {
           "name": "walk",
           "kind": "function",
-          "line": 289
+          "line": 295
         },
         {
           "name": "fullPath",
           "kind": "variable",
-          "line": 299
+          "line": 305
         },
         {
           "name": "s",
           "kind": "variable",
-          "line": 304
+          "line": 310
         },
         {
           "name": "extractMarkdownHeadings",
           "kind": "function",
-          "line": 320
+          "line": 326
         },
         {
           "name": "headings",
           "kind": "variable",
-          "line": 321
+          "line": 327
         },
         {
           "name": "lines",
           "kind": "variable",
-          "line": 322
+          "line": 328
         },
         {
           "name": "match",
           "kind": "variable",
-          "line": 324
+          "line": 330
         },
         {
           "name": "extractMarkdownTags",
           "kind": "function",
-          "line": 332
+          "line": 338
         },
         {
           "name": "tags",
           "kind": "variable",
-          "line": 333
+          "line": 339
         },
         {
           "name": "fmMatch",
           "kind": "variable",
-          "line": 335
+          "line": 341
         },
         {
           "name": "tagLine",
           "kind": "variable",
-          "line": 337
+          "line": 343
         },
         {
           "name": "inlinePattern",
           "kind": "variable",
-          "line": 343
+          "line": 349
         },
         {
           "name": "tag",
           "kind": "variable",
-          "line": 346
+          "line": 352
         },
         {
           "name": "extractMarkdownLinks",
           "kind": "function",
-          "line": 354
-        },
-        {
-          "name": "links",
-          "kind": "variable",
-          "line": 355
-        },
-        {
-          "name": "wikiPattern",
-          "kind": "variable",
-          "line": 357
-        },
-        {
-          "name": "isEmbed",
-          "kind": "variable",
           "line": 360
         },
         {
-          "name": "parts",
+          "name": "links",
           "kind": "variable",
           "line": 361
         },
         {
-          "name": "mdPattern",
+          "name": "wikiPattern",
           "kind": "variable",
-          "line": 365
+          "line": 363
         },
         {
-          "name": "isImage",
+          "name": "isEmbed",
+          "kind": "variable",
+          "line": 366
+        },
+        {
+          "name": "parts",
           "kind": "variable",
           "line": 367
         },
         {
+          "name": "mdPattern",
+          "kind": "variable",
+          "line": 371
+        },
+        {
+          "name": "isImage",
+          "kind": "variable",
+          "line": 373
+        },
+        {
           "name": "href",
           "kind": "variable",
-          "line": 368
+          "line": 374
         },
         {
           "name": "generateMindMap",
           "kind": "function",
-          "line": 376
+          "line": 382
         },
         {
           "name": "headings",
           "kind": "variable",
-          "line": 377
+          "line": 383
         },
         {
           "name": "links",
           "kind": "variable",
-          "line": 378
+          "line": 384
         },
         {
           "name": "tags",
           "kind": "variable",
-          "line": 379
+          "line": 385
         },
         {
           "name": "title",
           "kind": "variable",
-          "line": 380
+          "line": 386
         },
         {
           "name": "mermaid",
           "kind": "variable",
-          "line": 382
+          "line": 388
         },
         {
           "name": "outgoing",
           "kind": "variable",
-          "line": 391
+          "line": 397
         },
         {
           "name": "embeds",
           "kind": "variable",
-          "line": 399
+          "line": 405
         },
         {
           "name": "taskPattern",
           "kind": "variable",
-          "line": 415
+          "line": 421
         },
         {
           "name": "tasks",
           "kind": "variable",
-          "line": 416
+          "line": 422
         },
         {
           "name": "cleanMermaidLabel",
           "kind": "function",
-          "line": 431
+          "line": 437
         },
         {
           "name": "countWords",
           "kind": "function",
-          "line": 440
+          "line": 446
         },
         {
           "name": "normalizeAbsolutePath",
           "kind": "function",
-          "line": 444
+          "line": 450
         },
         {
           "name": "value",
           "kind": "variable",
-          "line": 445
+          "line": 451
         },
         {
           "name": "parsePositiveInteger",
           "kind": "function",
-          "line": 455
+          "line": 461
         },
         {
           "name": "parsed",
           "kind": "variable",
-          "line": 456
+          "line": 462
         },
         {
           "name": "assertDirectoryPath",
           "kind": "function",
-          "line": 461
+          "line": 467
         },
         {
           "name": "directoryPath",
           "kind": "variable",
-          "line": 462
+          "line": 468
         },
         {
           "name": "s",
           "kind": "variable",
-          "line": 463
+          "line": 469
         },
         {
           "name": "assertMarkdownPath",
           "kind": "function",
-          "line": 470
+          "line": 476
         },
         {
           "name": "filePath",
           "kind": "variable",
-          "line": 471
+          "line": 477
         },
         {
           "name": "assertReadableMarkdownFile",
           "kind": "function",
-          "line": 478
+          "line": 484
         },
         {
           "name": "filePath",
           "kind": "variable",
-          "line": 479
+          "line": 485
         },
         {
           "name": "s",
           "kind": "variable",
-          "line": 480
+          "line": 486
         },
         {
           "name": "coerceToolTextContent",
           "kind": "function",
-          "line": 490
+          "line": 496
         },
         {
           "name": "text",
           "kind": "variable",
-          "line": 491
+          "line": 497
         },
         {
           "name": "normalizeVaultRelativePath",
           "kind": "function",
-          "line": 498
+          "line": 504
         },
         {
           "name": "value",
           "kind": "variable",
-          "line": 500
+          "line": 506
         },
         {
           "name": "normalized",
           "kind": "variable",
-          "line": 515
+          "line": 521
         },
         {
           "name": "assertInsideRoot",
           "kind": "function",
-          "line": 530
+          "line": 536
         },
         {
           "name": "relative",
           "kind": "variable",
-          "line": 531
+          "line": 537
         },
         {
           "name": "resolveVaultChildPath",
           "kind": "function",
-          "line": 538
+          "line": 544
         },
         {
           "name": "root",
           "kind": "variable",
-          "line": 539
+          "line": 545
         },
         {
           "name": "normalizedRelative",
           "kind": "variable",
-          "line": 540
+          "line": 546
         },
         {
           "name": "filePath",
           "kind": "variable",
-          "line": 541
+          "line": 547
         },
         {
           "name": "relativeFromRoot",
           "kind": "variable",
-          "line": 542
+          "line": 548
         },
         {
           "name": "normalizeBacklinkTarget",
           "kind": "function",
-          "line": 550
+          "line": 556
         },
         {
           "name": "raw",
           "kind": "variable",
-          "line": 551
+          "line": 557
         },
         {
           "name": "relativeTarget",
           "kind": "variable",
-          "line": 559
+          "line": 565
         },
         {
           "name": "filePath",
           "kind": "variable",
-          "line": 561
+          "line": 567
         },
         {
           "name": "normalizeDateString",
           "kind": "function",
-          "line": 573
+          "line": 579
         },
         {
           "name": "dateStr",
           "kind": "variable",
-          "line": 574
+          "line": 580
         },
         {
           "name": "dateObj",
           "kind": "variable",
-          "line": 579
+          "line": 585
         },
         {
           "name": "atomicWriteUtf8File",
           "kind": "function",
-          "line": 586
+          "line": 592
         }
       ],
       "imports": [
@@ -4742,7 +4901,7 @@
       "type": "code",
       "startLine": 1,
       "endLine": 41,
-      "words": 100,
+      "words": 99,
       "headings": [],
       "tags": [],
       "aliases": [],
@@ -4757,7 +4916,7 @@
       "endLine": 105,
       "words": 310,
       "headings": [
-        "shibanshu-markdown-mcp",
+        "athena-code-mcp",
         "The problem",
         "The solution",
         "What it does",
@@ -4771,7 +4930,7 @@
       "aliases": [],
       "symbols": [
         {
-          "name": "shibanshu-markdown-mcp",
+          "name": "athena-code-mcp",
           "kind": "heading",
           "line": 1
         },
@@ -4880,8 +5039,8 @@
       "path": "scripts/browser-ui-smoke.mjs",
       "type": "code",
       "startLine": 1,
-      "endLine": 509,
-      "words": 2798,
+      "endLine": 530,
+      "words": 2882,
       "headings": [],
       "tags": [],
       "aliases": [],
@@ -5152,39 +5311,54 @@
           "line": 446
         },
         {
+          "name": "commandTitle",
+          "kind": "variable",
+          "line": 457
+        },
+        {
+          "name": "commandScrollMetrics",
+          "kind": "variable",
+          "line": 461
+        },
+        {
+          "name": "commandPaletteText",
+          "kind": "variable",
+          "line": 469
+        },
+        {
           "name": "commandText",
-          "kind": "variable",
-          "line": 459
-        },
-        {
-          "name": "formatCommandText",
-          "kind": "variable",
-          "line": 471
-        },
-        {
-          "name": "publishCommandText",
           "kind": "variable",
           "line": 480
         },
         {
+          "name": "formatCommandText",
+          "kind": "variable",
+          "line": 492
+        },
+        {
+          "name": "publishCommandText",
+          "kind": "variable",
+          "line": 501
+        },
+        {
           "name": "tabText",
           "kind": "variable",
-          "line": 489
+          "line": 510
         },
         {
           "name": "workspaceClass",
           "kind": "variable",
-          "line": 495
+          "line": 516
         },
         {
           "name": "isMacBrowserSandboxError",
           "kind": "function",
-          "line": 505
+          "line": 526
         },
         {
           "name": "text",
           "kind": "variable",
-          "line": 506
+          "line": 527
         }
       ],
       "imports": [
@@ -6588,10 +6762,10 @@
       "type": "code",
       "startLine": 1,
       "endLine": 57,
-      "words": 224,
+      "words": 223,
       "headings": [
         "Auto-regenerate context map after each commit",
-        "Installed by shibanshu-markdown-mcp"
+        "Installed by athena-mcp"
       ],
       "tags": [],
       "aliases": [],
@@ -7946,6 +8120,96 @@
       ]
     },
     {
+      "id": "node:a02e469f0324b014",
+      "path": "scripts/render-repo-brain-video.mjs",
+      "type": "code",
+      "startLine": 1,
+      "endLine": 45,
+      "words": 226,
+      "headings": [],
+      "tags": [],
+      "aliases": [],
+      "symbols": [
+        {
+          "name": "root",
+          "kind": "variable",
+          "line": 6
+        },
+        {
+          "name": "htmlPath",
+          "kind": "variable",
+          "line": 7
+        },
+        {
+          "name": "outDir",
+          "kind": "variable",
+          "line": 8
+        },
+        {
+          "name": "targetPath",
+          "kind": "variable",
+          "line": 9
+        },
+        {
+          "name": "posterPath",
+          "kind": "variable",
+          "line": 10
+        },
+        {
+          "name": "browser",
+          "kind": "variable",
+          "line": 16
+        },
+        {
+          "name": "context",
+          "kind": "variable",
+          "line": 17
+        },
+        {
+          "name": "page",
+          "kind": "variable",
+          "line": 26
+        },
+        {
+          "name": "video",
+          "kind": "variable",
+          "line": 31
+        },
+        {
+          "name": "recordedPath",
+          "kind": "variable",
+          "line": 39
+        },
+        {
+          "name": "info",
+          "kind": "variable",
+          "line": 41
+        }
+      ],
+      "imports": [
+        {
+          "specifier": "playwright",
+          "line": 1,
+          "imported": "chromium"
+        },
+        {
+          "specifier": "node:fs/promises",
+          "line": 2,
+          "imported": "mkdir, rename, rm, stat"
+        },
+        {
+          "specifier": "node:path",
+          "line": 3,
+          "imported": "path"
+        },
+        {
+          "specifier": "node:url",
+          "line": 4,
+          "imported": "fileURLToPath, pathToFileURL"
+        }
+      ]
+    },
+    {
       "id": "node:12909d5f1c9dc693",
       "path": "scripts/sign-dev-mac.mjs",
       "type": "code",
@@ -9140,7 +9404,7 @@
       "type": "markdown",
       "startLine": 1,
       "endLine": 113,
-      "words": 663,
+      "words": 669,
       "headings": [
         "Shibanshu Markdown Context",
         "MCP Server (Recommended)",
@@ -9516,7 +9780,7 @@
       "type": "code",
       "startLine": 1,
       "endLine": 665,
-      "words": 3290,
+      "words": 3291,
       "headings": [],
       "tags": [],
       "aliases": [],
@@ -9528,8 +9792,8 @@
       "path": "src/renderer.js",
       "type": "code",
       "startLine": 1,
-      "endLine": 9429,
-      "words": 11688,
+      "endLine": 9546,
+      "words": 12313,
       "headings": [
         "Tasks",
         "Notes",
@@ -10088,7 +10352,7 @@
         },
         {
           "specifier": "mermaid",
-          "line": 8993,
+          "line": 9110,
           "imported": "mermaid"
         }
       ]
@@ -10125,8 +10389,8 @@
       "path": "src/styles.css",
       "type": "code",
       "startLine": 1,
-      "endLine": 3163,
-      "words": 8510,
+      "endLine": 3210,
+      "words": 8681,
       "headings": [],
       "tags": [],
       "aliases": [],
@@ -10237,7 +10501,7 @@
   ],
   "chunks": {
     "path": "llm-context-chunks.jsonl",
-    "count": 853,
+    "count": 893,
     "targetTokens": 900
   },
   "routeValidation": {
@@ -10274,10 +10538,10 @@
       },
       {
         "name": "docs",
-        "files": 22,
-        "words": 42079,
-        "markdownFiles": 12,
-        "codeFiles": 10,
+        "files": 30,
+        "words": 53272,
+        "markdownFiles": 13,
+        "codeFiles": 17,
         "internalEdges": 0,
         "externalEdges": 0,
         "topDocs": [
@@ -10286,21 +10550,21 @@
           "docs/marketing/ads/explorer-v2.html",
           "docs/marketing/ads/explorer-v3.html",
           "docs/obsidian-parity-plan.md",
+          "docs/marketing/ads/ad-athena-final.html",
           "docs/marketing/ads/ad-resourceai-live.html",
           "docs/premium-roadmap.md",
-          "docs/marketing/ads/ad-3d-graph.html",
-          "docs/marketing/go-to-market.md",
-          "docs/mega-stress-test-plan.md",
-          "docs/marketing/ad-creatives.md",
-          "docs/four-track-completion-plan.md"
+          "docs/marketing/ads/ad-split.html",
+          "docs/marketing/ads/ad-apple-premium.html",
+          "docs/marketing/ads/ad-atlas.html",
+          "docs/marketing/ads/ad-emotion.html"
         ]
       },
       {
         "name": "scripts",
-        "files": 18,
-        "words": 27214,
+        "files": 19,
+        "words": 27523,
         "markdownFiles": 0,
-        "codeFiles": 18,
+        "codeFiles": 19,
         "internalEdges": 0,
         "externalEdges": 1,
         "topDocs": [
@@ -10321,7 +10585,7 @@
       {
         "name": "/",
         "files": 10,
-        "words": 30127,
+        "words": 30075,
         "markdownFiles": 4,
         "codeFiles": 6,
         "internalEdges": 0,
@@ -10342,7 +10606,7 @@
       {
         "name": "packages",
         "files": 5,
-        "words": 14472,
+        "words": 14399,
         "markdownFiles": 1,
         "codeFiles": 4,
         "internalEdges": 0,
@@ -10358,7 +10622,7 @@
       {
         "name": "src",
         "files": 5,
-        "words": 25111,
+        "words": 25908,
         "markdownFiles": 1,
         "codeFiles": 4,
         "internalEdges": 2,
@@ -10374,7 +10638,7 @@
       {
         "name": "skills",
         "files": 3,
-        "words": 995,
+        "words": 1001,
         "markdownFiles": 2,
         "codeFiles": 1,
         "internalEdges": 1,
@@ -10388,7 +10652,7 @@
       {
         "name": "electron",
         "files": 2,
-        "words": 8051,
+        "words": 8050,
         "markdownFiles": 0,
         "codeFiles": 2,
         "internalEdges": 0,
@@ -10646,47 +10910,47 @@
           {
             "name": "isMarkdownFile",
             "kind": "function",
-            "line": 282
+            "line": 288
           },
           {
             "name": "ext",
             "kind": "variable",
-            "line": 283
+            "line": 289
           },
           {
             "name": "walkVault",
             "kind": "function",
-            "line": 287
+            "line": 293
           },
           {
             "name": "results",
             "kind": "variable",
-            "line": 288
+            "line": 294
           },
           {
             "name": "walk",
             "kind": "function",
-            "line": 289
+            "line": 295
           },
           {
             "name": "fullPath",
             "kind": "variable",
-            "line": 299
+            "line": 305
           },
           {
             "name": "s",
             "kind": "variable",
-            "line": 304
+            "line": 310
           },
           {
             "name": "extractMarkdownHeadings",
             "kind": "function",
-            "line": 320
+            "line": 326
           },
           {
             "name": "headings",
             "kind": "variable",
-            "line": 321
+            "line": 327
           }
         ]
       },
@@ -10856,47 +11120,47 @@
           {
             "name": "isMarkdownFile",
             "kind": "function",
-            "line": 282
+            "line": 288
           },
           {
             "name": "ext",
             "kind": "variable",
-            "line": 283
+            "line": 289
           },
           {
             "name": "walkVault",
             "kind": "function",
-            "line": 287
+            "line": 293
           },
           {
             "name": "results",
             "kind": "variable",
-            "line": 288
+            "line": 294
           },
           {
             "name": "walk",
             "kind": "function",
-            "line": 289
+            "line": 295
           },
           {
             "name": "fullPath",
             "kind": "variable",
-            "line": 299
+            "line": 305
           },
           {
             "name": "s",
             "kind": "variable",
-            "line": 304
+            "line": 310
           },
           {
             "name": "extractMarkdownHeadings",
             "kind": "function",
-            "line": 320
+            "line": 326
           },
           {
             "name": "headings",
             "kind": "variable",
-            "line": 321
+            "line": 327
           }
         ]
       },
@@ -13176,6 +13440,66 @@
         ]
       },
       {
+        "path": "scripts/render-repo-brain-video.mjs",
+        "symbols": [
+          {
+            "name": "root",
+            "kind": "variable",
+            "line": 6
+          },
+          {
+            "name": "htmlPath",
+            "kind": "variable",
+            "line": 7
+          },
+          {
+            "name": "outDir",
+            "kind": "variable",
+            "line": 8
+          },
+          {
+            "name": "targetPath",
+            "kind": "variable",
+            "line": 9
+          },
+          {
+            "name": "posterPath",
+            "kind": "variable",
+            "line": 10
+          },
+          {
+            "name": "browser",
+            "kind": "variable",
+            "line": 16
+          },
+          {
+            "name": "context",
+            "kind": "variable",
+            "line": 17
+          },
+          {
+            "name": "page",
+            "kind": "variable",
+            "line": 26
+          },
+          {
+            "name": "video",
+            "kind": "variable",
+            "line": 31
+          },
+          {
+            "name": "recordedPath",
+            "kind": "variable",
+            "line": 39
+          },
+          {
+            "name": "info",
+            "kind": "variable",
+            "line": 41
+          }
+        ]
+      },
+      {
         "path": "scripts/validate-syntax.mjs",
         "symbols": [
           {
@@ -13289,7 +13613,7 @@
         "path": "packages/mcp-server/README.md",
         "symbols": [
           {
-            "name": "shibanshu-markdown-mcp",
+            "name": "athena-code-mcp",
             "kind": "heading",
             "line": 1
           },
@@ -13382,6 +13706,51 @@
             "name": "Reference",
             "kind": "heading",
             "line": 110
+          }
+        ]
+      },
+      {
+        "path": "docs/marketing/repo-brain-one-pager.md",
+        "symbols": [
+          {
+            "name": "Shibanshu Markdown Viewer: The Repo Brain",
+            "kind": "heading",
+            "line": 1
+          },
+          {
+            "name": "The Big Idea",
+            "kind": "heading",
+            "line": 3
+          },
+          {
+            "name": "Why This Is Big",
+            "kind": "heading",
+            "line": 9
+          },
+          {
+            "name": "Reason To Believe",
+            "kind": "heading",
+            "line": 20
+          },
+          {
+            "name": "Why It Can Feel Groundbreaking",
+            "kind": "heading",
+            "line": 31
+          },
+          {
+            "name": "The Market Hook",
+            "kind": "heading",
+            "line": 43
+          },
+          {
+            "name": "What The Video Should Prove",
+            "kind": "heading",
+            "line": 51
+          },
+          {
+            "name": "Final Positioning",
+            "kind": "heading",
+            "line": 61
           }
         ]
       },
@@ -13978,15 +14347,21 @@
       "android/app/src/main/assets/public/assets/journeyDiagram-5HDEW3XC-B8jHg_5C.js",
       "android/app/src/main/assets/public/assets/wardleyDiagram-EHGQE667-CrgxZRJQ.js",
       "android/app/src/main/assets/public/assets/gitGraphDiagram-IHSO6WYX-BbdM1sHt.js",
+      "docs/marketing/ads/ad-athena-final.html",
       "android/app/src/main/assets/public/assets/mindmap-definition-LN4V7U3C-bOcZmVQV.js",
       "scripts/generate-app-icon.mjs",
       "docs/marketing/ads/ad-resourceai-live.html",
       "docs/premium-roadmap.md",
+      "docs/marketing/ads/ad-split.html",
       "android/app/src/main/assets/public/assets/kanban-definition-HUTT4EX6-B07a0otC.js",
+      "docs/marketing/ads/ad-apple-premium.html",
       "android/app/src/main/assets/public/assets/ishikawaDiagram-FXEZZL3T-w0bOb-b-.js",
+      "docs/marketing/ads/ad-atlas.html",
       "android/app/src/main/assets/public/assets/diagram-G47NLZAW-CFu0QIkP.js",
       "android/app/src/main/assets/public/assets/mermaid-parser.core-CosqdZY-.js",
       "README.md",
+      "docs/marketing/ads/ad-emotion.html",
+      "docs/marketing/ads/ad-animation.html",
       "android/app/src/main/assets/public/assets/chunk-Q4XR5HBZ-0vSsliLn.js",
       "bin/shibanshu-markdown.mjs",
       "docs/marketing/ads/ad-3d-graph.html",
@@ -13994,6 +14369,7 @@
       "docs/mega-stress-test-plan.md",
       "scripts/verify-mac-app.mjs",
       "android/app/src/main/assets/public/assets/chunk-MOJQB5TN-B0qIm2NO.js",
+      "docs/marketing/ads/repo-brain-video.html",
       "android/app/src/main/assets/public/assets/stateDiagram-2N3HPSRC-x5QxUvlG.js",
       "scripts/release-readiness.mjs",
       "android/app/src/main/assets/public/assets/linear-nw9rU0-a.js",
@@ -14012,6 +14388,7 @@
       "docs/download/index.html",
       "docs/marketing/ads/ad-before-after.html",
       "android/app/src/main/assets/public/assets/defaultLocale-C8Fc0cco.js",
+      "docs/marketing/repo-brain-one-pager.md",
       "scripts/mcp-safety-check.mjs",
       "android/app/src/main/assets/public/assets/pieDiagram-ENE6RG2P-E_E3a9B_.js",
       "android/app/src/main/assets/public/assets/arc-CH6Gzxsm.js",
@@ -14034,6 +14411,7 @@
       "scripts/package-mac-zip.mjs",
       "android/app/src/main/assets/public/assets/path-BWPyau1x.js",
       "scripts/sign-dev-mac.mjs",
+      "scripts/render-repo-brain-video.mjs",
       "scripts/install-git-hook.mjs",
       "android/app/src/main/assets/public/assets/dist-eWuB-svD.js",
       "scripts/validate-syntax.mjs",
@@ -14165,9 +14543,9 @@
           "scripts/publish-static-site.mjs",
           "scripts/smoke-check.mjs",
           "src/index.html",
+          "scripts/browser-ui-smoke.mjs",
           "packages/mcp-server/export-context.mjs",
           "scripts/export-claude-map.mjs",
-          "scripts/browser-ui-smoke.mjs",
           "index.html",
           "src/capacitor-bridge.js",
           "android/app/src/main/assets/public/index.html",

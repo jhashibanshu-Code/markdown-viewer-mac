@@ -33,7 +33,7 @@ These are the top 4 complaints about AI coding tools. Your tool solves all four.
 | Aider | CLI coding assistant | No | No | No |
 | Continue.dev | Open-source AI coding | No | No | Adding |
 | Codeium | AI completion | No | No | No |
-| **Your tool** | Context compression | **218:1 proven** | **Hub/bridge/orphan** | **19 tools** |
+| **Your tool** | Context compression | **218:1 proven** | **Hub/bridge/orphan** | **22 tools** |
 
 You are creating a category, not competing in one.
 
@@ -232,7 +232,7 @@ Requirements:
   5. [pause 2 seconds]
   6. "One command." (large, green)
   7. "npx shibanshu-markdown-mcp" (monospace, green, centered)
-  8. "218:1 compression. 19 tools. Zero effort." (smaller, gray)
+  8. "218:1 compression. 22 tools. Zero effort." (smaller, gray)
 - Total duration: 30 seconds loop
 - Export-ready at 1920x1080
 - No UI controls, just the animation + text
@@ -272,7 +272,7 @@ Left 40%: Large typography
   Line 2: "to 91% of your repo." (48px, #ff6b6b, bold)
   Line 3: small gap
   Line 4: "npx shibanshu-markdown-mcp" (16px, monospace, #5eead4)
-  Line 5: "19 tools · 218:1 compression · free" (12px, #666)
+  Line 5: "22 tools · 218:1 compression · free" (12px, #666)
 
 Right 60%: Mini 3D graph visualization (static or slow rotation)
   - 80 nodes, color-coded clusters
@@ -304,7 +304,7 @@ Sections:
 4. Benchmarks: Table showing real numbers from resourceai-in
    924 files → 10,812 tokens · 218:1 · 0.6 seconds
 
-5. 19 Tools: Icon grid showing all tools with one-line descriptions
+5. 22 Tools: Icon grid showing all tools with one-line descriptions
 
 6. "Try it now": Terminal mockup showing the install + first use
 
@@ -355,7 +355,7 @@ Style: minimal, developer-friendly, not flashy
 - "Claude finally understands your architecture"
 - "Right answer, first try"
 - "One setup. Automatic forever."
-- "19 tools. Zero config."
+- "22 tools. Zero config."
 - "Works on repos too large for Claude to read"
 
 ### DON'T say:

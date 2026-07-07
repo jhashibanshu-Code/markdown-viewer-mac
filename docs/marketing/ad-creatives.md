@@ -203,3 +203,100 @@ Benchmarks and details in the README. Curious what this community thinks about t
 **URL:** github.com/shibanshu12/markdown-viewer-mac
 
 (HN prefers GitHub links over blog posts for Show HN)
+
+---
+
+## Verified Benchmark Numbers (July 2026)
+
+Use these in all ads. All numbers are reproducible via `node scripts/benchmark-980-repo.mjs`.
+
+| Metric | 190-file repo | 994-file repo |
+|--------|---------------|---------------|
+| Raw tokens | 1,237,965 | 453,522 |
+| With MCP (nav + 5 files) | 11,812 | 15,541 |
+| Compression ratio | 105:1 | 29:1 |
+| Token savings | 99.0% | 96.6% |
+| Context window usage (raw) | 619% (impossible) | 227% (impossible) |
+| Context window usage (MCP) | 6% | 8% |
+| Map generation time | — | 0.5s |
+
+### Monthly cost savings (40 sessions/month, 994-file repo)
+
+| Model | Without MCP | With MCP | Saved/year |
+|-------|-------------|----------|------------|
+| Claude Opus 4 | $136/mo | $9/mo | $1,521/yr |
+| GPT-o3 | $91/mo | $6/mo | $1,014/yr |
+| Claude Sonnet 4 | $27/mo | $2/mo | $304/yr |
+| GPT-4o | $23/mo | $2/mo | $253/yr |
+
+### Verification methodology
+
+1. 994 real source files (React components, Node controllers/services/models, tests, SQL migrations, configs, docs)
+2. Token count: chars/4 approximation, within 5% of OpenAI tiktoken (cl100k_base)
+3. "Without MCP" conservatively assumes 50% file exploration (real usage often reads more)
+4. Cost = input tokens x published API pricing
+5. All code is open source and auditable
+
+---
+
+## 12 Reasons To Believe (RTBs)
+
+Use these as proof points in any ad, post, or pitch. Each solves a specific pain.
+
+### 1. Wrong AI output
+Claude reads the wrong files because it has no map. Athena gives it the map.
+*Proof: Navigation routes prioritize hub files first — Claude hits the right code on attempt 1.*
+
+### 2. Too many files for AI
+200+ file repos exceed the context window. Athena compresses 29:1 (994 files tested).
+*Proof: 453K tokens → 15.5K. Raw is 227% of window. With MCP: 8%.*
+
+### 3. Cost per run
+$3-35 per exploration wasted on file reading. Athena: $0.03-0.23.
+*Proof: Benchmarked across Opus, Sonnet, GPT-4o, GPT-o3. Published API pricing.*
+
+### 4. Repeated context every session
+CLAUDE.md + auto-mapping eliminates re-explaining your architecture.
+*Proof: setup_repo writes CLAUDE.md instructions that persist across sessions.*
+
+### 5. Refactoring fear
+vault_backlinks shows every dependency before you change anything.
+*Proof: "What depends on auth.ts?" — instant answer with file paths and line numbers.*
+
+### 6. Dead code
+Orphan detection finds files with zero connections.
+*Proof: Graph analysis flags orphan nodes. Tested on repos with 200+ orphans.*
+
+### 7. Onboarding time
+2 weeks for a human to understand a codebase. 0.5 seconds for AI with a map.
+*Proof: Context map generation benchmarked at 0.3-0.5s on production repos.*
+
+### 8. Code review quality
+Hub analysis identifies which changed files are critical.
+*Proof: Hub nodes have 10-50+ dependents. Changing a hub without knowing its blast radius breaks things.*
+
+### 9. Security blind spots
+Graph shows which files are in sensitive clusters (auth, payments, crypto).
+*Proof: Cluster analysis groups files by directory and dependency. Security-critical clusters are visible instantly.*
+
+### 10. Documentation rot
+Unresolved link detection finds docs pointing to deleted files.
+*Proof: Integrity check reports unresolved markdown links with file path and line number.*
+
+### 11. AI tool switching cost
+Context map is tool-agnostic. Any MCP client reads the same map.
+*Proof: Works with Claude Code, Cursor, Windsurf, any MCP-compatible client. Same map file.*
+
+### 12. No architectural awareness
+Every other AI tool treats files as equal. Athena knows which ones matter.
+*Proof: Hub/bridge analysis ranks files by structural importance. A 3-line config file with 40 dependents matters more than a 2000-line utility.*
+
+---
+
+## Proof Snippet
+
+Embed `docs/marketing/ads/proof-snippet.html` in any ad or landing page as a self-contained verification block. Shows stats, comparison bar, methodology, and reproduce command.
+
+## Full Verified Ad
+
+`docs/marketing/ads/ad-verified-benchmark.html` — standalone ad with benchmark bars, cost cards, proof section, and install CTA. Uses all verified numbers from the 994-file benchmark.

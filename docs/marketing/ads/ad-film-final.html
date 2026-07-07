@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Athena — Cinematic Ad</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;0,800;1,300&family=Space+Mono:wght@400;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#f1f5f9}
+canvas{display:block;width:100vw;height:100vh}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="Athena cinematic advertisement"></canvas>
+<!-- Music: Cinematic & Emotional Background (48s clip, normalized, faded) -->
+<audio id="bgm" preload="auto" src="music.mp3"></audio>
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  Athena — 48s Cinematic Film Ad
+//  Single-file, Canvas + Web Audio, no external deps beyond fonts
+// ═══════════════════════════════════════════════════════════════
+
+const cv = document.getElementById('c');
+const cx = cv.getContext('2d');
+const TAU = Math.PI * 2;
+const DUR = 48;
+let W, H, dpr;
+
+function resize() {
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = Math.floor(W * dpr);
+  cv.height = Math.floor(H * dpr);
+  cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resize();
+addEventListener('resize', resize);
+
+// ═══ TIMING ═══
+let t = 0, lt = 0, started = false;
+
+// ═══ EASING ═══
+function ease(x) { x = cl(x); return x < 0.5 ? 4*x*x*x : 1 - Math.pow(-2*x+2, 3)/2; }
+function cl(x) { return Math.max(0, Math.min(1, x)); }
+function fi(s, d) { return ease(cl((t - s) / d)); }
+function fo(s, d) { return 1 - ease(cl((t - s) / d)); }
+function fio(s, life, edge) { edge = edge || 0.8; return Math.min(fi(s, edge), fo(s + life - edge, edge)); }
+
+// ═══════════════════════════════════════════════════════════════
+//  AUDIO — Real music track (music.mp3)
+// ═══════════════════════════════════════════════════════════════
+const bgm = document.getElementById('bgm');
+let audioStarted = false;
+
+function initAudio() {
+  if (audioStarted) return;
+  audioStarted = true;
+  bgm.currentTime = 0;
+  bgm.volume = 0.85;
+  bgm.play().catch(() => {});
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  3D UNIVERSE DATA
+// ═══════════════════════════════════════════════════════════════
+
+// 140 dot nodes across 6 color clusters (golden angle distribution)
+const CLUSTER_COLORS = [
+  [94,234,212], [148,197,255], [255,199,111],
+  [255,134,151], [207,186,255], [190,243,128]
+];
+const NODE_COUNT = 140;
+const HUB_INDICES = new Set([0, 7, 18, 31, 47, 63, 84, 102, 119, 135]);
+
+const graphNodes = [];
+for (let i = 0; i < NODE_COUNT; i++) {
+  const cluster = i % 6;
+  const col = CLUSTER_COLORS[cluster];
+  const isHub = HUB_INDICES.has(i);
+  const radius = isHub ? 5.5 : 2.4 + ((i * 137.508) % 1) * 1.6;
+  const angle = i * 2.39996; // golden angle
+  const ring = 120 + Math.floor(i / 6) * 10;
+  const x = Math.cos(angle) * ring + (cluster - 2.5) * 55;
+  const y = Math.sin(angle) * ring * 0.58 + Math.sin(cluster) * 38;
+  const z = Math.sin(angle * 0.7) * 320 + cluster * 24;
+  graphNodes.push({ x, y, z, col, radius, isHub, cluster, i });
+}
+
+// Edges: ~4% same-cluster, ~0.5% cross-cluster, plus 24 forced cross-links
+const conns = [];
+const connSet = new Set();
+function addEdge(a, b) {
+  if (a === b) return;
+  const key = Math.min(a, b) + ',' + Math.max(a, b);
+  if (connSet.has(key)) return;
+  connSet.add(key);
+  conns.push([a, b]);
+}
+// Seeded pseudo-random for deterministic layout
+function seededRand(seed) { let s = seed; return function() { s = (s * 16807 + 0) % 2147483647; return s / 2147483647; }; }
+const srand = seededRand(42);
+for (let i = 0; i < NODE_COUNT; i++) {
+  for (let j = i + 1; j < NODE_COUNT; j++) {
+    if (graphNodes[i].cluster === graphNodes[j].cluster) {
+      if (srand() < 0.04) addEdge(i, j);
+    } else {
+      if (srand() < 0.005) addEdge(i, j);
+    }
+  }
+}
+// 24 forced cross-cluster links between hubs and random nodes
+const hubArr = [...HUB_INDICES];
+for (let k = 0; k < 24; k++) {
+  const from = hubArr[k % hubArr.length];
+  const to = Math.floor(srand() * NODE_COUNT);
+  addEdge(from, to);
+}
+
+// Stars — 350 particles in 3D space
+const stars = [];
+for (let i = 0; i < 350; i++) {
+  stars.push({
+    x: (Math.random() - 0.5) * 6000,
+    y: (Math.random() - 0.5) * 4000,
+    z: (Math.random() - 0.5) * 5000,
+    b: 0.15 + Math.random() * 0.85,
+    s: 0.2 + Math.random() * 0.5,
+    tw: 0.3 + Math.random() * 4 // twinkle speed
+  });
+}
+
+// Terminal data
+const CMD = 'claude, refactor the payment module';
+const FILES = [
+  { path: 'Reading src/auth/login.ts...', tokens: '3,200 tokens' },
+  { path: 'Reading src/api/payments.ts...', tokens: '4,100 tokens' },
+  { path: 'Reading src/middleware/auth.ts...', tokens: '2,100 tokens' },
+  { path: 'Reading src/utils/crypto.ts...', tokens: '1,800 tokens' },
+  { path: 'Reading src/services/billing.ts...', tokens: '4,100 tokens' },
+  { path: 'Reading src/models/user.ts...', tokens: '3,400 tokens' },
+  { path: 'Reading src/config/auth.ts...', tokens: '640 tokens' },
+  { path: 'Reading src/routes/login.ts...', tokens: '1,700 tokens' },
+  { path: 'Reading src/api/session.ts...', tokens: '2,800 tokens' },
+  { path: 'Reading src/workers/dispatch.ts...', tokens: '900 tokens' },
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  CAMERA SYSTEM
+// ═══════════════════════════════════════════════════════════════
+
+function getCam() {
+  // ACT 1: Far away, static — terminal scene
+  if (t < 12) return { x: 0, y: 0, z: 600, ry: 0, rx: 0 };
+  const gt = t - 12;
+  // ACT 2-3 opening: Fly IN from far to inside graph
+  if (gt < 4) {
+    const p = ease(cl(gt / 4));
+    return { x: 0, y: 0, z: 600 - p * 500, ry: gt * 0.04, rx: -0.08 };
+  }
+  // ACT 3: Inside the graph, slow orbit
+  if (gt < 20) {
+    const p = gt - 4;
+    return {
+      x: Math.sin(p * 0.08) * 50,
+      y: Math.cos(p * 0.06) * 25,
+      z: 100 + Math.sin(p * 0.04) * 60,
+      ry: p * 0.055,
+      rx: -0.08 + Math.sin(p * 0.03) * 0.04
+    };
+  }
+  // ACT 4: Slight pull back for proof
+  if (gt < 28) {
+    const p = ease(cl((gt - 20) / 2.5));
+    const orbit = gt - 20;
+    return {
+      x: Math.sin(orbit * 0.05) * 30,
+      y: 0,
+      z: 100 + p * 200,
+      ry: (gt - 4) * 0.055,
+      rx: -0.06
+    };
+  }
+  // ACT 5: Pull back to see full graph
+  const p = ease(cl((gt - 28) / 3));
+  return {
+    x: 0, y: 0,
+    z: 300 + p * 200,
+    ry: (gt - 4) * 0.055,
+    rx: -0.05
+  };
+}
+
+function proj3d(px, py, pz) {
+  const cam = getCam();
+  let dx = px - cam.x, dy = py - cam.y, dz = pz - cam.z;
+  // Rotate Y
+  const cy = Math.cos(cam.ry), sy = Math.sin(cam.ry);
+  let x1 = dx * cy - dz * sy, z1 = dx * sy + dz * cy;
+  // Rotate X
+  const crx = Math.cos(cam.rx), srx = Math.sin(cam.rx);
+  let y1 = dy * crx - z1 * srx, z2 = dy * srx + z1 * crx;
+  const fov = 800;
+  if (z2 < -fov + 10) return null;
+  const s = fov / (fov + z2);
+  return { x: x1 * s + W / 2, y: y1 * s + H / 2, z: z2, s: s };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TEXT HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function txt(text, x, y, font, color, alpha, align) {
+  if (!alpha || alpha < 0.005) return;
+  cx.save();
+  cx.globalAlpha = alpha;
+  cx.font = font;
+  cx.fillStyle = color;
+  cx.textAlign = align || 'center';
+  cx.textBaseline = 'middle';
+  cx.fillText(text, x, y);
+  cx.restore();
+}
+
+function txtDM(text, x, y, weight, size, color, alpha, align) {
+  txt(text, x, y, weight + ' ' + size + 'px "DM Sans",system-ui,sans-serif', color, alpha, align);
+}
+
+function txtMono(text, x, y, weight, size, color, alpha, align) {
+  txt(text, x, y, weight + ' ' + size + 'px "Space Mono",monospace', color, alpha, align);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDERING
+// ═══════════════════════════════════════════════════════════════
+
+function drawStars() {
+  for (const s of stars) {
+    const p = proj3d(s.x, s.y, s.z);
+    if (!p || p.x < -20 || p.x > W + 20 || p.y < -20 || p.y > H + 20) continue;
+    const twinkle = 0.15 + Math.sin(t * s.tw + s.b * 10) * 0.12;
+    const a = s.b * twinkle * Math.min(1, p.s * 2.2);
+    if (a < 0.01) continue;
+    cx.fillStyle = 'rgba(255,255,255,' + a + ')';
+    cx.beginPath();
+    cx.arc(p.x, p.y, Math.max(0.3, s.s * p.s), 0, TAU);
+    cx.fill();
+  }
+}
+
+function drawNebulae() {
+  const nebulae = [
+    [0.28, 0.32, 94, 234, 212, 0.018],
+    [0.72, 0.58, 196, 181, 253, 0.013],
+    [0.5,  0.78, 253, 211, 77,  0.007]
+  ];
+  for (const [ox, oy, r, g, b, a] of nebulae) {
+    const nb = cx.createRadialGradient(W * ox, H * oy, 0, W * ox, H * oy, W * 0.36);
+    nb.addColorStop(0, 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')');
+    nb.addColorStop(1, 'rgba(0,0,0,0)');
+    cx.fillStyle = nb;
+    cx.fillRect(0, 0, W, H);
+  }
+}
+
+function drawTerminal(termAlpha) {
+  const tw = Math.min(820, W * 0.44);
+  const th = Math.min(380, H * 0.52);
+  const tx = W * 0.06;
+  const ty = H * 0.24;
+
+  cx.save();
+  cx.globalAlpha = termAlpha * 0.94;
+
+  // Frosted glass background
+  cx.fillStyle = '#0a0d12';
+  cx.beginPath();
+  cx.roundRect(tx, ty, tw, th, 12);
+  cx.fill();
+  // Subtle border
+  cx.strokeStyle = 'rgba(94,234,212,0.07)';
+  cx.lineWidth = 1;
+  cx.stroke();
+
+  // Three colored dots
+  const dotY = ty + 18;
+  for (const [i, c] of ['#ff5f56', '#ffbd2e', '#27c93f'].entries()) {
+    cx.fillStyle = c;
+    cx.beginPath();
+    cx.arc(tx + 20 + i * 16, dotY, 4.5, 0, TAU);
+    cx.fill();
+  }
+
+  // Command typing
+  cx.globalAlpha = termAlpha;
+  const cmdProgress = cl((t - 0.8) / 1);
+  const chars = Math.min(CMD.length, Math.floor(cmdProgress * CMD.length));
+  cx.font = '600 22px "Space Mono",monospace';
+  cx.fillStyle = '#e6edf3';
+  cx.textAlign = 'left';
+  cx.fillText('$ ' + CMD.substring(0, chars), tx + 16, ty + 48);
+  // Blinking cursor
+  if (cmdProgress < 1 && Math.sin(t * 7) > 0) {
+    cx.fillStyle = '#5eead4';
+    const cursorX = tx + 16 + cx.measureText('$ ' + CMD.substring(0, chars)).width + 2;
+    cx.fillRect(cursorX, ty + 34, 8, 16);
+  }
+
+  // Files reading in
+  if (t > 1.8) {
+    cx.font = '500 18px "Space Mono",monospace';
+    const shown = Math.min(FILES.length, Math.floor((t - 1.8) / 0.25));
+    for (let i = 0; i < shown; i++) {
+      const fy = ty + 78 + i * 26;
+      if (fy > ty + th - 60) continue;
+      cx.fillStyle = '#4a5568';
+      cx.fillText('  ' + FILES[i].path, tx + 16, fy);
+      cx.fillStyle = '#6b7280';
+      cx.fillText(FILES[i].tokens, tx + 16 + cx.measureText('  ' + FILES[i].path).width + 10, fy);
+    }
+  }
+
+  // Context bar
+  if (t > 4) {
+    const prog = cl((t - 4) / 4);
+    const barY = ty + th - 38;
+    const barH = 18;
+    const barW = tw - 32;
+    // Background
+    cx.fillStyle = '#111418';
+    cx.beginPath(); cx.roundRect(tx + 16, barY, barW, barH, 5); cx.fill();
+    // Fill
+    const barColor = prog > 0.65 ? '#ef4444' : '#d97706';
+    cx.fillStyle = barColor;
+    cx.beginPath(); cx.roundRect(tx + 16, barY, barW * Math.min(prog, 0.98), barH, 5); cx.fill();
+    // Label
+    cx.fillStyle = '#fff';
+    cx.font = '700 9px "Space Mono",monospace';
+    cx.textAlign = 'center';
+    cx.fillText('CONTEXT ' + Math.floor(prog * 91) + '%', tx + 16 + barW / 2, barY + 13);
+    cx.textAlign = 'left';
+  }
+
+  cx.restore();
+}
+
+function drawAct1RTBs(a1) {
+  const rtbX = W * 0.58;
+  const sz1 = 78;
+  const sz2 = 44;
+  const sz3 = 30;
+
+  // Context saved comes after the opening cost headline.
+  if (t > 0.9) {
+    const a = fi(0.9, 0.6) * a1;
+    txtDM('CONTEXT SAVED', rtbX, H * 0.32, 700, 22, '#6b7280', a, 'left');
+    txtMono('453K -> 15.5K', rtbX, H * 0.40, 800, 56, '#5eead4', a, 'left');
+    txtDM('tokens to understand', rtbX, H * 0.40 + 44, 400, 28, '#a8b3c7', a * 0.9, 'left');
+  }
+
+  // Then the reason: the repo map is fast.
+  if (t > 3.1) {
+    const a = fi(3.1, 0.7) * a1;
+    txtDM('REPO MAP', rtbX, H * 0.69, 700, 20, '#6b7280', a, 'left');
+    txtMono('0.5s', rtbX, H * 0.75, 700, sz2, '#f1f5f9', a, 'left');
+    txtDM('to learn 994 files', rtbX + 118, H * 0.75, 400, 26, '#a8b3c7', a * 0.85, 'left');
+  }
+
+  // One extra use case, not a crowded feature list.
+  if (t > 6.4) {
+    const a = fi(6.4, 0.7) * a1;
+    txtDM('CHECK YOUR REPO', rtbX, H * 0.84, 700, 20, '#6b7280', a, 'left');
+    txtDM('Dead code, broken links, risk signals.', rtbX, H * 0.84 + 34, 500, 26, '#fcd34d', a, 'left');
+  }
+}
+
+function drawGraph(ga, buildProg) {
+  const nodesVis = Math.floor(buildProg * NODE_COUNT);
+  if (nodesVis === 0 && ga < 0.02) return;
+
+  cx.save();
+  cx.globalAlpha = ga;
+
+  // Birth pulse rings (first 5s of graph life)
+  const gt = t - 12;
+  if (gt > 0 && gt < 5) {
+    for (let i = 0; i < 4; i++) {
+      const rr = (gt - i * 0.4) * 180;
+      if (rr < 0) continue;
+      const ra = 0.12 * (1 - rr / 900);
+      if (ra < 0.005) continue;
+      cx.strokeStyle = 'rgba(94,234,212,' + ra + ')';
+      cx.lineWidth = 1.5 + i * 0.3;
+      cx.beginPath();
+      cx.arc(W / 2, H / 2, rr, 0, TAU);
+      cx.stroke();
+    }
+  }
+
+  // Edges — curved quadratic beziers with pulsing opacity
+  if (gt > 3) {
+    const ea = cl((gt - 3) / 3);
+    for (const [a, b] of conns) {
+      if (a >= nodesVis || b >= nodesVis) continue;
+      const na = graphNodes[a], nb = graphNodes[b];
+      const pa = proj3d(na.x, na.y, na.z), pb = proj3d(nb.x, nb.y, nb.z);
+      if (!pa || !pb) continue;
+      const depth = (pa.s + pb.s) * 0.5;
+      const pulse = 0.5 + Math.sin(t * 0.8 + a * 0.3 + b * 0.17) * 0.3;
+      const al = Math.max(0.02, Math.min(0.18, depth * 0.1)) * ea * pulse;
+      const [cr, cg, cb] = na.col;
+      cx.strokeStyle = 'rgba(' + cr + ',' + cg + ',' + cb + ',' + al + ')';
+      cx.lineWidth = Math.max(0.3, depth * 1.2);
+      const mx = (pa.x + pb.x) / 2, my = (pa.y + pb.y) / 2;
+      const dx = pb.x - pa.x, dy = pb.y - pa.y;
+      cx.beginPath();
+      cx.moveTo(pa.x, pa.y);
+      cx.quadraticCurveTo(mx + dy * 0.08, my - dx * 0.08, pb.x, pb.y);
+      cx.stroke();
+    }
+  }
+
+  // Nodes — project, sort by depth, draw as circles
+  const projected = [];
+  for (let i = 0; i < nodesVis; i++) {
+    const n = graphNodes[i];
+    const p = proj3d(n.x, n.y, n.z);
+    if (!p) continue;
+    projected.push({ ...n, px: p.x, py: p.y, pz: p.z, ps: p.s });
+  }
+  projected.sort((a, b) => a.pz - b.pz);
+
+  for (const n of projected) {
+    if (n.px < -40 || n.px > W + 40 || n.py < -40 || n.py > H + 40) continue;
+    const [cr, cg, cb] = n.col;
+    const s = n.ps;
+    const r = n.radius * s;
+    const al = Math.max(0.15, Math.min(1, s * 1.8));
+
+    // Hub corona glow (radial gradient, radius*7)
+    if (n.isHub) {
+      const pulse = 1 + Math.sin(t * 1.2 + n.i * 0.7) * 0.15;
+      const glowR = r * 7 * pulse;
+      const g = cx.createRadialGradient(n.px, n.py, r * 0.5, n.px, n.py, glowR);
+      g.addColorStop(0, 'rgba(' + cr + ',' + cg + ',' + cb + ',' + (al * 0.18) + ')');
+      g.addColorStop(0.4, 'rgba(' + cr + ',' + cg + ',' + cb + ',' + (al * 0.06) + ')');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      cx.fillStyle = g;
+      cx.beginPath();
+      cx.arc(n.px, n.py, glowR, 0, TAU);
+      cx.fill();
+    }
+
+    // Node circle
+    cx.fillStyle = 'rgba(' + cr + ',' + cg + ',' + cb + ',' + (al * 0.9) + ')';
+    cx.beginPath();
+    cx.arc(n.px, n.py, Math.max(0.5, r), 0, TAU);
+    cx.fill();
+
+    // Bright core for hubs
+    if (n.isHub) {
+      cx.fillStyle = 'rgba(' + Math.min(255, cr + 80) + ',' + Math.min(255, cg + 80) + ',' + Math.min(255, cb + 80) + ',' + (al * 0.6) + ')';
+      cx.beginPath();
+      cx.arc(n.px, n.py, Math.max(0.3, r * 0.45), 0, TAU);
+      cx.fill();
+    }
+  }
+
+  cx.restore();
+}
+
+// RTB text helper with dark shadow backing so text is always legible over graph
+function txtRTB(text, x, y, font, color, alpha, align) {
+  if (!alpha || alpha < 0.005) return;
+  cx.save();
+  cx.globalAlpha = alpha;
+  cx.shadowColor = 'rgba(0,0,0,0.85)';
+  cx.shadowBlur = 22;
+  cx.shadowOffsetX = 0;
+  cx.shadowOffsetY = 0;
+  cx.font = font;
+  cx.fillStyle = color;
+  cx.textAlign = align || 'center';
+  cx.textBaseline = 'middle';
+  // Double-draw for stronger shadow backing
+  cx.fillText(text, x, y);
+  cx.fillText(text, x, y);
+  cx.restore();
+}
+
+function txtRTBMono(text, x, y, weight, size, color, alpha, align) {
+  txtRTB(text, x, y, weight + ' ' + size + 'px "Space Mono",monospace', color, alpha, align);
+}
+function txtRTBDM(text, x, y, weight, size, color, alpha, align) {
+  txtRTB(text, x, y, weight + ' ' + size + 'px "DM Sans",system-ui,sans-serif', color, alpha, align);
+}
+
+function drawAct3RTBs(ga) {
+  const gt = t - 12;
+  const lx = 50;
+  const rx = W - 50;
+
+  // LEFT t=15: Cost saved
+  if (t > 15 && t < 18.5) {
+    const a = fio(15, 3.5, 0.7) * ga;
+    txtRTBMono('$136/mo -> $9/mo', lx, H * 0.35, 800, 58, '#5eead4', a, 'left');
+    txtRTBDM('Cost saved on a 994-file repo.', lx, H * 0.35 + 72, 400, 22, '#6b7280', a * 0.8, 'left');
+  }
+  // RIGHT t=17: Context saved
+  if (t > 17 && t < 20.5) {
+    const a = fio(17, 3.5, 0.7) * ga;
+    txtRTBMono('453K -> 15.5K', rx, H * 0.35, 800, 58, '#c4b5fd', a, 'right');
+    txtRTBDM('Context saved before the first answer.', rx, H * 0.35 + 72, 400, 22, '#6b7280', a * 0.8, 'right');
+  }
+  // LEFT t=19: Repo learning speed
+  if (t > 19 && t < 22.5) {
+    const a = fio(19, 3.5, 0.7) * ga;
+    txtRTBMono('0.5 seconds', lx, H * 0.52, 800, 64, '#f1f5f9', a, 'left');
+    txtRTBDM('to learn and map 994 files.', lx, H * 0.52 + 72, 400, 22, '#6b7280', a * 0.8, 'left');
+  }
+  // RIGHT t=21: Repo health
+  if (t > 21 && t < 24.5) {
+    const a = fio(21, 3.5, 0.7) * ga;
+    txtRTBMono('Check your repo', rx, H * 0.52, 800, 64, '#fcd34d', a, 'right');
+    txtRTBDM('Dead code, broken links, and risk signals.', rx, H * 0.52 + 72, 400, 22, '#6b7280', a * 0.8, 'right');
+  }
+
+  // Bottom feature line (t=27-32) — faster appearance
+  if (t > 27 && t < 33) {
+    const a = fio(27, 4, 1) * ga;
+    txtRTBDM('Cost saved \u00B7 Context saved \u00B7 0.5s repo map \u00B7 Health check', W / 2, H - 72, 400, 26, '#6b7280', a, 'center');
+    if (t > 28.5) {
+      const a2 = fi(28.5, 0.8) * ga;
+      txtRTBDM('Give your AI the repo map before it spends your tokens.', W / 2, H - 42, 500, 30, '#5eead4', a2, 'center');
+    }
+  }
+}
+
+function drawProofTerminal() {
+  const tw = Math.min(720, W * 0.58);
+  const th = Math.min(300, H * 0.42);
+  const tx = W * 0.06;
+  const ty = H * 0.38;
+
+  const termA = fi(33.5, 0.8);
+  if (termA < 0.01) return;
+
+  cx.save();
+  cx.globalAlpha = termA * 0.94;
+  // Frosted glass
+  cx.fillStyle = '#0a0d12';
+  cx.beginPath(); cx.roundRect(tx, ty, tw, th, 12); cx.fill();
+  cx.strokeStyle = 'rgba(34,197,94,0.08)';
+  cx.lineWidth = 1;
+  cx.stroke();
+
+  // Dots
+  for (const [i, c] of ['#ff5f56', '#ffbd2e', '#27c93f'].entries()) {
+    cx.fillStyle = c;
+    cx.beginPath();
+    cx.arc(tx + 20 + i * 16, ty + 18, 4, 0, TAU);
+    cx.fill();
+  }
+
+  cx.globalAlpha = termA;
+  cx.textAlign = 'left';
+
+  const lines = [
+    { text: '$ node scripts/benchmark-980-repo.mjs', color: '#e6edf3', delay: 0 },
+    { text: '  \u2713 Generated 1000+ files', color: '#22c55e', delay: 0.35 },
+    { text: '  \u2713 Context map in 0.5s', color: '#22c55e', delay: 0.7 },
+    { text: '  Raw tokens:   453,522', color: '#fca5a5', delay: 1.05 },
+    { text: '  MCP tokens:   15,541', color: '#5eead4', delay: 1.4 },
+    { text: '  Compression:  29:1', color: '#5eead4', delay: 1.75 },
+    { text: '  Savings:      96.6% in cost', color: '#5eead4', delay: 2.1 },
+  ];
+
+  const startT = 33.8;
+  cx.font = '500 20px "Space Mono",monospace';
+  for (const line of lines) {
+    const lineT = startT + line.delay;
+    if (t < lineT) continue;
+    const la = fi(lineT, 0.3);
+    cx.globalAlpha = termA * la;
+    cx.fillStyle = line.color;
+    cx.fillText(line.text, tx + 16, ty + 48 + lines.indexOf(line) * 28);
+  }
+
+  cx.restore();
+}
+
+function drawProofBadges() {
+  const rx = W * 0.72;
+
+  // Verified badge
+  if (t > 36) {
+    const a = fi(36, 0.8);
+    // Green circle with checkmark
+    cx.save();
+    cx.globalAlpha = a;
+    cx.fillStyle = '#22c55e';
+    cx.beginPath();
+    cx.arc(rx, H * 0.4, 14, 0, TAU);
+    cx.fill();
+    // Checkmark
+    cx.strokeStyle = '#000';
+    cx.lineWidth = 2.5;
+    cx.beginPath();
+    cx.moveTo(rx - 5, H * 0.4);
+    cx.lineTo(rx - 1, H * 0.4 + 5);
+    cx.lineTo(rx + 7, H * 0.4 - 5);
+    cx.stroke();
+    // Label
+    cx.font = '700 10px "Space Mono",monospace';
+    cx.fillStyle = '#22c55e';
+    cx.textAlign = 'left';
+    cx.fillText('INDEPENDENTLY REPRODUCIBLE', rx + 22, H * 0.4 + 4);
+    cx.restore();
+  }
+
+  // Methodology checks
+  if (t > 37) {
+    const checks = [
+      '1000+ real source files',
+      'Published API pricing',
+      'Open source \u00B7 MIT \u00B7 auditable'
+    ];
+    for (let i = 0; i < checks.length; i++) {
+      const ca = fi(37 + i * 0.4, 0.6);
+      if (ca < 0.01) continue;
+      const cy = H * 0.48 + i * 32;
+      cx.save();
+      cx.globalAlpha = ca;
+      // Green dot
+      cx.fillStyle = '#22c55e';
+      cx.beginPath();
+      cx.arc(rx, cy, 4, 0, TAU);
+      cx.fill();
+      // Text
+      cx.font = '400 14px "DM Sans",system-ui,sans-serif';
+      cx.fillStyle = '#a8b3c7';
+      cx.textAlign = 'left';
+      cx.fillText(checks[i], rx + 14, cy + 5);
+      cx.restore();
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MAIN DRAW LOOP
+// ═══════════════════════════════════════════════════════════════
+
+function draw(ts) {
+  if (!lt) lt = ts;
+  const dt = (ts - lt) / 1000;
+  lt = ts;
+  t += dt;
+
+  // Done
+  if (t >= DUR) {
+    t = DUR;
+    window.__videoDone = true;
+  }
+
+  cx.fillStyle = '#000';
+  cx.fillRect(0, 0, W, H);
+
+  const cw = W / 2, ch = H / 2;
+
+  // ═══ ALWAYS: Stars + Nebulae ═══
+  drawStars();
+  drawNebulae();
+
+  // ═══ ACT 1: THE PROBLEM (0-10s) ═══
+  if (t < 12) {
+    const a1 = t < 10 ? 1 : fo(10, 2);
+
+    // Headlines — top area, clear of terminal
+    if (t > 0.3) {
+      const ha = fi(0.3, 1.2) * a1;
+      txtDM('$136/mo -> $9/mo', W * 0.08, H * 0.09, 760, 78, '#fca5a5', ha, 'left');
+    }
+    if (t > 0.8) {
+      const ha = fi(0.8, 1.2) * a1;
+      txtDM('Stop paying AI to explore your repo raw.', W * 0.08, H * 0.09 + 56, 520, 40, '#f8fafc', ha, 'left');
+    }
+
+    // Terminal
+    if (t > 1.5) {
+      const ta = fi(1.5, 1) * a1;
+      drawTerminal(ta);
+    }
+
+    // RTB numbers on right
+    drawAct1RTBs(a1);
+
+    // Graph barely visible in deep background
+    if (t > 2) {
+      drawGraph(0.08 * a1, cl((t - 2) / 6));
+    }
+  }
+
+  // ═══ ACT 2: THE TURN (10-13s) ═══
+  if (t >= 10 && t < 14) {
+    // Brief teal flash
+    if (t > 10 && t < 10.2) {
+      cx.fillStyle = 'rgba(94,234,212,' + (0.06 * (1 - (t - 10) / 0.2)) + ')';
+      cx.fillRect(0, 0, W, H);
+    }
+    // "What if it already knew?"
+    const qa = Math.min(fi(10.8, 1.2), fo(13, 0.8));
+    txtDM('What if it already knew?', cw, ch, 300, 80, '#f1f5f9', qa, 'center');
+  }
+
+  // ═══ ACT 3: THE UNIVERSE (13-32s) ═══
+  // Draw order: graph FIRST, then RTB text AFTER so text is always on top
+  if (t >= 12 && t < 34) {
+    const gt = t - 12;
+    const ga = Math.min(fi(12, 3), t < 32 ? 1 : fo(32, 2));
+    const buildProg = ease(cl(gt / 6));
+    drawGraph(ga, buildProg);
+    // RTB text drawn AFTER graph — always on top with shadow backing
+    drawAct3RTBs(ga);
+  }
+
+  // ═══ ACT 4: PROOF (32-40s) ═══
+  if (t >= 32 && t < 41) {
+    // Graph dimmed, slightly pulled back
+    const ga = Math.min(fi(32, 1), t < 39 ? 0.4 : fo(39, 2) * 0.4);
+    drawGraph(ga, 1);
+
+    // "Verified."
+    if (t > 33) {
+      const va = fi(33, 0.8);
+      txtDM('Verified.', W * 0.08, H * 0.22, 800, 72, '#22c55e', va, 'left');
+    }
+
+    drawProofTerminal();
+    drawProofBadges();
+  }
+
+  // ═══ ACT 5: THE CLOSE (40-48s) ═══
+  if (t >= 40) {
+    // Full graph visible, rotating slowly
+    const graphA = fi(40, 1.5) * 0.35;
+    drawGraph(graphA, 1);
+
+    // Teal glow bloom
+    const bloom = cx.createRadialGradient(cw, ch - 30, 0, cw, ch - 30, W * 0.3);
+    bloom.addColorStop(0, 'rgba(94,234,212,' + (0.025 * fi(40, 1)) + ')');
+    bloom.addColorStop(1, 'rgba(0,0,0,0)');
+    cx.fillStyle = bloom;
+    cx.fillRect(0, 0, W, H);
+
+    // "Stop paying AI to get lost."
+    if (t > 41) {
+      const a = fi(41, 1.2);
+      txtDM('Stop paying AI to get lost.', cw, ch - 76, 840, 84, '#f8fafc', a, 'center');
+    }
+    // Support line: keep a clear gap from the main CTA.
+    if (t > 43) {
+      const a = fi(43, 1);
+      txtDM('Give your AI the repo map.', cw, ch + 36, 500, 56, '#5eead4', a, 'center');
+    }
+    // Install command box
+    if (t > 44.5) {
+      const a = fi(44.5, 0.8);
+      cx.save();
+      cx.globalAlpha = a * 0.92;
+      const boxW = Math.min(540, W * 0.36);
+      const boxH = 52;
+      const boxX = cw - boxW / 2;
+      const boxY = ch + 72;
+      cx.fillStyle = '#0a0d12';
+      cx.beginPath(); cx.roundRect(boxX, boxY, boxW, boxH, 10); cx.fill();
+      cx.strokeStyle = 'rgba(94,234,212,0.12)';
+      cx.lineWidth = 1;
+      cx.stroke();
+      cx.restore();
+      txtMono('$ npx athena-code-mcp', cw, ch + 98, 500, 30, '#5eead4', a, 'center');
+    }
+    // Bottom tags
+    if (t > 46) {
+      const a = fi(46, 0.6);
+      txtDM('Created by Shibanshu \u00B7 Free \u00B7 Open Source \u00B7 MIT \u00B7 22 Tools \u00B7 No Telemetry', cw, ch + 150, 400, 22, '#4a5568', a, 'center');
+    }
+    // Gold closing line
+    if (t > 46.5) {
+      const a = fi(46.5, 0.6);
+      txtDM('1000+ files \u2192 not millions of tokens \u2192 accurate answers \u2192 low cost', cw, ch + 180, 500, 26, '#ffc76f', a, 'center');
+    }
+  }
+
+  // ═══ ALWAYS: Creator credit — bottom right ═══
+  cx.save();
+  cx.globalAlpha = 0.35;
+  cx.font = '500 14px "DM Sans",system-ui,sans-serif';
+  cx.fillStyle = '#6b7280';
+  cx.textAlign = 'right';
+  cx.textBaseline = 'bottom';
+  cx.fillText('Shibanshu Jha', W - 24, H - 16);
+  cx.restore();
+
+  // Continue if not done
+  if (t < DUR) {
+    requestAnimationFrame(draw);
+  }
+}
+
+// ═══ START ═══
+requestAnimationFrame(draw);
+
+// Audio requires user interaction (browser autoplay policy)
+document.addEventListener('click', function() {
+  initAudio();
+}, { once: true });
+
+// Try auto-start (works in some browsers/contexts)
+try { initAudio(); } catch(e) {}
+</script>
+</body>
+</html>

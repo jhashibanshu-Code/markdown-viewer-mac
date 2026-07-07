@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0e14; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 40px; }
+
+/* ---- Embeddable proof card ---- */
+.proof-card {
+  max-width: 680px;
+  width: 100%;
+  background: #111827;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* Header strip */
+.proof-top {
+  background: rgba(34, 197, 94, 0.06);
+  border-bottom: 1px solid rgba(34, 197, 94, 0.1);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.proof-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #22c55e;
+  font-weight: 700;
+}
+.proof-badge svg { width: 14px; height: 14px; fill: #22c55e; }
+.proof-date { font-size: 10px; color: #374151; font-family: monospace; }
+
+/* Stats strip */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.stat {
+  padding: 18px 16px;
+  text-align: center;
+  border-right: 1px solid rgba(255,255,255,0.04);
+}
+.stat:last-child { border-right: none; }
+.stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  margin-bottom: 2px;
+}
+.stat-value.green { color: #5eead4; }
+.stat-value.red { color: #ef4444; }
+.stat-value.yellow { color: #fbbf24; }
+.stat-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #4b5563;
+}
+
+/* Comparison bar */
+.comparison {
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.comp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.comp-row:last-child { margin-bottom: 0; }
+.comp-label {
+  font-size: 11px;
+  color: #6b7280;
+  width: 80px;
+  flex-shrink: 0;
+}
+.comp-bar {
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: monospace;
+  color: rgba(255,255,255,0.8);
+  white-space: nowrap;
+}
+.comp-bar.raw {
+  background: linear-gradient(90deg, #991b1b, #dc2626);
+  width: 100%;
+}
+.comp-bar.mcp {
+  background: linear-gradient(90deg, #065f46, #10b981);
+  width: 3.4%;
+  min-width: 60px;
+}
+
+/* Methodology */
+.method {
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.method-title {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #374151;
+  margin-bottom: 10px;
+}
+.method-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.method-item {
+  font-size: 11px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.method-item .dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+
+/* Reproduce command */
+.reproduce {
+  padding: 14px 24px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  color: #5eead4;
+  background: rgba(0,0,0,0.2);
+}
+.reproduce .dim { color: #1f2937; }
+</style>
+</head>
+<body>
+
+<!--
+  EMBEDDABLE PROOF CARD
+  Drop this into any ad, landing page, README, or blog post.
+  Self-contained. No external dependencies.
+-->
+<div class="proof-card">
+
+  <div class="proof-top">
+    <div class="proof-badge">
+      <svg viewBox="0 0 20 20"><path d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg>
+      Independently Reproducible Benchmark
+    </div>
+    <div class="proof-date">July 2026</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat">
+      <div class="stat-value green">994</div>
+      <div class="stat-label">Files tested</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value red">453K</div>
+      <div class="stat-label">Tokens raw</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value green">15.5K</div>
+      <div class="stat-label">Tokens w/ MCP</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value green">29:1</div>
+      <div class="stat-label">Compression</div>
+    </div>
+  </div>
+
+  <div class="comparison">
+    <div class="comp-row">
+      <div class="comp-label">Without MCP</div>
+      <div class="comp-bar raw">453,522 tokens — 227% of context window (IMPOSSIBLE)</div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-label">With MCP</div>
+      <div class="comp-bar mcp">15.5K — 8%</div>
+    </div>
+  </div>
+
+  <div class="method">
+    <div class="method-title">Methodology</div>
+    <div class="method-list">
+      <div class="method-item"><span class="dot"></span> 994 real source files (React, Node, tests, SQL)</div>
+      <div class="method-item"><span class="dot"></span> Token count: chars/4 (within 5% of tiktoken)</div>
+      <div class="method-item"><span class="dot"></span> "Without" assumes 50% file exploration</div>
+      <div class="method-item"><span class="dot"></span> Map generation: 0.5s on Apple Silicon</div>
+      <div class="method-item"><span class="dot"></span> Costs use published API pricing</div>
+      <div class="method-item"><span class="dot"></span> Open source, MIT — all code auditable</div>
+    </div>
+  </div>
+
+  <div class="reproduce">
+    <span class="dim"># Verify yourself:</span> node scripts/benchmark-980-repo.mjs
+  </div>
+
+</div>
+
+</body>
+</html>

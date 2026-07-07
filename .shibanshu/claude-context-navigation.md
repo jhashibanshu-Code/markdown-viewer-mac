@@ -1,11 +1,11 @@
 # Claude Context Navigation Guide
 
-Generated: 2026-07-05T16:49:22.064Z
+Generated: 2026-07-06T01:54:09.049Z
 Schema: shibanshu.context.v1
 Profile: analysis (Analysis)
-Fingerprint: 2eb2e578c15b3dd8c9988589
+Fingerprint: df3ef911d3899cdb1042ade8
 Root: /Users/shibanshujha/Documents/markdown-viewer-mac
-Files indexed: 175
+Files indexed: 184
 Resolved links: 4
 Unresolved links: 2
 Limits: max 5000 files, max 768000 bytes per file, max depth 24
@@ -25,56 +25,56 @@ Start here to understand the repo or vault shape before reading detailed files.
 
 - packages/mcp-server/README.md — 310 words, 9 headings
 - README.md — 1378 words, 7 headings
-- src/renderer.js — 11688 words, 4 headings
+- src/renderer.js — 12313 words, 4 headings
 - scripts/stress-check.mjs — 1971 words, 0 headings
 - skills/shibanshu-markdown-context/references/workflows.md — 301 words, 6 headings
-- skills/shibanshu-markdown-context/SKILL.md — 663 words, 9 headings
+- skills/shibanshu-markdown-context/SKILL.md — 669 words, 9 headings
 - src/capacitor-bridge.js — 1547 words, 0 headings
-- src/index.html — 3290 words, 0 headings
-- src/styles.css — 8510 words, 0 headings
+- src/index.html — 3291 words, 0 headings
+- src/styles.css — 8681 words, 0 headings
 - android/app/src/main/assets/public/assets/katex-CddkPoXu.js — 17453 words, 0 headings
 - android/app/src/main/assets/public/assets/cytoscape.esm-B3I8pqwA.js — 16464 words, 0 headings
 - docs/marketing/ads/explorer-v4.html — 7003 words, 0 headings
 - docs/marketing/ads/explorer-resourceai.html — 6922 words, 0 headings
 - scripts/export-claude-map.mjs — 7331 words, 0 headings
 - package-lock.json — 20482 words, 0 headings
-- mcp-server.mjs — 3767 words, 1 headings
+- mcp-server.mjs — 3692 words, 1 headings
 - packages/mcp-server/export-context.mjs — 7331 words, 0 headings
-- packages/mcp-server/mcp-server.mjs — 3764 words, 1 headings
-- electron/main.cjs — 7712 words, 0 headings
+- packages/mcp-server/mcp-server.mjs — 3692 words, 1 headings
+- electron/main.cjs — 7711 words, 0 headings
 - electron/preload.cjs — 339 words, 0 headings
 - bin/shibanshu-markdown.mjs — 1192 words, 0 headings
 
 ### Graph Hubs And Bridges Route
 Read these files to understand the most connected nodes and cross-cluster transitions.
 
-- src/renderer.js — 11688 words, 4 headings
+- src/renderer.js — 12313 words, 4 headings
 - scripts/stress-check.mjs — 1971 words, 0 headings
 - skills/shibanshu-markdown-context/references/workflows.md — 301 words, 6 headings
-- skills/shibanshu-markdown-context/SKILL.md — 663 words, 9 headings
+- skills/shibanshu-markdown-context/SKILL.md — 669 words, 9 headings
 - src/capacitor-bridge.js — 1547 words, 0 headings
-- src/index.html — 3290 words, 0 headings
-- src/styles.css — 8510 words, 0 headings
+- src/index.html — 3291 words, 0 headings
+- src/styles.css — 8681 words, 0 headings
 
 ### Implementation Route
 Use this path when the task needs code, package, imports, symbols, config, or automation context.
 
-- src/renderer.js — 11688 words, 4 headings
-- electron/main.cjs — 7712 words, 0 headings
-- mcp-server.mjs — 3767 words, 1 headings
-- packages/mcp-server/mcp-server.mjs — 3764 words, 1 headings
+- src/renderer.js — 12313 words, 4 headings
+- electron/main.cjs — 7711 words, 0 headings
+- mcp-server.mjs — 3692 words, 1 headings
+- packages/mcp-server/mcp-server.mjs — 3692 words, 1 headings
 - scripts/stress-check.mjs — 1971 words, 0 headings
 - scripts/publish-static-site.mjs — 3336 words, 0 headings
 - scripts/smoke-check.mjs — 3812 words, 0 headings
-- src/index.html — 3290 words, 0 headings
+- src/index.html — 3291 words, 0 headings
+- scripts/browser-ui-smoke.mjs — 2882 words, 0 headings
 - packages/mcp-server/export-context.mjs — 7331 words, 0 headings
 - scripts/export-claude-map.mjs — 7331 words, 0 headings
-- scripts/browser-ui-smoke.mjs — 2798 words, 0 headings
-- index.html — 3274 words, 0 headings
+- index.html — 3297 words, 0 headings
 - src/capacitor-bridge.js — 1547 words, 0 headings
 - android/app/src/main/assets/public/index.html — 2643 words, 0 headings
 - bin/shibanshu-markdown.mjs — 1192 words, 0 headings
-- src/styles.css — 8510 words, 0 headings
+- src/styles.css — 8681 words, 0 headings
 - scripts/generate-app-icon.mjs — 1881 words, 0 headings
 - scripts/e2e-electron.mjs — 836 words, 1 headings
 - scripts/verify-mac-app.mjs — 1050 words, 0 headings
@@ -87,16 +87,16 @@ Use this path when the task needs code, package, imports, symbols, config, or au
 ### Symbol And Import Route
 Use this path to inspect exported symbols, local imports, and test coverage edges before editing code.
 
-- electron/main.cjs — 7712 words, 0 headings
-- mcp-server.mjs — 3767 words, 1 headings
+- electron/main.cjs — 7711 words, 0 headings
+- mcp-server.mjs — 3692 words, 1 headings
 - packages/mcp-server/export-context.mjs — 7331 words, 0 headings
-- packages/mcp-server/mcp-server.mjs — 3764 words, 1 headings
+- packages/mcp-server/mcp-server.mjs — 3692 words, 1 headings
 - scripts/export-claude-map.mjs — 7331 words, 0 headings
 - scripts/generate-app-icon.mjs — 1881 words, 0 headings
 - scripts/publish-static-site.mjs — 3336 words, 0 headings
-- src/renderer.js — 11688 words, 4 headings
+- src/renderer.js — 12313 words, 4 headings
 - scripts/verify-mac-app.mjs — 1050 words, 0 headings
-- scripts/browser-ui-smoke.mjs — 2798 words, 0 headings
+- scripts/browser-ui-smoke.mjs — 2882 words, 0 headings
 - bin/shibanshu-markdown.mjs — 1192 words, 0 headings
 - src/capacitor-bridge.js — 1547 words, 0 headings
 - scripts/release-readiness.mjs — 870 words, 0 headings
@@ -110,7 +110,7 @@ Use this path to inspect exported symbols, local imports, and test coverage edge
 Use this path to repair weak navigation, unresolved links, orphan notes, and stale docs.
 
 - scripts/stress-check.mjs — 1971 words, 0 headings
-- src/renderer.js — 11688 words, 4 headings
+- src/renderer.js — 12313 words, 4 headings
 - package-lock.json — 20482 words, 0 headings
 - android/app/src/main/assets/public/assets/katex-CddkPoXu.js — 17453 words, 0 headings
 - android/app/src/main/assets/public/assets/cytoscape.esm-B3I8pqwA.js — 16464 words, 0 headings
@@ -122,7 +122,7 @@ Use this path to repair weak navigation, unresolved links, orphan notes, and sta
 - android/app/src/main/assets/public/assets/chunk-ZGVPDNZ5-BEqpcTv8.js — 8443 words, 0 headings
 - android/app/src/main/assets/public/assets/index-BWbEtIfq.css — 7936 words, 0 headings
 - android/app/src/main/assets/public/assets/ganttDiagram-NO4QXBWP-SkzvzuDh.js — 7842 words, 0 headings
-- electron/main.cjs — 7712 words, 0 headings
+- electron/main.cjs — 7711 words, 0 headings
 - packages/mcp-server/export-context.mjs — 7331 words, 0 headings
 - scripts/export-claude-map.mjs — 7331 words, 0 headings
 - docs/marketing/ads/explorer-v4.html — 7003 words, 0 headings
@@ -172,10 +172,12 @@ Use this path to repair weak navigation, unresolved links, orphan notes, and sta
 - scripts/sign-dev-mac.mjs: variable:root@5, variable:arch@6, variable:appPath@7, variable:infoPlistPath@8, function:getArg@20, variable:index@21, function:resolveAppPath@26, variable:productName@27
 - docs/obsidian-parity-plan.md: heading:Obsidian Feature-Parity Plan@1, heading:Feature Inventory To Match For Free@11, heading:Parity Plan 0: Writing Core@26, heading:Parity Plan 1: Local Vault@53, heading:Parity Plan 2: Graph View@83, heading:Parity Plan 3: Canvas And Mind Map@121, heading:Parity Plan 4: Publish@164, heading:Parity Plan 5: Sync And Collaboration@197
 - docs/marketing/ad-creatives.md: heading:Ad Creatives — Shibanshu Markdown MCP@1, heading:Ad 1: "The Blind Spot" (Problem → Solution)@3, heading:Ad 2: "The Map" (Visual metaphor)@17, heading:Ad 3: "The Numbers" (Benchmark-driven)@33, heading:Ad 4: "The Before/After" (Screencast-style)@55, heading:Ad 5: "The Impossible" (Edge case that sells)@94, heading:Ad 6: "The Dev Tool Tax" (Cost angle — for API users)@118, heading:Reddit Post Templates@150
+- scripts/render-repo-brain-video.mjs: variable:root@6, variable:htmlPath@7, variable:outDir@8, variable:targetPath@9, variable:posterPath@10, variable:browser@16, variable:context@17, variable:page@26
 - scripts/validate-syntax.mjs: variable:root@7, variable:checkedExtensions@8, variable:ignoredDirectories@9, variable:files@21, variable:failures@22, variable:result@25, function:discoverJavaScriptFiles@47, variable:result@48
 - docs/premium-roadmap.md: heading:Free Professional Markdown App Roadmap@1, heading:End Goal@5, heading:Plan 1: Data Safety And File Correctness@9, heading:Plan 2: Security And Native Bridge Hardening@41, heading:Plan 3: Professional Editor Core@62, heading:Plan 4: Workspace, Library, And Navigation@90, heading:Plan 5: Preview And Export System@133, heading:Plan 6: UX, Accessibility, And Native Mac Polish@154
-- packages/mcp-server/README.md: heading:shibanshu-markdown-mcp@1, heading:The problem@5, heading:The solution@9, heading:What it does@28, heading:Real benchmarks (tested on production repos)@38, heading:19 tools@48, heading:How it works@72, heading:Install@92
+- packages/mcp-server/README.md: heading:athena-code-mcp@1, heading:The problem@5, heading:The solution@9, heading:What it does@28, heading:Real benchmarks (tested on production repos)@38, heading:19 tools@48, heading:How it works@72, heading:Install@92
 - skills/shibanshu-markdown-context/SKILL.md: heading:Shibanshu Markdown Context@6, heading:MCP Server (Recommended)@10, heading:Available MCP Tools@25, heading:Scene and 3D Payload@46, heading:MCP Workflow@59, heading:CLI Workflow (Alternative)@70, heading:Navigation Rules@93, heading:Safe Operation@102
+- docs/marketing/repo-brain-one-pager.md: heading:Shibanshu Markdown Viewer: The Repo Brain@1, heading:The Big Idea@3, heading:Why This Is Big@9, heading:Reason To Believe@20, heading:Why It Can Feel Groundbreaking@31, heading:The Market Hook@43, heading:What The Video Should Prove@51, heading:Final Positioning@61
 - docs/mega-stress-test-plan.md: heading:Mega Stress Test And Premium Gap Plan@1, heading:Plan 1: Extreme Test Gates@5, heading:Plan 2: Large Repository Context And Mind Maps@29, heading:Plan 3: Premium Graph And Mind Map Interaction@55, heading:Plan 4: LLM Skill@78, heading:Plan 5: Installable Offline Distribution@98, heading:Plan 6: Security And File Safety@127, heading:Plan 7: Completion Audit@148
 - scripts/install-git-hook.mjs: variable:__dirname@12, variable:exportScript@13, variable:repoPath@15, variable:absRepo@21, variable:hooksDir@22, variable:hookPath@23, variable:hookScript@25, variable:existing@37
 - README.md: heading:Shibanshu Markdown Viewer@1, heading:What It Does@7, heading:Commands@36, heading:URL Scheme@164, heading:CLI@176, heading:Architecture@198, heading:Security@218
@@ -203,7 +205,6 @@ Use this path to repair weak navigation, unresolved links, orphan notes, and sta
 - android/app/src/main/assets/public/assets/rough.esm-CSKSodPl.js: function:e@1
 - android/app/src/main/assets/public/assets/swimlanes-5IMT3BWC-cqwfyrHk.js: variable:__vite__mapDeps@1
 - docs/marketing/twitter-thread.md: heading:Twitter/X Launch Thread@1
-- THIRD_PARTY_NOTICES.md: heading:Third Party Notices@1
 
 ## Cluster Index
 
@@ -220,19 +221,19 @@ Start here:
 - android/app/src/main/assets/public/assets/chunk-ZGVPDNZ5-BEqpcTv8.js
 
 ### docs
-Files: 22. Words: 42079. Internal links: 0. External links: 0.
+Files: 30. Words: 53272. Internal links: 0. External links: 0.
 Start here:
 - docs/marketing/ads/explorer-v4.html
 - docs/marketing/ads/explorer-resourceai.html
 - docs/marketing/ads/explorer-v2.html
 - docs/marketing/ads/explorer-v3.html
 - docs/obsidian-parity-plan.md
+- docs/marketing/ads/ad-athena-final.html
 - docs/marketing/ads/ad-resourceai-live.html
 - docs/premium-roadmap.md
-- docs/marketing/ads/ad-3d-graph.html
 
 ### scripts
-Files: 18. Words: 27214. Internal links: 0. External links: 1.
+Files: 19. Words: 27523. Internal links: 0. External links: 1.
 Start here:
 - scripts/stress-check.mjs
 - scripts/export-claude-map.mjs
@@ -244,7 +245,7 @@ Start here:
 - scripts/release-readiness.mjs
 
 ### /
-Files: 10. Words: 30127. Internal links: 0. External links: 0.
+Files: 10. Words: 30075. Internal links: 0. External links: 0.
 Start here:
 - package-lock.json
 - mcp-server.mjs
@@ -256,7 +257,7 @@ Start here:
 - THIRD_PARTY_NOTICES.md
 
 ### packages
-Files: 5. Words: 14472. Internal links: 0. External links: 0.
+Files: 5. Words: 14399. Internal links: 0. External links: 0.
 Start here:
 - packages/mcp-server/export-context.mjs
 - packages/mcp-server/mcp-server.mjs
@@ -265,7 +266,7 @@ Start here:
 - packages/mcp-server/package.json
 
 ### src
-Files: 5. Words: 25111. Internal links: 2. External links: 0.
+Files: 5. Words: 25908. Internal links: 2. External links: 0.
 Start here:
 - src/renderer.js
 - src/styles.css
@@ -274,14 +275,14 @@ Start here:
 - src/sample.md
 
 ### skills
-Files: 3. Words: 995. Internal links: 1. External links: 0.
+Files: 3. Words: 1001. Internal links: 1. External links: 0.
 Start here:
 - skills/shibanshu-markdown-context/SKILL.md
 - skills/shibanshu-markdown-context/references/workflows.md
 - skills/shibanshu-markdown-context/agents/openai.yaml
 
 ### electron
-Files: 2. Words: 8051. Internal links: 0. External links: 0.
+Files: 2. Words: 8050. Internal links: 0. External links: 0.
 Start here:
 - electron/main.cjs
 - electron/preload.cjs
@@ -349,15 +350,15 @@ Orphans with no resolved links:
 - android/app/src/main/assets/public/assets/journeyDiagram-5HDEW3XC-B8jHg_5C.js
 - android/app/src/main/assets/public/assets/wardleyDiagram-EHGQE667-CrgxZRJQ.js
 - android/app/src/main/assets/public/assets/gitGraphDiagram-IHSO6WYX-BbdM1sHt.js
+- docs/marketing/ads/ad-athena-final.html
 - android/app/src/main/assets/public/assets/mindmap-definition-LN4V7U3C-bOcZmVQV.js
 - scripts/generate-app-icon.mjs
 - docs/marketing/ads/ad-resourceai-live.html
 - docs/premium-roadmap.md
+- docs/marketing/ads/ad-split.html
 - android/app/src/main/assets/public/assets/kanban-definition-HUTT4EX6-B07a0otC.js
+- docs/marketing/ads/ad-apple-premium.html
 - android/app/src/main/assets/public/assets/ishikawaDiagram-FXEZZL3T-w0bOb-b-.js
-- android/app/src/main/assets/public/assets/diagram-G47NLZAW-CFu0QIkP.js
-- android/app/src/main/assets/public/assets/mermaid-parser.core-CosqdZY-.js
-- README.md
 
 Files with unresolved links:
 - scripts/stress-check.mjs — 1 unresolved
@@ -368,5 +369,5 @@ Files with unresolved links:
 - Open the folder in Shibanshu Markdown Viewer to browse this same graph visually.
 - Use the graph search to jump between hubs and bridge files.
 - Use Mind Map on a specific note to inspect headings, tasks, backlinks, and unresolved links.
-- Use Copy AI Map after changing notes to create a fresh model-readable map.
-- Use `shibanshu-markdown context <folder> --out <folder>` to regenerate this guide offline.
+- Use Copy for AI after changing notes to create a fresh model-readable map.
+- Use `athena context <folder> --out <folder>` to regenerate this guide offline.

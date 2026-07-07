@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verified Benchmark — Animated Ad</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070a;color:#f7f8fb;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif}
+canvas{display:block;width:100vw;height:100vh}
+</style>
+</head>
+<body>
+<canvas id="scene" aria-label="Animated benchmark advertisement"></canvas>
+<script>
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+const TAU = Math.PI * 2;
+const DURATION = 28;
+let W = 0, H = 0, start = 0, elapsed = 0;
+
+// --- Setup ---
+function resize() {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  W = Math.floor(innerWidth * dpr);
+  H = Math.floor(innerHeight * dpr);
+  canvas.width = W;
+  canvas.height = H;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  W = innerWidth;
+  H = innerHeight;
+}
+resize();
+addEventListener('resize', resize);
+
+// --- Graph nodes ---
+const COLORS = [
+  [94, 234, 212], [148, 197, 255], [255, 199, 111],
+  [255, 134, 151], [207, 186, 255], [190, 243, 128]
+];
+const nodes = [];
+const edges = [];
+
+for (let i = 0; i < 140; i++) {
+  const c = i % 6;
+  const ring = 100 + Math.floor(i / 6) * 9;
+  const angle = i * 2.39996;
+  nodes.push({
+    x: Math.cos(angle) * ring + (c - 2.5) * 44,
+    y: Math.sin(angle) * ring * 0.58 + Math.sin(c) * 38,
+    z: Math.sin(angle * 0.7) * 260 + c * 24,
+    r: (c === 0 || i % 19 === 0) ? 5.8 : 2.4 + Math.random() * 2,
+    color: COLORS[c],
+    hub: i % 21 === 0 || (c === 0 && i % 8 === 0)
+  });
+}
+for (let i = 0; i < nodes.length; i++) {
+  for (let j = i + 1; j < nodes.length; j++) {
+    const same = (i % 6) === (j % 6);
+    if ((same && Math.random() < 0.04) || (!same && Math.random() < 0.005))
+      edges.push([i, j, Math.random()]);
+  }
+}
+for (let i = 0; i < 24; i++) edges.push([i, (i * 13 + 31) % nodes.length, Math.random()]);
+
+// --- Helpers ---
+function clamp(v) { return Math.max(0, Math.min(1, v)); }
+function ease(v) { v = clamp(v); return v < 0.5 ? 4*v*v*v : 1 - Math.pow(-2*v+2, 3)/2; }
+function easeOut(v) { v = clamp(v); return 1 - Math.pow(1 - v, 3); }
+function inn(t, s, d) { return ease((t - s) / d); }
+function outt(t, s, d) { return 1 - ease((t - s) / d); }
+function alpha(t, s, life, e = 0.6) { return Math.min(inn(t, s, e), outt(t, s + life - e, e)); }
+
+function clear() {
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, '#06080d');
+  g.addColorStop(0.5, '#0a0f18');
+  g.addColorStop(1, '#040506');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  // Subtle teal glow
+  const r = ctx.createRadialGradient(W * 0.55, H * 0.42, 0, W * 0.55, H * 0.42, W * 0.7);
+  r.addColorStop(0, 'rgba(67,232,198,0.06)');
+  r.addColorStop(0.4, 'rgba(100,160,255,0.03)');
+  r.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = r;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function txt(str, x, y, size, weight = '600', color = '#f7f8fb', a = 1, align = 'left', lh = 1.18) {
+  if (a <= 0.01) return;
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.fillStyle = color;
+  ctx.font = `${weight} ${size}px -apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif`;
+  ctx.textAlign = align;
+  String(str).split('\n').forEach((line, i) => ctx.fillText(line, x, y + i * size * lh));
+  ctx.restore();
+}
+
+function mono(str, x, y, size, a = 1, color = '#5eead4', align = 'left') {
+  if (a <= 0.01) return;
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.fillStyle = color;
+  ctx.font = `700 ${size}px "SF Mono","Fira Code","JetBrains Mono",monospace`;
+  ctx.textAlign = align;
+  ctx.fillText(str, x, y);
+  ctx.restore();
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function project(n, t, scale = 1) {
+  const rot = t * 0.15;
+  const x = n.x * Math.cos(rot) - n.z * Math.sin(rot);
+  const z = n.x * Math.sin(rot) + n.z * Math.cos(rot);
+  const y = n.y * Math.cos(rot * 0.4) - z * Math.sin(rot * 0.4) * 0.12;
+  const p = 700 / (780 + z);
+  return { x: W * 0.55 + x * p * scale, y: H * 0.50 + y * p * scale, s: p, z };
+}
+
+function drawGraph(t, a, scale = 1, ox = 0, oy = 0) {
+  if (a <= 0.01) return;
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.translate(ox, oy);
+  const proj = nodes.map(n => project(n, t, scale));
+  for (const [ai, bi, phase] of edges) {
+    const pa = proj[ai], pb = proj[bi], n = nodes[ai];
+    const [r, g, b] = n.color;
+    const pulse = 0.15 + 0.2 * Math.max(0, Math.sin(t * 2.5 + phase * TAU));
+    ctx.strokeStyle = `rgba(${r},${g},${b},${pulse * a})`;
+    ctx.lineWidth = Math.max(0.4, (pa.s + pb.s) * 0.5);
+    ctx.beginPath();
+    ctx.moveTo(pa.x, pa.y);
+    ctx.quadraticCurveTo((pa.x + pb.x) / 2 + (pb.y - pa.y) * 0.04, (pa.y + pb.y) / 2 - (pb.x - pa.x) * 0.04, pb.x, pb.y);
+    ctx.stroke();
+  }
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i], p = proj[i];
+    const [r, g, b] = n.color;
+    const active = n.hub || Math.sin(t * 2 + i * 0.35) > 0.75;
+    const radius = (n.r + (active ? 2.2 : 0)) * p.s * scale;
+    if (n.hub) {
+      const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius * 6);
+      glow.addColorStop(0, `rgba(${r},${g},${b},${0.16 * a})`);
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, radius * 6, 0, TAU);
+      ctx.fill();
+    }
+    ctx.fillStyle = `rgba(${r},${g},${b},${(active ? 0.95 : 0.55) * a})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, Math.max(1, radius), 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ===============================================================
+// SCENE 1 (0-6s): THE PROBLEM — files counting, context overflow
+// ===============================================================
+function scene1(t) {
+  const a = alpha(t, 0, 6.5, 0.7);
+  if (a <= 0.01) return;
+  const x = Math.max(52, W * 0.08);
+  const y = H * 0.16;
+
+  // File counter
+  const count = Math.floor(easeOut(clamp((t - 0.3) / 3)) * 994);
+  mono(count.toString(), x, y + 62, 96, a, '#ef4444');
+  txt('files', x + (count > 99 ? (count > 999 ? 260 : 210) : 140), y + 60, 36, '400', '#6b7280', a);
+
+  // Token counter
+  const tokenProg = easeOut(clamp((t - 1.2) / 3));
+  const tokens = Math.floor(tokenProg * 453522);
+  const tokStr = tokens.toLocaleString();
+  const ta = inn(t, 1.2, 0.6) * a;
+  mono(tokStr, x, y + 140, 56, ta, '#ef4444');
+  txt('tokens to read', x + tokStr.length * 34 + 20, y + 138, 22, '400', '#6b7280', ta);
+
+  // Context bar
+  const barA = inn(t, 2, 0.5) * a;
+  if (barA > 0.01) {
+    const barX = x;
+    const barY = y + 190;
+    const barW = Math.min(600, W * 0.7);
+    const barH = 32;
+    const fill = clamp(tokenProg * 2.27); // 227% of window
+
+    ctx.save();
+    ctx.globalAlpha = barA;
+    // Background
+    ctx.fillStyle = '#111827';
+    roundRect(barX, barY, barW, barH, 6);
+    ctx.fill();
+    // Fill (red, overflows)
+    const fillW = Math.min(fill * barW, barW);
+    const grad = ctx.createLinearGradient(barX, 0, barX + fillW, 0);
+    grad.addColorStop(0, '#991b1b');
+    grad.addColorStop(1, fill > 1 ? '#ef4444' : '#dc2626');
+    ctx.fillStyle = grad;
+    roundRect(barX, barY, fillW, barH, 6);
+    ctx.fill();
+    // 100% marker
+    const marker = barX + barW / 2.27;
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(marker, barY - 6);
+    ctx.lineTo(marker, barY + barH + 6);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Percentage text
+    const pct = Math.floor(fill * 100);
+    mono(pct + '%', barX + fillW + 12, barY + 23, 16, barA, pct > 100 ? '#ef4444' : '#fbbf24');
+    ctx.restore();
+
+    // "CONTEXT WINDOW" label
+    txt('Context window', barX + barW / 2.27, barY - 14, 10, '600', '#374151', barA, 'center');
+  }
+
+  // Impossible message
+  const impA = alpha(t, 3.8, 2.5, 0.5) * a;
+  txt('Impossible.', x, y + 280, 54, '800', '#ef4444', impA);
+  txt('Your AI literally cannot read this repo.', x, y + 336, 22, '500', '#9ca3af', impA);
+
+  // Subtle graph in background
+  drawGraph(t, a * 0.12, 0.4, W * 0.15, H * 0.1);
+}
+
+// ===============================================================
+// SCENE 2 (6-13s): THE COMPRESSION — bar chart animating
+// ===============================================================
+function scene2(t) {
+  const a = alpha(t, 5.8, 7.5, 0.8);
+  if (a <= 0.01) return;
+
+  // Graph on right
+  drawGraph(t, a * 0.35, 0.65, W * 0.12, 0);
+
+  const x = Math.max(48, W * 0.07);
+  const y = H * 0.14;
+
+  txt('One command.', x, y, 48, '800', '#f8fafc', a);
+  txt('29:1 compression.', x, y + 58, 48, '800', '#5eead4', a);
+
+  // Animated bar chart
+  const chartY = y + 120;
+  const chartW = Math.min(520, W * 0.55);
+  const bars = [
+    { label: 'All files', value: 453522, max: 453522, color: '#ef4444', display: '453K' },
+    { label: '50% explore', value: 226761, max: 453522, color: '#b91c1c', display: '227K' },
+    { label: 'With MCP', value: 15541, max: 453522, color: '#5eead4', display: '15.5K' },
+  ];
+
+  const barH = 30;
+  const barGap = 22;
+  const labelW = 110;
+  const prog = easeOut(clamp((t - 6.8) / 2.5));
+
+  bars.forEach((b, i) => {
+    const by = chartY + i * (barH + barGap);
+    const ba = inn(t, 6.3 + i * 0.3, 0.5) * a;
+
+    // Label
+    txt(b.label, x, by + barH / 2 + 5, 13, '500', '#9ca3af', ba);
+
+    // Bar bg
+    ctx.save();
+    ctx.globalAlpha = ba;
+    ctx.fillStyle = '#111827';
+    roundRect(x + labelW, by, chartW, barH, 5);
+    ctx.fill();
+
+    // Bar fill
+    const ratio = b.value / b.max;
+    const fillW = Math.max(ratio * chartW * prog, i === 2 ? 6 : 0);
+    const grad = ctx.createLinearGradient(x + labelW, 0, x + labelW + fillW, 0);
+    grad.addColorStop(0, b.color + '66');
+    grad.addColorStop(1, b.color);
+    ctx.fillStyle = grad;
+    roundRect(x + labelW, by, fillW, barH, 5);
+    ctx.fill();
+    ctx.restore();
+
+    // Value
+    mono(b.display, x + labelW + fillW + 12, by + barH / 2 + 5, 14, ba, b.color);
+  });
+
+  // Compression ratio callout
+  const ratioA = alpha(t, 9, 3.5, 0.6) * a;
+  const ratioY = chartY + 3 * (barH + barGap) + 20;
+  mono('96.6%', x, ratioY + 4, 64, ratioA, '#5eead4');
+  txt('less tokens', x + 230, ratioY + 2, 26, '500', '#6b7280', ratioA);
+  txt('Same understanding.', x, ratioY + 58, 22, '600', '#9ca3af', ratioA);
+}
+
+// ===============================================================
+// SCENE 3 (12-19s): COST SAVINGS — animated cost cards
+// ===============================================================
+function scene3(t) {
+  const a = alpha(t, 12.5, 7, 0.8);
+  if (a <= 0.01) return;
+
+  drawGraph(t, a * 0.18, 0.42, W * 0.2, H * 0.05);
+
+  const x = Math.max(48, W * 0.07);
+  txt('What this saves you.', x, H * 0.14, 44, '800', '#f8fafc', a);
+  txt('Monthly cost with 40 sessions — published API pricing', x, H * 0.14 + 52, 16, '400', '#6b7280', a);
+
+  const models = [
+    { name: 'Claude Opus 4', without: 136, withM: 9, saved: 1521, color: '#5eead4' },
+    { name: 'GPT-o3', without: 91, withM: 6, saved: 1014, color: '#22c55e' },
+    { name: 'Sonnet 4', without: 27, withM: 2, saved: 304, color: '#3b82f6' },
+    { name: 'GPT-4o', without: 23, withM: 2, saved: 253, color: '#8b5cf6' },
+  ];
+
+  const cardW = Math.min(220, (W - 120) / 4 - 16);
+  const cardH = 170;
+  const cardY = H * 0.32;
+  const totalW = models.length * (cardW + 16) - 16;
+  const startX = (W - totalW) / 2;
+
+  models.forEach((m, i) => {
+    const ca = inn(t, 13.2 + i * 0.35, 0.6) * a;
+    const cx = startX + i * (cardW + 16);
+
+    ctx.save();
+    ctx.globalAlpha = ca;
+
+    // Card bg
+    ctx.fillStyle = 'rgba(255,255,255,0.02)';
+    ctx.strokeStyle = `${m.color}22`;
+    ctx.lineWidth = 1;
+    roundRect(cx, cardY, cardW, cardH, 14);
+    ctx.fill();
+    ctx.stroke();
+
+    // Top accent line
+    ctx.fillStyle = m.color;
+    roundRect(cx + cardW * 0.3, cardY, cardW * 0.4, 2, 1);
+    ctx.fill();
+
+    ctx.restore();
+
+    // Model name
+    txt(m.name, cx + cardW / 2, cardY + 30, 12, '600', '#6b7280', ca, 'center');
+
+    // Strikethrough old price
+    const oldA = inn(t, 13.5 + i * 0.35, 0.4) * a;
+    mono('$' + m.without + '/mo', cx + cardW / 2, cardY + 62, 16, oldA, '#ef4444', 'center');
+    if (oldA > 0.01) {
+      ctx.save();
+      ctx.globalAlpha = oldA;
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1.5;
+      const tw = ctx.measureText('$' + m.without + '/mo').width || 80;
+      ctx.beginPath();
+      ctx.moveTo(cx + cardW / 2 - tw / 2 - 4, cardY + 58);
+      ctx.lineTo(cx + cardW / 2 + tw / 2 + 4, cardY + 58);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // New price
+    const newA = inn(t, 14 + i * 0.35, 0.5) * a;
+    mono('$' + m.withM, cx + cardW / 2, cardY + 105, 38, newA, m.color, 'center');
+    txt('/mo', cx + cardW / 2 + 34, cardY + 103, 14, '400', '#6b7280', newA);
+
+    // Yearly savings
+    const savA = inn(t, 14.5 + i * 0.35, 0.5) * a;
+    txt('Save $' + m.saved.toLocaleString() + '/yr', cx + cardW / 2, cardY + 140, 12, '700', '#22c55e', savA, 'center');
+  });
+
+  // Bottom context window note
+  const noteA = alpha(t, 15.5, 3.5, 0.6) * a;
+  const noteY = cardY + cardH + 40;
+  txt('Context window:', W / 2, noteY, 16, '600', '#6b7280', noteA, 'center');
+  txt('Raw = 227% (impossible)', W / 2, noteY + 26, 18, '700', '#ef4444', noteA, 'center');
+  txt('MCP = 8% (fits easily)', W / 2, noteY + 52, 18, '700', '#5eead4', noteA, 'center');
+}
+
+// ===============================================================
+// SCENE 4 (18-24s): VERIFICATION — terminal + methodology
+// ===============================================================
+function scene4(t) {
+  const a = alpha(t, 18, 6.5, 0.8);
+  if (a <= 0.01) return;
+
+  drawGraph(t, a * 0.14, 0.36, W * 0.22, H * 0.08);
+
+  const x = Math.max(48, W * 0.07);
+
+  // Header with shield icon
+  txt('Verified.', x, H * 0.13, 48, '800', '#22c55e', a);
+  txt('Every number is reproducible.', x, H * 0.13 + 56, 20, '500', '#6b7280', a);
+
+  // Terminal box
+  const termX = x;
+  const termY = H * 0.30;
+  const termW = Math.min(640, W * 0.82);
+  const termH = 240;
+
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.fillStyle = '#000000';
+  ctx.strokeStyle = 'rgba(34,197,94,0.15)';
+  ctx.lineWidth = 1;
+  roundRect(termX, termY, termW, termH, 12);
+  ctx.fill();
+  ctx.stroke();
+  // Terminal dots
+  ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(termX + 18, termY + 16, 5, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.arc(termX + 34, termY + 16, 5, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(termX + 50, termY + 16, 5, 0, TAU); ctx.fill();
+  ctx.restore();
+
+  // Terminal lines typing in
+  const lines = [
+    { text: '$ node scripts/benchmark-980-repo.mjs', color: '#22c55e', delay: 0 },
+    { text: '', delay: 0.3 },
+    { text: '  ✓ Generated 994 files', color: '#22c55e', delay: 0.6 },
+    { text: '  ✓ Context map generated in 0.5s', color: '#22c55e', delay: 1.0 },
+    { text: '  ✓ 991 files indexed', color: '#22c55e', delay: 1.3 },
+    { text: '', delay: 1.5 },
+    { text: '  Files:        994', color: '#fbbf24', delay: 1.8 },
+    { text: '  Raw tokens:   453,522', color: '#ef4444', delay: 2.1 },
+    { text: '  MCP tokens:   15,541', color: '#5eead4', delay: 2.4 },
+    { text: '  Compression:  29:1', color: '#5eead4', delay: 2.7 },
+    { text: '  Savings:      96.6%', color: '#5eead4', delay: 3.0 },
+  ];
+
+  const lineH = 18;
+  const tStart = 18.8;
+  lines.forEach((l, i) => {
+    if (!l.text) return;
+    const la = inn(t, tStart + l.delay, 0.25) * a;
+    const charCount = Math.floor(easeOut(clamp((t - tStart - l.delay) / 0.4)) * l.text.length);
+    const visible = l.text.substring(0, charCount);
+    mono(visible, termX + 18, termY + 42 + i * lineH, 12, la, l.color || '#9ca3af');
+  });
+
+  // Methodology checkmarks
+  const methY = termY + termH + 28;
+  const checks = [
+    '994 real files — React, Node, tests, SQL, configs',
+    'Token count within 5% of tiktoken',
+    'Conservative 50% exploration baseline',
+    'Published API pricing — no inflated claims',
+    'Open source — MIT — fully auditable',
+    'Run it yourself: benchmark-980-repo.mjs',
+  ];
+
+  checks.forEach((c, i) => {
+    const col = i < 3 ? 0 : 1;
+    const row = i % 3;
+    const cx = x + col * Math.min(460, W * 0.46);
+    const cy = methY + row * 28;
+    const ca = inn(t, 21 + i * 0.2, 0.4) * a;
+
+    // Green check circle
+    ctx.save();
+    ctx.globalAlpha = ca;
+    ctx.fillStyle = 'rgba(34,197,94,0.12)';
+    ctx.strokeStyle = 'rgba(34,197,94,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx + 8, cy + 4, 8, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    // Checkmark
+    ctx.strokeStyle = '#22c55e';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx + 4, cy + 4);
+    ctx.lineTo(cx + 7, cy + 7);
+    ctx.lineTo(cx + 12, cy + 1);
+    ctx.stroke();
+    ctx.restore();
+
+    txt(c, cx + 22, cy + 9, 12, '500', '#9ca3af', ca);
+  });
+}
+
+// ===============================================================
+// SCENE 5 (23-28s): FINAL CTA
+// ===============================================================
+function scene5(t) {
+  const a = inn(t, 23.5, 1);
+  if (a <= 0.01) return;
+
+  drawGraph(t, a * 0.4, 0.5);
+
+  txt('Give your AI a map.', W / 2, H * 0.28, 52, '800', '#f8fafc', a, 'center');
+  txt('Not a flashlight.', W / 2, H * 0.28 + 62, 52, '800', '#5eead4', a, 'center');
+
+  // Install command box
+  const cmdA = inn(t, 24.5, 0.6) * a;
+  const cmdW = Math.min(540, W * 0.65);
+  const cmdX = (W - cmdW) / 2;
+  const cmdY = H * 0.52;
+
+  ctx.save();
+  ctx.globalAlpha = cmdA;
+  ctx.fillStyle = '#000';
+  ctx.strokeStyle = 'rgba(94,234,212,0.2)';
+  ctx.lineWidth = 1.5;
+  roundRect(cmdX, cmdY, cmdW, 52, 10);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  mono('$', cmdX + 20, cmdY + 34, 18, cmdA, '#374151');
+  mono('npx shibanshu-markdown-mcp', cmdX + 40, cmdY + 34, 18, cmdA, '#5eead4');
+
+  // Bottom tags
+  const tagA = inn(t, 25, 0.5) * a;
+  const tags = ['Free', 'Open Source', 'MIT', '19 Tools', 'No Telemetry', '0.5s'];
+  const tagW = tags.length * 100;
+  const tagStart = (W - tagW) / 2;
+  tags.forEach((tag, i) => {
+    txt(tag, tagStart + i * 100 + 50, H * 0.72, 13, '500', '#374151', tagA, 'center');
+  });
+
+  // Final line
+  const finalA = inn(t, 25.5, 0.8) * a;
+  txt('994 files → 15,541 tokens → 0.5 seconds', W / 2, H * 0.82, 18, '600', '#6b7280', finalA, 'center');
+  txt('Verified. Reproducible. Yours.', W / 2, H * 0.82 + 30, 16, '600', '#22c55e', finalA, 'center');
+}
+
+// --- Main loop ---
+function frame(now) {
+  if (!start) start = now;
+  elapsed = (now - start) / 1000;
+  const t = elapsed % DURATION;
+  clear();
+  scene1(t);
+  scene2(t);
+  scene3(t);
+  scene4(t);
+  scene5(t);
+
+  if (elapsed >= DURATION) {
+    window.__videoDone = true;
+  } else {
+    requestAnimationFrame(frame);
+  }
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

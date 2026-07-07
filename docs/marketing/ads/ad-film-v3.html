@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",sans-serif}
+canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const cv=document.getElementById('c'),cx=cv.getContext('2d');
+let W,H;
+function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight}
+rs();addEventListener('resize',rs);
+
+const TAU=Math.PI*2,DUR=40;
+let t=0,lt=0;
+
+// ═══ COLOR PALETTE (Apple-clean) ═══
+const WHITE='#ffffff',ZINC='#a1a1aa',RED='#f87171',TEAL='#5eead4',GOLD='#fbbf24',BG='#000000';
+const MONO='"SF Mono",ui-monospace,Menlo,monospace';
+const SANS='-apple-system,"SF Pro Display","Helvetica Neue",sans-serif';
+
+// ═══ GRAPH DATA ═══
+const NODE_COUNT=130;
+const nodes=[],edges=[],stars=[];
+const clusterColors=[[94,234,212],[147,197,253],[252,211,77],[248,113,113],[167,139,250],[110,231,183]];
+for(let ci=0;ci<6;ci++){
+  const ang=ci/6*TAU,count=ci<2?28:ci<4?22:15;
+  for(let i=0;i<count;i++){
+    const isHub=i<2;
+    const phi=ang+(Math.random()-0.5)*0.8;
+    const theta=(Math.random()-0.5)*Math.PI*0.7;
+    const dist=150+Math.random()*200;
+    nodes.push({
+      x:Math.cos(phi)*Math.cos(theta)*dist,
+      y:Math.sin(theta)*dist*0.6,
+      z:Math.sin(phi)*Math.cos(theta)*dist,
+      r:isHub?8+Math.random()*5:2+Math.random()*3.5,
+      col:clusterColors[ci],isHub,
+      words:isHub?3000+Math.random()*4000:100+Math.random()*2000
+    });
+  }
+}
+for(let i=0;i<200;i++){
+  const a=Math.floor(Math.random()*nodes.length),b=Math.floor(Math.random()*nodes.length);
+  if(a!==b)edges.push([a,b]);
+}
+// Force layout
+for(let it=0;it<200;it++){
+  const alpha=1-it/200;
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      let dx=nodes[j].x-nodes[i].x,dy=nodes[j].y-nodes[i].y,dz=nodes[j].z-nodes[i].z;
+      let d2=dx*dx+dy*dy+dz*dz;if(d2>800000)continue;
+      let d=Math.sqrt(d2)||1,f=Math.min(4,1100*alpha/(d*d));
+      nodes[i].x-=dx/d*f;nodes[i].y-=dy/d*f;nodes[i].z-=dz/d*f;
+      nodes[j].x+=dx/d*f;nodes[j].y+=dy/d*f;nodes[j].z+=dz/d*f;
+    }
+  }
+  for(const[a,b]of edges){
+    let dx=nodes[b].x-nodes[a].x,dy=nodes[b].y-nodes[a].y,dz=nodes[b].z-nodes[a].z;
+    let d=Math.sqrt(dx*dx+dy*dy+dz*dz)||1,f=(d-90)*0.007*alpha;
+    nodes[a].x+=dx/d*f;nodes[a].y+=dy/d*f;nodes[a].z+=dz/d*f;
+    nodes[b].x-=dx/d*f;nodes[b].y-=dy/d*f;nodes[b].z-=dz/d*f;
+  }
+  for(const n of nodes){
+    n.x-=n.x*0.0005;n.y-=n.y*0.0005;n.z-=n.z*0.0005;
+  }
+}
+for(let i=0;i<250;i++)stars.push({x:(Math.random()-0.5)*5000,y:(Math.random()-0.5)*3500,z:(Math.random()-0.5)*4000,b:0.15+Math.random()*0.5,s:0.2+Math.random()*0.4});
+
+// ═══ HELPERS ═══
+function ease(x){return x<0.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2}
+function cl(x){return Math.max(0,Math.min(1,x))}
+function fi(s,d){return ease(cl((t-s)/d))}
+function fo(s,d){return 1-ease(cl((t-s)/d))}
+function fio(s,d,fd){return Math.min(fi(s,d*0.3),fo(s+d-fd,fd))}
+
+function proj(x,y,z,ry){
+  const cy=Math.cos(ry),sy=Math.sin(ry),x1=x*cy-z*sy,z1=x*sy+z*cy;
+  const rx=-0.12,crx=Math.cos(rx),srx=Math.sin(rx),y1=y*crx-z1*srx,z2=y*srx+z1*crx;
+  const fov=1000,s=fov/(fov+z2+600);
+  if(s<0.005)return null;
+  return{x:x1*s+W/2,y:y1*s+H/2,z:z2,s};
+}
+
+function text(str,x,y,font,size,weight,color,alpha,align='center'){
+  if(alpha<0.01)return;
+  cx.globalAlpha=alpha;
+  cx.font=`${weight} ${size}px ${font}`;
+  cx.fillStyle=color;
+  cx.textAlign=align;
+  cx.fillText(str,x,y);
+  cx.textAlign='left';
+  cx.globalAlpha=1;
+}
+
+// ═══ GRAPH RENDERER ═══
+function drawGraph(ga,buildProg,ry,highlight=-1){
+  if(ga<0.01)return;
+  cx.globalAlpha=ga;
+
+  // Nebulae
+  const n1=cx.createRadialGradient(W*0.3,H*0.4,0,W*0.3,H*0.4,W*0.35);
+  n1.addColorStop(0,'rgba(94,234,212,0.018)');n1.addColorStop(1,'rgba(0,0,0,0)');
+  cx.fillStyle=n1;cx.fillRect(0,0,W,H);
+  const n2=cx.createRadialGradient(W*0.7,H*0.55,0,W*0.7,H*0.55,W*0.3);
+  n2.addColorStop(0,'rgba(147,197,253,0.012)');n2.addColorStop(1,'rgba(0,0,0,0)');
+  cx.fillStyle=n2;cx.fillRect(0,0,W,H);
+
+  // Stars
+  for(const s of stars){
+    const p=proj(s.x,s.y,s.z,ry*0.15);
+    if(!p||p.x<0||p.x>W)continue;
+    cx.fillStyle=`rgba(255,255,255,${s.b*(0.2+Math.sin(t*0.6+s.b*10)*0.12)})`;
+    cx.beginPath();cx.arc(p.x,p.y,s.s*p.s,0,TAU);cx.fill();
+  }
+
+  const nv=Math.floor(cl(buildProg)*nodes.length);
+
+  // Edges
+  for(const[a,b]of edges){
+    if(a>=nv||b>=nv)continue;
+    const pa=proj(nodes[a].x,nodes[a].y,nodes[a].z,ry);
+    const pb=proj(nodes[b].x,nodes[b].y,nodes[b].z,ry);
+    if(!pa||!pb)continue;
+    const depth=(pa.s+pb.s)*0.5;
+    let al=Math.max(0.01,Math.min(0.12,depth*0.06));
+    let w=Math.max(0.3,depth*1.2);
+    if(highlight>=0){
+      if(a===highlight||b===highlight){al=0.4;w=2}
+      else{al*=0.06;w*=0.3}
+    }
+    const[cr,cg,cb]=nodes[a].col;
+    cx.strokeStyle=`rgba(${cr},${cg},${cb},${al})`;
+    cx.lineWidth=w;
+    const mx=(pa.x+pb.x)/2,my=(pa.y+pb.y)/2,dx=pb.x-pa.x,dy=pb.y-pa.y;
+    cx.beginPath();cx.moveTo(pa.x,pa.y);cx.quadraticCurveTo(mx+dy*0.05,my-dx*0.05,pb.x,pb.y);cx.stroke();
+  }
+
+  // Particles
+  for(let i=0;i<70;i++){
+    const ei=i%edges.length;
+    const[a,b]=edges[ei];if(a>=nv||b>=nv)continue;
+    const pa=proj(nodes[a].x,nodes[a].y,nodes[a].z,ry);
+    const pb=proj(nodes[b].x,nodes[b].y,nodes[b].z,ry);
+    if(!pa||!pb)continue;
+    const ph=(t*0.08+i*0.023)%1;
+    const gl=Math.sin(ph*Math.PI)*0.3*(pa.s+pb.s)*0.5;
+    if(gl<0.015)continue;
+    const[cr,cg,cb]=nodes[a].col;
+    for(let tr=0;tr<3;tr++){
+      const tp=Math.max(0,ph-tr*0.04);
+      cx.fillStyle=`rgba(${cr},${cg},${cb},${gl*(1-tr*0.3)})`;
+      cx.beginPath();cx.arc(pa.x+(pb.x-pa.x)*tp,pa.y+(pb.y-pa.y)*tp,1-tr*0.25,0,TAU);cx.fill();
+    }
+  }
+
+  // Nodes — sorted back to front
+  const projected=[];
+  for(let i=0;i<nv;i++){
+    const p=proj(nodes[i].x,nodes[i].y,nodes[i].z,ry);
+    if(!p)continue;
+    projected.push({...nodes[i],i,px:p.x,py:p.y,pz:p.z,ps:p.s});
+  }
+  projected.sort((a,b)=>a.pz-b.pz);
+
+  for(const n of projected){
+    if(n.px<-50||n.px>W+50)continue;
+    const[cr,cg,cb]=n.col;
+    const r=Math.max(1,(n.isHub?n.r:2+Math.sqrt(n.words)*0.04)*n.ps*1.5);
+    const da=Math.max(0.1,Math.min(1,n.ps*1.3));
+    let al=da;
+    if(highlight>=0&&n.i!==highlight)al=da*0.1;
+
+    // Hub corona
+    if(n.isHub&&al>0.15){
+      const pulse=1+Math.sin(t*1.2+n.r)*0.1;
+      const g=cx.createRadialGradient(n.px,n.py,r,n.px,n.py,r*6*pulse);
+      g.addColorStop(0,`rgba(${cr},${cg},${cb},${al*0.1})`);
+      g.addColorStop(1,'rgba(0,0,0,0)');
+      cx.fillStyle=g;cx.beginPath();cx.arc(n.px,n.py,r*6*pulse,0,TAU);cx.fill();
+    }
+
+    // Sphere gradient
+    const ng=cx.createRadialGradient(n.px-r*0.3,n.py-r*0.35,0,n.px+r*0.1,n.py+r*0.1,r*1.1);
+    ng.addColorStop(0,`rgba(${Math.min(255,cr+90)},${Math.min(255,cg+90)},${Math.min(255,cb+90)},${al})`);
+    ng.addColorStop(0.4,`rgba(${cr},${cg},${cb},${al})`);
+    ng.addColorStop(1,`rgba(${Math.max(0,cr-50)},${Math.max(0,cg-50)},${Math.max(0,cb-50)},${al*0.5})`);
+    cx.fillStyle=ng;cx.beginPath();cx.arc(n.px,n.py,r,0,TAU);cx.fill();
+
+    // Specular
+    if(r>3){
+      cx.fillStyle=`rgba(255,255,255,${al*0.35})`;
+      cx.beginPath();cx.arc(n.px-r*0.25,n.py-r*0.3,r*0.3,0,TAU);cx.fill();
+    }
+  }
+  cx.globalAlpha=1;
+}
+
+// ═══ MAIN DRAW LOOP ═══
+function draw(ts){
+  if(!lt)lt=ts;
+  t+=(ts-lt)/1000;
+  lt=ts;
+  if(t>DUR)t=0;
+
+  cx.fillStyle=BG;
+  cx.fillRect(0,0,W,H);
+
+  const cw=W/2,ch=H/2;
+  const lm=80; // left margin
+  const rm=W-80; // right margin
+
+  // ═══ BEAT 1: THE FEELING (0-3s) ═══
+  // What every developer feels. No features. Just pain.
+  if(t<4.5){
+    const a=t<3.5?fi(0.2,0.6):fo(3.5,1);
+    text('You ask Claude to fix your code.',cw,ch-30,SANS,48,300,WHITE,a);
+    if(t>0.8){
+      const a2=fi(0.8,0.6)*(t<3.5?1:fo(3.5,1));
+      text('It reads 47 files. Gets it wrong. You try again.',cw,ch+30,SANS,28,300,ZINC,a2);
+    }
+  }
+
+  // ═══ BEAT 2: THE COST (3-7s) ═══
+  // Make pain concrete with money and time
+  if(t>3.5&&t<8){
+    const a=fio(3.5,4.5,0.8);
+
+    // Big dollar amount — left
+    text('$35',lm,ch-20,MONO,96,800,RED,a,'left');
+    text('burned. Every session.',lm,ch+40,SANS,24,300,ZINC,a*0.7,'left');
+
+    // Time wasted — right
+    if(t>4.5){
+      const a2=fi(4.5,0.6)*fo(7.2,0.8);
+      text('45 min',rm,ch-20,MONO,96,800,'#fb923c',a2,'right');
+      text('wasted. Every day.',rm,ch+40,SANS,24,300,ZINC,a2*0.7,'right');
+    }
+
+    // Bottom line
+    if(t>5.5){
+      const a3=fi(5.5,0.5)*fo(7.2,0.8);
+      text('And tomorrow, same thing.',cw,H-100,SANS,22,400,ZINC,a3*0.5);
+    }
+  }
+
+  // ═══ BEAT 3: THE TURN (7-9s) ═══
+  // Silence. One question. Lean in.
+  if(t>7&&t<10){
+    const a=fio(7.5,2.5,0.6);
+    text('What if it already knew your code?',cw,ch,SANS,52,300,WHITE,a);
+  }
+
+  // ═══ BEAT 4: THE REVEAL (9-32s) ═══
+  // Graph builds. This IS the product.
+  if(t>9&&t<34){
+    const gt=t-9;
+    const ga=Math.min(fi(9,2.5),t<32?1:fo(32,2));
+    const buildProg=ease(cl(gt/5));
+    const ry=gt*0.04;
+
+    // Simulate "highlight" effect at certain moments
+    let highlight=-1;
+    if(gt>12&&gt<14)highlight=0; // highlight hub node
+
+    drawGraph(ga,buildProg,ry,highlight);
+
+    // ═══ BEAT 5: BENEFITS (15-26s) ═══
+    // On the SIDES. Clean. Spaced. User benefits.
+
+    // Benefit 1: ACCURACY (what they want most)
+    if(t>15&&t<19){
+      const a=fio(15,4,0.7)*ga;
+      text('Right answer.',lm,H*0.15,SANS,42,600,WHITE,a,'left');
+      text('First try. Every time.',lm,H*0.15+50,SANS,22,300,ZINC,a*0.7,'left');
+    }
+
+    // Benefit 2: MONEY (what the boss cares about)
+    if(t>17.5&&t<21.5){
+      const a=fio(17.5,4,0.7)*ga;
+      text('$4,521',rm,H*0.15,MONO,42,800,GOLD,a,'right');
+      text('saved per year.',rm,H*0.15+50,SANS,22,300,ZINC,a*0.7,'right');
+    }
+
+    // Benefit 3: AUTO-UPDATE (zero effort)
+    if(t>20&&t<24){
+      const a=fio(20,4,0.7)*ga;
+      text('Auto-updates',lm,H*0.82,SANS,36,600,TEAL,a,'left');
+      text('on every commit. Zero config.',lm,H*0.82+44,SANS,20,300,ZINC,a*0.7,'left');
+    }
+
+    // Benefit 4: HEALTH CHECK (new capability)
+    if(t>22.5&&t<26.5){
+      const a=fio(22.5,4,0.7)*ga;
+      text('Repo Health Check',rm,H*0.82,SANS,36,600,TEAL,a,'right');
+      text('Dead code. Broken links. Secrets. Rated.',rm,H*0.82+44,SANS,20,300,ZINC,a*0.7,'right');
+    }
+
+    // Benefit 5: BLAST RADIUS (fear reducer)
+    if(t>25&&t<29){
+      const a=fio(25,4,0.7)*ga;
+      text('Blast Radius',lm,H*0.15,SANS,36,600,'#fb923c',a,'left');
+      text('Know what breaks before you push.',lm,H*0.15+44,SANS,20,300,ZINC,a*0.7,'left');
+    }
+
+    // Benefit 6: 22 TOOLS
+    if(t>27.5&&t<31.5){
+      const a=fio(27.5,4,0.7)*ga;
+      text('22 tools',rm,H*0.15,MONO,36,800,WHITE,a,'right');
+      text('One command. Works forever.',rm,H*0.15+44,SANS,20,300,ZINC,a*0.7,'right');
+    }
+  }
+
+  // ═══ BEAT 6: THE NAME (32-40s) ═══
+  if(t>31){
+    const na=fi(32,1.5);
+    const cmdA=fi(34,0.8);
+    const tagA=fi(35.5,0.6);
+
+    // Subtle teal glow
+    const ag=cx.createRadialGradient(cw,ch-20,0,cw,ch-20,W*0.25);
+    ag.addColorStop(0,`rgba(94,234,212,${0.015*na})`);
+    ag.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=ag;cx.fillRect(0,0,W,H);
+
+    // Name
+    text('Athena',cw,ch-80,SANS,82,700,WHITE,na);
+    text('for codebases',cw,ch-20,SANS,26,300,ZINC,na*0.7);
+
+    // Command
+    const pulse=1+Math.sin(t*2.5)*0.008;
+    cx.save();cx.translate(cw,ch+50);cx.scale(pulse,pulse);
+    text('npx athena-code-mcp',0,0,MONO,28,500,TEAL,cmdA);
+    cx.restore();
+
+    // Tags
+    text('22 tools  ·  auto-updates  ·  open source',cw,ch+110,SANS,16,400,'#52525b',tagA);
+
+    // Fade out at end
+    if(t>38){
+      const fadeA=(t-38)/2;
+      cx.fillStyle=`rgba(0,0,0,${cl(fadeA)})`;
+      cx.fillRect(0,0,W,H);
+    }
+  }
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
